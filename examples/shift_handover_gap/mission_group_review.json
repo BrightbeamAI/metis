@@ -1,0 +1,16 @@
+{
+  "fragment_id": "TF-00001",
+  "outcome": "promoted_to_advisory",
+  "reviewers": [
+    "group:mission-group@tacitflow.local"
+  ],
+  "dimension_assessments": {
+    "description_fidelity": "faithful",
+    "operational_relevance": "high",
+    "normative_alignment": "acceptable",
+    "safety_risk": "medium",
+    "evidence_strength": "moderate",
+    "consent_status": "granted"
+  },
+  "summary": "Promote as advisory checklist guidance for handovers, not automation."
+}

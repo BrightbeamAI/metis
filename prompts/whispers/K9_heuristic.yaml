@@ -1,0 +1,13 @@
+category: K9_heuristic
+domain: inferential
+trigger: operator applies a rule-of-thumb at an exception, threshold, or deviation
+primary_whisper: "You acted before the threshold was formally reached. What rule of thumb were you using?"
+follow_ups:
+  - "When does this rule NOT apply?"
+  - "What conditions make it reliable?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Heuristics have boundaries; capture counter-conditions explicitly."
+do_not_ask:
+  - "Do not ask the operator to defend the heuristic against policy."

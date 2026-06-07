@@ -1,0 +1,249 @@
+{
+  "$defs": {
+    "AgentVisibility": {
+      "enum": [
+        "hidden",
+        "retrievable_with_gate",
+        "advisory_context",
+        "controlled_instruction"
+      ],
+      "title": "AgentVisibility",
+      "type": "string"
+    },
+    "AuthorityLayer": {
+      "enum": [
+        "evidence",
+        "advisory",
+        "controlled"
+      ],
+      "title": "AuthorityLayer",
+      "type": "string"
+    },
+    "Category": {
+      "enum": [
+        "K1_procedural",
+        "K2_embodied",
+        "K3_rhythmic",
+        "K4_equipment_specific",
+        "K5_material",
+        "K6_tool_extended",
+        "K7_sensory",
+        "K8_aesthetic",
+        "K9_heuristic",
+        "K10_diagnostic",
+        "K11_anticipatory",
+        "K12_metacognitive",
+        "K13_affective_regulatory",
+        "K14_collaborative",
+        "K15_cultural_narrative",
+        "K16_judgemental_ethical",
+        "K17_strategic"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "Domain": {
+      "enum": [
+        "procedural_embodied",
+        "material_equipment",
+        "perceptual_aesthetic",
+        "inferential",
+        "metacognitive_affective",
+        "social_normative"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "RevocationStatus": {
+      "enum": [
+        "active",
+        "withdrawn",
+        "superseded",
+        "rejected",
+        "under_re_elicitation",
+        "retired"
+      ],
+      "title": "RevocationStatus",
+      "type": "string"
+    },
+    "SourcePathway": {
+      "enum": [
+        "exogenous",
+        "endogenous"
+      ],
+      "title": "SourcePathway",
+      "type": "string"
+    },
+    "ValidationState": {
+      "enum": [
+        "captured",
+        "worker_confirmed",
+        "tier1_confirmed",
+        "tier2_pending",
+        "promoted_to_advisory",
+        "promoted_to_controlled",
+        "held",
+        "rejected",
+        "re_elicit",
+        "withdrawn",
+        "superseded",
+        "expired"
+      ],
+      "title": "ValidationState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "memory_id": {
+      "title": "Memory Id",
+      "type": "string"
+    },
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "memory_type": {
+      "default": "tacit",
+      "title": "Memory Type",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/Category"
+    },
+    "domain": {
+      "$ref": "#/$defs/Domain"
+    },
+    "source_pathway": {
+      "$ref": "#/$defs/SourcePathway"
+    },
+    "conditions": {
+      "additionalProperties": true,
+      "title": "Conditions",
+      "type": "object"
+    },
+    "provenance": {
+      "additionalProperties": true,
+      "title": "Provenance",
+      "type": "object"
+    },
+    "evidence": {
+      "additionalProperties": true,
+      "title": "Evidence",
+      "type": "object"
+    },
+    "authority_layer": {
+      "$ref": "#/$defs/AuthorityLayer"
+    },
+    "validation_state": {
+      "$ref": "#/$defs/ValidationState"
+    },
+    "confidence": {
+      "default": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "use_constraints": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Use Constraints",
+      "type": "array"
+    },
+    "retrieval_policy": {
+      "additionalProperties": true,
+      "title": "Retrieval Policy",
+      "type": "object"
+    },
+    "agent_visibility": {
+      "$ref": "#/$defs/AgentVisibility",
+      "default": "hidden"
+    },
+    "agent_instruction": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Agent Instruction"
+    },
+    "linked_procedural_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Linked Procedural Refs",
+      "type": "array"
+    },
+    "linked_semantic_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Linked Semantic Refs",
+      "type": "array"
+    },
+    "linked_episodic_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Linked Episodic Refs",
+      "type": "array"
+    },
+    "linked_chap_evidence_refs": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Linked Chap Evidence Refs",
+      "type": "array"
+    },
+    "model_assist_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Model Assist Refs",
+      "type": "array"
+    },
+    "review_due_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Review Due At"
+    },
+    "revocation_status": {
+      "$ref": "#/$defs/RevocationStatus",
+      "default": "active"
+    }
+  },
+  "required": [
+    "memory_id",
+    "fragment_id",
+    "title",
+    "content",
+    "category",
+    "domain",
+    "source_pathway",
+    "authority_layer",
+    "validation_state"
+  ],
+  "title": "TacitMemoryObject",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_memory_object.schema.json"
+}

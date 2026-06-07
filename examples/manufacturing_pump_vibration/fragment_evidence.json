@@ -1,0 +1,9 @@
+{
+  "recurrence_count": 4,
+  "supporting_cases": ["case-1", "case-2", "case-3"],
+  "comparison_baseline": "SOP-17",
+  "outcome_link": "avoided 3 alarm events",
+  "uncertainty": "Acoustic cue is subjective; confirm with operator before action.",
+  "counterexamples": ["Low vibration with dull acoustic at low load did not precede an alarm."],
+  "evidence_strength": "moderate"
+}

@@ -1,0 +1,965 @@
+{
+  "$defs": {
+    "Attribution": {
+      "additionalProperties": false,
+      "properties": {
+        "worker_or_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Or Group"
+        },
+        "mode": {
+          "default": "role",
+          "title": "Mode",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "title": "Attribution",
+      "type": "object"
+    },
+    "AttributionMode": {
+      "enum": [
+        "named",
+        "role",
+        "anonymous",
+        "group"
+      ],
+      "title": "AttributionMode",
+      "type": "string"
+    },
+    "AuthorityLayer": {
+      "enum": [
+        "evidence",
+        "advisory",
+        "controlled"
+      ],
+      "title": "AuthorityLayer",
+      "type": "string"
+    },
+    "Category": {
+      "enum": [
+        "K1_procedural",
+        "K2_embodied",
+        "K3_rhythmic",
+        "K4_equipment_specific",
+        "K5_material",
+        "K6_tool_extended",
+        "K7_sensory",
+        "K8_aesthetic",
+        "K9_heuristic",
+        "K10_diagnostic",
+        "K11_anticipatory",
+        "K12_metacognitive",
+        "K13_affective_regulatory",
+        "K14_collaborative",
+        "K15_cultural_narrative",
+        "K16_judgemental_ethical",
+        "K17_strategic"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "ConsentRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "consent_required": {
+          "default": true,
+          "title": "Consent Required",
+          "type": "boolean"
+        },
+        "consent_status": {
+          "$ref": "#/$defs/ConsentStatus",
+          "default": "pending"
+        },
+        "attribution_mode": {
+          "$ref": "#/$defs/AttributionMode",
+          "default": "role"
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility",
+          "default": "mission_group"
+        },
+        "withdrawal_allowed": {
+          "default": true,
+          "title": "Withdrawal Allowed",
+          "type": "boolean"
+        },
+        "withdrawal_constraints": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Withdrawal Constraints"
+        },
+        "worker_visible_record": {
+          "default": true,
+          "title": "Worker Visible Record",
+          "type": "boolean"
+        },
+        "policy_exception": {
+          "default": false,
+          "title": "Policy Exception",
+          "type": "boolean"
+        },
+        "policy_exception_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Exception Reason"
+        }
+      },
+      "title": "ConsentRecord",
+      "type": "object"
+    },
+    "ConsentStatus": {
+      "enum": [
+        "not_required",
+        "pending",
+        "granted",
+        "withdrawn",
+        "policy_exception"
+      ],
+      "title": "ConsentStatus",
+      "type": "string"
+    },
+    "Domain": {
+      "enum": [
+        "procedural_embodied",
+        "material_equipment",
+        "perceptual_aesthetic",
+        "inferential",
+        "metacognitive_affective",
+        "social_normative"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "EvidenceStrength": {
+      "enum": [
+        "none",
+        "weak",
+        "moderate",
+        "strong"
+      ],
+      "title": "EvidenceStrength",
+      "type": "string"
+    },
+    "FragmentEvidence": {
+      "additionalProperties": false,
+      "description": "Evidence is a governance signal, not universal truth.",
+      "properties": {
+        "recurrence_count": {
+          "default": 0,
+          "title": "Recurrence Count",
+          "type": "integer"
+        },
+        "supporting_cases": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Cases",
+          "type": "array"
+        },
+        "comparison_baseline": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Baseline"
+        },
+        "outcome_link": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outcome Link"
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uncertainty"
+        },
+        "counterexamples": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Counterexamples",
+          "type": "array"
+        },
+        "review_notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Review Notes",
+          "type": "array"
+        },
+        "evidence_strength": {
+          "$ref": "#/$defs/EvidenceStrength",
+          "default": "none"
+        }
+      },
+      "title": "FragmentEvidence",
+      "type": "object"
+    },
+    "LineageEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "at": {
+          "title": "At",
+          "type": "string"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "By"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "chap_evidence_seq": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chap Evidence Seq"
+        },
+        "chap_artefact_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chap Artefact Ref"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "LineageEntry",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Where a fragment came from. References CHAP participants/tasks/artefacts/evidence.",
+      "properties": {
+        "observed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed By"
+        },
+        "originating_participant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Originating Participant"
+        },
+        "capture_cell": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capture Cell"
+        },
+        "source_pathway": {
+          "$ref": "#/$defs/SourcePathway",
+          "default": "exogenous"
+        },
+        "source_event": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Event"
+        },
+        "source_logs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Logs",
+          "type": "array"
+        },
+        "source_artefacts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Artefacts",
+          "type": "array"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "capture_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capture Method"
+        },
+        "human_confirmed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Human Confirmed By"
+        },
+        "mission_group_reviewed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mission Group Reviewed By"
+        },
+        "model_provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Provider"
+        },
+        "model_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Name"
+        },
+        "model_prompt_template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Prompt Template"
+        },
+        "model_input_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Model Input Refs",
+          "type": "array"
+        },
+        "model_output_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Output Ref"
+        },
+        "model_output_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Output Status"
+        },
+        "human_review_status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Human Review Status"
+        },
+        "model_assist_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Model Assist Refs",
+          "type": "array"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "RevocationStatus": {
+      "enum": [
+        "active",
+        "withdrawn",
+        "superseded",
+        "rejected",
+        "under_re_elicitation",
+        "retired"
+      ],
+      "title": "RevocationStatus",
+      "type": "string"
+    },
+    "SourcePathway": {
+      "enum": [
+        "exogenous",
+        "endogenous"
+      ],
+      "title": "SourcePathway",
+      "type": "string"
+    },
+    "TacitContext": {
+      "additionalProperties": false,
+      "description": "Structured conditions of applicability / runtime context.",
+      "properties": {
+        "site": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Site"
+        },
+        "area": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Area"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "equipment_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Equipment Family"
+        },
+        "equipment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Equipment Id"
+        },
+        "product_family": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Product Family"
+        },
+        "material_lot": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Material Lot"
+        },
+        "operating_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operating Mode"
+        },
+        "shift_pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shift Pattern"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "risk_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Risk Class"
+        },
+        "trigger_context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trigger Context"
+        },
+        "environmental_conditions": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "title": "Environmental Conditions",
+          "type": "object"
+        },
+        "exclusion_conditions": {
+          "items": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "type": "object"
+          },
+          "title": "Exclusion Conditions",
+          "type": "array"
+        },
+        "valid_from": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid From"
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid Until"
+        }
+      },
+      "title": "TacitContext",
+      "type": "object"
+    },
+    "ValidationState": {
+      "enum": [
+        "captured",
+        "worker_confirmed",
+        "tier1_confirmed",
+        "tier2_pending",
+        "promoted_to_advisory",
+        "promoted_to_controlled",
+        "held",
+        "rejected",
+        "re_elicit",
+        "withdrawn",
+        "superseded",
+        "expired"
+      ],
+      "title": "ValidationState",
+      "type": "string"
+    },
+    "Visibility": {
+      "enum": [
+        "worker_only",
+        "mission_group",
+        "workspace",
+        "agent_visible"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "content": {
+      "title": "Content",
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/Category"
+    },
+    "domain": {
+      "$ref": "#/$defs/Domain"
+    },
+    "source_pathway": {
+      "$ref": "#/$defs/SourcePathway",
+      "default": "exogenous"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "conditions": {
+      "$ref": "#/$defs/TacitContext"
+    },
+    "evidence": {
+      "$ref": "#/$defs/FragmentEvidence"
+    },
+    "confidence": {
+      "default": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "authority_layer": {
+      "$ref": "#/$defs/AuthorityLayer",
+      "default": "evidence"
+    },
+    "validation_state": {
+      "$ref": "#/$defs/ValidationState",
+      "default": "captured"
+    },
+    "consent": {
+      "$ref": "#/$defs/ConsentRecord"
+    },
+    "attribution": {
+      "$ref": "#/$defs/Attribution"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "updated_at": {
+      "title": "Updated At",
+      "type": "string"
+    },
+    "review_due_at": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Review Due At"
+    },
+    "expiry_triggers": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Expiry Triggers",
+      "type": "array"
+    },
+    "revocation_status": {
+      "$ref": "#/$defs/RevocationStatus",
+      "default": "active"
+    },
+    "policy_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Policy Refs",
+      "type": "array"
+    },
+    "lineage": {
+      "items": {
+        "$ref": "#/$defs/LineageEntry"
+      },
+      "title": "Lineage",
+      "type": "array"
+    },
+    "use_constraints": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Use Constraints",
+      "type": "array"
+    }
+  },
+  "required": [
+    "fragment_id",
+    "title",
+    "content",
+    "category",
+    "domain"
+  ],
+  "title": "TacitFragment",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_fragment.schema.json"
+}

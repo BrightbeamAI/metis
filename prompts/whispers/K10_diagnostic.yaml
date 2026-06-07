@@ -1,0 +1,13 @@
+category: K10_diagnostic
+domain: inferential
+trigger: operator localises a fault or explains an anomaly during or after an event
+primary_whisper: "You localised the cause quickly. What told you it was this and not something else?"
+follow_ups:
+  - "What did you rule out, and how?"
+  - "Under what conditions would this reasoning mislead?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: medium
+risk_notes:
+  - "Best captured via mini-CTA or incident reconstruction; not in-flow under pressure."
+do_not_ask:
+  - "Do not interrupt active fault response."

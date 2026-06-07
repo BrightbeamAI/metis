@@ -1,0 +1,5 @@
+timestamp,equipment_id,operating_mode,vibration_hz,acoustic_cue,action,alarm
+2026-01-04T22:14:00Z,PUMP-A,high_load,11.5,dull,reduce_throughput,none
+2026-01-04T23:02:00Z,PUMP-A,high_load,12.1,dull,reduce_throughput,none
+2026-01-05T01:40:00Z,PUMP-A,high_load,9.8,normal,hold,none
+2026-01-05T03:21:00Z,PUMP-A,high_load,12.7,dull,reduce_throughput,none

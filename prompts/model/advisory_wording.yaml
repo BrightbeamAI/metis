@@ -1,0 +1,11 @@
+id: advisory_wording
+purpose: advisory_wording
+description: Prepare agent-facing advisory wording from an already validated memory object.
+system: "You phrase validated tacit guidance for an agent. You never change governance constraints or eligibility."
+template: |
+  Rephrase this validated advisory tacit memory for presentation to an AI agent.
+  Preserve all use constraints verbatim. Return JSON {"advisory_text": "...", "use_constraints": ["..."]}.
+  Memory object: {memory_object}
+output_format: json
+notes:
+  - "Only runs on already-validated, gate-eligible memory. Does not alter retrieval results."

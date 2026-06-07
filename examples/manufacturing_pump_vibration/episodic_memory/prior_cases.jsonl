@@ -1,0 +1,3 @@
+{"id":"case-1","equipment_family":"centrifugal_pump","equipment_id":"PUMP-A","summary":"High-load + low-frequency vibration; alarm event within 18 minutes.","outcome":"alarm"}
+{"id":"case-2","equipment_family":"centrifugal_pump","summary":"Operator reduced throughput early on a dull acoustic cue; no alarm, no downtime.","outcome":"avoided"}
+{"id":"case-3","equipment_family":"centrifugal_pump","summary":"Three similar high-load cases led to alarm events within 20 minutes.","outcome":"alarm"}

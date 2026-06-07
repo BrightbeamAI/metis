@@ -1,0 +1,9 @@
+{
+  "site": "plant_b",
+  "area": "finishing",
+  "product_family": "resin_batch",
+  "operating_mode": "inspection",
+  "trigger_context": "pre_lab_result",
+  "risk_class": "moderate",
+  "role": "quality_specialist"
+}

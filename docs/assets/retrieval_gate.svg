@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 360" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Condition-aware retrieval gate">
+  <defs>
+    <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5A5A5A"/>
+    </marker>
+  </defs>
+  <rect width="920" height="360" fill="#F2F5FA"/>
+  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The retrieval gate is a governance check, not similarity search</text>
+  <text x="28" y="60" font-size="13" fill="#5A5A5A">A fragment is eligible only when every check passes. The first failing check is the recorded reason.</text>
+
+  <!-- input -->
+  <rect x="28" y="92" width="170" height="180" rx="10" fill="#FFFFFF" stroke="#5A5A5A" stroke-width="1.5"/>
+  <text x="113" y="116" font-size="13" font-weight="bold" fill="#282829" text-anchor="middle">Runtime context</text>
+  <text x="44" y="140" font-size="11" fill="#5A5A5A">site, area, line</text>
+  <text x="44" y="158" font-size="11" fill="#5A5A5A">equipment family / id</text>
+  <text x="44" y="176" font-size="11" fill="#5A5A5A">operating mode, shift</text>
+  <text x="44" y="194" font-size="11" fill="#5A5A5A">role, risk class</text>
+  <text x="44" y="212" font-size="11" fill="#5A5A5A">trigger context</text>
+  <text x="44" y="242" font-size="11" fill="#5A5A5A" font-style="italic">fails closed if a</text>
+  <text x="44" y="258" font-size="11" fill="#5A5A5A" font-style="italic">required value is missing</text>
+
+  <!-- gate checks -->
+  <rect x="250" y="92" width="330" height="232" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2.5"/>
+  <text x="415" y="116" font-size="14" font-weight="bold" fill="#EA4700" text-anchor="middle">Gate checks (in order)</text>
+  <g font-size="12" fill="#282829">
+    <text x="270" y="142">1. revocation status active</text>
+    <text x="270" y="162">2. consent permits use</text>
+    <text x="270" y="182">3. endogenous reviewed</text>
+    <text x="270" y="202">4. authority is advisory / controlled</text>
+    <text x="270" y="222">5. Tier-2 validated</text>
+    <text x="270" y="242">6. review date not expired</text>
+    <text x="270" y="262">7. role authorised, risk not high</text>
+    <text x="270" y="282">8. conditions match, no exclusions</text>
+    <text x="270" y="302">9. controlled needs exact match</text>
+  </g>
+
+  <line x1="198" y1="182" x2="250" y2="182" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>
+
+  <!-- outcomes -->
+  <rect x="632" y="110" width="260" height="84" rx="10" fill="#FFFFFF" stroke="#2E7D32" stroke-width="2"/>
+  <text x="762" y="138" font-size="14" font-weight="bold" fill="#2E7D32" text-anchor="middle">Eligible</text>
+  <text x="762" y="160" font-size="11" fill="#5A5A5A" text-anchor="middle">returned with use constraints</text>
+  <text x="762" y="178" font-size="11" fill="#5A5A5A" text-anchor="middle">+ retrieval decision artefact</text>
+
+  <rect x="632" y="210" width="260" height="114" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+  <text x="762" y="236" font-size="14" font-weight="bold" fill="#EA4700" text-anchor="middle">Blocked, with reason</text>
+  <text x="762" y="258" font-size="11" fill="#5A5A5A" text-anchor="middle">evidence_layer_not_authorised</text>
+  <text x="762" y="276" font-size="11" fill="#5A5A5A" text-anchor="middle">conditions_do_not_match</text>
+  <text x="762" y="294" font-size="11" fill="#5A5A5A" text-anchor="middle">consent_withdrawn, revoked ...</text>
+  <text x="762" y="312" font-size="11" fill="#5A5A5A" text-anchor="middle">recorded in the audit chain</text>
+
+  <line x1="580" y1="160" x2="632" y2="152" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>
+  <line x1="580" y1="250" x2="632" y2="262" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>
+</svg>

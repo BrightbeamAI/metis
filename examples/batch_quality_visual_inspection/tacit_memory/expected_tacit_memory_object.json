@@ -1,0 +1,91 @@
+{
+  "memory_id": "TM-00001",
+  "fragment_id": "TF-00001",
+  "memory_type": "tacit",
+  "title": "Visual 'looks off' precedes lab-confirmed drift",
+  "content": "A quality specialist flags a resin batch as 'looks off' before the lab measure confirms drift, based on surface sheen against annotated exemplars.",
+  "category": "K8_aesthetic",
+  "domain": "perceptual_aesthetic",
+  "source_pathway": "exogenous",
+  "conditions": {
+    "site": "plant_b",
+    "area": "finishing",
+    "product_family": "resin_batch",
+    "operating_mode": "inspection",
+    "trigger_context": "pre_lab_result",
+    "environmental_conditions": {},
+    "exclusion_conditions": []
+  },
+  "provenance": {
+    "observed_by": "human:operator@plant_b",
+    "originating_participant": "human:operator@plant_b",
+    "capture_cell": "wsp_batch_quality",
+    "source_pathway": "exogenous",
+    "source_event": "OBS-BQ-1",
+    "source_logs": [],
+    "source_artefacts": [
+      "art_01HF7YAT08002F3EYDSFX57R58",
+      "art_01HF7YAT0A0032WAP17VWEHP6J",
+      "art_01HF7YAT0C003PN6DMP7VQVM7W"
+    ],
+    "timestamp": "2026-06-07T15:17:29.462318+00:00",
+    "capture_method": "observe->infer->whisper->confirm (synthetic)",
+    "human_confirmed_by": "human:operator@plant_b",
+    "mission_group_reviewed_by": "group:mission-group@tacitflow.local",
+    "model_provider": "ollama",
+    "model_name": "gemma4",
+    "model_input_refs": [],
+    "model_output_status": "draft_pending_human_review",
+    "human_review_status": "tier1_confirmed",
+    "model_assist_refs": [
+      "MA-0001",
+      "MA-0002"
+    ]
+  },
+  "evidence": {
+    "recurrence_count": 2,
+    "supporting_cases": [],
+    "comparison_baseline": null,
+    "outcome_link": null,
+    "uncertainty": "Subjective visual judgement; weak evidence so far.",
+    "counterexamples": [
+      "A glossy batch once passed the lab measure cleanly."
+    ],
+    "review_notes": [],
+    "evidence_strength": "weak"
+  },
+  "authority_layer": "advisory",
+  "validation_state": "promoted_to_advisory",
+  "confidence": 0.3,
+  "use_constraints": [
+    "Present as an advisory cue requiring exemplar comparison.",
+    "Do not convert into a universal rule.",
+    "Ask a human to confirm against annotated exemplars before action.",
+    "Escalate if risk class is high."
+  ],
+  "retrieval_policy": {
+    "match": "conditions_match",
+    "presentation": "advisory_only"
+  },
+  "agent_visibility": "advisory_context",
+  "agent_instruction": "Present as an advisory cue requiring exemplar comparison.",
+  "linked_procedural_refs": [
+    "QA-04"
+  ],
+  "linked_semantic_refs": [
+    "resin_metadata"
+  ],
+  "linked_episodic_refs": [
+    "bq-case-1"
+  ],
+  "linked_chap_evidence_refs": [
+    13,
+    16
+  ],
+  "model_assist_refs": [
+    "MA-0001",
+    "MA-0002"
+  ],
+  "review_due_at": null,
+  "revocation_status": "active"
+}

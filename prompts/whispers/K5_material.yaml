@@ -1,0 +1,13 @@
+category: K5_material
+domain: material_equipment
+trigger: operator adapts to a material lot, batch, or feedstock state
+primary_whisper: "You handled this batch differently. What about the material prompted that?"
+follow_ups:
+  - "Is this specific to a lot, supplier, or storage condition?"
+  - "What should the system not generalise from this?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Bind tightly to material lot / conditions; avoid over-generalising."
+do_not_ask:
+  - "Do not ask the operator to justify themselves."

@@ -1,0 +1,6 @@
+{
+  "site": "plant_a", "area": "utilities", "line": "line_3",
+  "equipment_family": "centrifugal_pump", "equipment_id": "PUMP-A",
+  "operating_mode": "high_load", "shift_pattern": "night",
+  "trigger_context": "pre_alarm", "risk_class": "moderate", "role": "operator"
+}

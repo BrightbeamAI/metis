@@ -1,0 +1,98 @@
+{
+  "memory_id": "TM-00001",
+  "fragment_id": "TF-00001",
+  "memory_type": "tacit",
+  "title": "Early throughput reduction on dull acoustic cue",
+  "content": "Experienced operators reduce throughput earlier when high-load operation coincides with low-frequency vibration and a dull acoustic cue.",
+  "category": "K7_sensory",
+  "domain": "perceptual_aesthetic",
+  "source_pathway": "exogenous",
+  "conditions": {
+    "site": "plant_a",
+    "area": "utilities",
+    "line": "line_3",
+    "equipment_family": "centrifugal_pump",
+    "equipment_id": "PUMP-A",
+    "operating_mode": "high_load",
+    "shift_pattern": "night",
+    "trigger_context": "pre_alarm",
+    "environmental_conditions": {},
+    "exclusion_conditions": [
+      {
+        "operating_mode": "startup"
+      }
+    ]
+  },
+  "provenance": {
+    "observed_by": "human:operator@plant_a",
+    "originating_participant": "human:operator@plant_a",
+    "capture_cell": "wsp_pump_vibration",
+    "source_pathway": "exogenous",
+    "source_event": "OBS-1",
+    "source_logs": [],
+    "source_artefacts": [
+      "art_01HF7YAT08002F3EYDSFX57R58",
+      "art_01HF7YAT0A0032WAP17VWEHP6J",
+      "art_01HF7YAT0C003PN6DMP7VQVM7W"
+    ],
+    "timestamp": "2026-06-07T15:17:29.454551+00:00",
+    "capture_method": "observe->infer->whisper->confirm (synthetic)",
+    "human_confirmed_by": "human:operator@plant_a",
+    "mission_group_reviewed_by": "group:mission-group@tacitflow.local",
+    "model_provider": "ollama",
+    "model_name": "gemma4",
+    "model_input_refs": [],
+    "model_output_status": "draft_pending_human_review",
+    "human_review_status": "tier1_confirmed",
+    "model_assist_refs": [
+      "MA-0001",
+      "MA-0002"
+    ]
+  },
+  "evidence": {
+    "recurrence_count": 4,
+    "supporting_cases": [
+      "case-1"
+    ],
+    "comparison_baseline": "SOP-17",
+    "outcome_link": "avoided 3 alarm events",
+    "uncertainty": null,
+    "counterexamples": [],
+    "review_notes": [],
+    "evidence_strength": "moderate"
+  },
+  "authority_layer": "advisory",
+  "validation_state": "promoted_to_advisory",
+  "confidence": 0.3,
+  "use_constraints": [
+    "Present as an advisory cue only.",
+    "Do not automatically reduce throughput.",
+    "Ask the human operator to confirm the acoustic cue.",
+    "Escalate if risk class is high."
+  ],
+  "retrieval_policy": {
+    "match": "conditions_match",
+    "presentation": "advisory_only"
+  },
+  "agent_visibility": "advisory_context",
+  "agent_instruction": "Present as an advisory cue only.",
+  "linked_procedural_refs": [
+    "SOP-17"
+  ],
+  "linked_semantic_refs": [
+    "equipment_metadata"
+  ],
+  "linked_episodic_refs": [
+    "case-1"
+  ],
+  "linked_chap_evidence_refs": [
+    13,
+    16
+  ],
+  "model_assist_refs": [
+    "MA-0001",
+    "MA-0002"
+  ],
+  "review_due_at": null,
+  "revocation_status": "active"
+}

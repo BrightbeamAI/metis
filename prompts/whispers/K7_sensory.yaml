@@ -1,0 +1,16 @@
+category: K7_sensory
+domain: perceptual_aesthetic
+trigger: operator notices a sensory cue before a formal metric changes
+primary_whisper: "You noticed something before the formal measure changed. What cue made you pause?"
+follow_ups:
+  - "Does this apply only to a particular product, material, equipment state, or shift?"
+  - "What should the system not infer from this?"
+  - "Would a new operator recognise this cue?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Avoid converting sensory judgement into a universal rule."
+  - "Require examples or supervisor review before promotion."
+do_not_ask:
+  - "Do not ask for personal performance explanations."
+  - "Do not ask the operator to justify themselves."

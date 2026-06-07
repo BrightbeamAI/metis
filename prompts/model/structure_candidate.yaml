@@ -1,0 +1,12 @@
+id: structure_candidate
+purpose: structure_candidate
+description: Turn a confirmed explanation into a structured candidate fragment. Advisory only.
+system: "You structure confirmed operator explanations into draft candidate fragments. You never validate them."
+template: |
+  Convert this confirmed explanation into a draft candidate fragment.
+  Return JSON {"title": "...", "content": "...", "category": "K?_name", "suggested_conditions": {...}}.
+  Explanation: {explanation}
+  Context: {context}
+output_format: json
+notes:
+  - "The candidate is a hypothesis only, never trusted knowledge."

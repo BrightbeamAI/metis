@@ -1,0 +1,11 @@
+id: summarise_confirmation
+purpose: summarise_confirmation
+description: Summarise an operator confirmation. Both original and summary are preserved.
+system: "You summarise operator confirmations faithfully. You never change their meaning."
+template: |
+  Summarise this operator confirmation in one neutral sentence.
+  Return JSON {"summary": "..."}.
+  Confirmation: {confirmation}
+output_format: json
+notes:
+  - "The original confirmation is always retained alongside the summary."

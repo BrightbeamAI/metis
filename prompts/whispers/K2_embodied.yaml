@@ -1,0 +1,15 @@
+category: K2_embodied
+domain: procedural_embodied
+trigger: operator makes a physical adjustment not described in the procedure
+primary_whisper: "You adjusted that by feel rather than to the written setting. What were you sensing that guided the adjustment?"
+follow_ups:
+  - "Does this only apply to a particular machine, material, or condition?"
+  - "What should the system not infer from this?"
+  - "Would a new operator know to do this?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Embodied skill rarely transfers as a written rule; require expert confirmation."
+do_not_ask:
+  - "Do not ask the operator to justify their personal performance."
+  - "Do not request continuous physical monitoring."

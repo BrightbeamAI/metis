@@ -1,0 +1,12 @@
+id: classify_fragment
+purpose: classify_fragment
+description: Suggest a K1-K17 category for a candidate fragment. Advisory only.
+system: "You classify situated work observations into the K1-K17 tacit taxonomy. You never decide governance."
+template: |
+  Classify the following situated work observation into exactly one K1-K17 tacit category.
+  Return JSON {"category": "K?_name", "rationale": "...", "alternatives": ["..."]}.
+  Observation: {observation}
+output_format: json
+notes:
+  - "Output is a draft suggestion. A human confirms the category."
+  - "The model never sets authority layer or promotes a fragment."

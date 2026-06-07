@@ -1,0 +1,86 @@
+{
+  "task_id": "tsk_runtime_shift-handover-gap",
+  "runtime_context": {
+    "site": "plant_a",
+    "area": "control_room",
+    "operating_mode": "handover",
+    "shift_pattern": "night_to_day",
+    "role": "team_lead",
+    "risk_class": "moderate",
+    "trigger_context": "incomplete_handover",
+    "environmental_conditions": {},
+    "exclusion_conditions": []
+  },
+  "procedural_memory": [
+    {
+      "source": "HANDOVER-SOP",
+      "content": "Complete the handover form and tick all open items before sign-off.",
+      "metadata": {}
+    }
+  ],
+  "semantic_memory": [
+    {
+      "source": "shift_metadata",
+      "content": "Night-to-day handovers cover three control-room desks.",
+      "metadata": {
+        "area": "control_room"
+      }
+    }
+  ],
+  "episodic_memory": [
+    {
+      "source": "sh-case-1",
+      "content": "A filled form still missed an open valve-isolation thread; caught verbally.",
+      "metadata": {
+        "area": "control_room"
+      }
+    }
+  ],
+  "tacit_memory": [
+    {
+      "memory_id": "TM-00001",
+      "fragment_id": "TF-00001",
+      "authority_layer": "advisory",
+      "content": "Team leads sense an incomplete handover when open threads are ticked off on the form but not confirmed verbally between outgoing and incoming shifts.",
+      "use_constraints": [
+        "Present as a handover checklist prompt, not automation.",
+        "Ask the incoming lead to confirm open threads verbally.",
+        "Do not auto-close the handover.",
+        "Escalate if risk class is high."
+      ],
+      "citations": [
+        "evidence:13",
+        "evidence:16",
+        "art_01HF7YAT08002F3EYDSFX57R58",
+        "art_01HF7YAT0A0032WAP17VWEHP6J",
+        "art_01HF7YAT0C003PN6DMP7VQVM7W"
+      ],
+      "audit_refs": [
+        13,
+        16
+      ]
+    }
+  ],
+  "blocked_tacit_memory": [],
+  "governance_notes": [
+    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Respect every use constraint and the conditions of applicability.",
+    "Blocked tacit results are recorded for audit and must not be treated as usable guidance."
+  ],
+  "required_human_actions": [
+    "Ask the incoming lead to confirm open threads verbally.",
+    "Escalate if risk class is high."
+  ],
+  "citations": [
+    "evidence:13",
+    "evidence:16",
+    "art_01HF7YAT08002F3EYDSFX57R58",
+    "art_01HF7YAT0A0032WAP17VWEHP6J",
+    "art_01HF7YAT0C003PN6DMP7VQVM7W"
+  ],
+  "audit_refs": [
+    13,
+    16,
+    24
+  ]
+}

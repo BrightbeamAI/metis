@@ -1,0 +1,13 @@
+category: K11_anticipatory
+domain: inferential
+trigger: operator acts before a predicted event or divergence
+primary_whisper: "You acted as if something was about to happen. What early signal were you reading?"
+follow_ups:
+  - "How far ahead does this signal usually appear?"
+  - "When is the signal unreliable?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Anticipatory cues can be spurious; require recurrence and outcome links."
+do_not_ask:
+  - "Do not ask the operator to predict on demand."

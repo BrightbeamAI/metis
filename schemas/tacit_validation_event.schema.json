@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "outcome": {
+      "title": "Outcome",
+      "type": "string"
+    },
+    "reviewers": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reviewers",
+      "type": "array"
+    },
+    "dimension_assessments": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Dimension Assessments",
+      "type": "object"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "model_assist_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model Assist Ref"
+    },
+    "reviewed_at": {
+      "title": "Reviewed At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fragment_id",
+    "outcome"
+  ],
+  "title": "MissionGroupReview",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_validation_event.schema.json"
+}

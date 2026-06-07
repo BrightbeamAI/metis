@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "RevocationReason": {
+      "enum": [
+        "consent_withdrawn",
+        "rejected",
+        "superseded",
+        "safety_concern",
+        "drift",
+        "retired",
+        "re_elicitation"
+      ],
+      "title": "RevocationReason",
+      "type": "string"
+    },
+    "RevocationStatus": {
+      "enum": [
+        "active",
+        "withdrawn",
+        "superseded",
+        "rejected",
+        "under_re_elicitation",
+        "retired"
+      ],
+      "title": "RevocationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "new_status": {
+      "$ref": "#/$defs/RevocationStatus"
+    },
+    "reason": {
+      "$ref": "#/$defs/RevocationReason"
+    },
+    "actioned_by": {
+      "title": "Actioned By",
+      "type": "string"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    },
+    "retention_audit_only": {
+      "default": true,
+      "title": "Retention Audit Only",
+      "type": "boolean"
+    },
+    "superseded_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Superseded By"
+    },
+    "actioned_at": {
+      "title": "Actioned At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fragment_id",
+    "new_status",
+    "reason",
+    "actioned_by"
+  ],
+  "title": "RevocationRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_revocation_record.schema.json"
+}

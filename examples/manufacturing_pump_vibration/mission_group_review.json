@@ -1,0 +1,15 @@
+{
+  "fragment_id": "TF-00001",
+  "outcome": "promoted_to_advisory",
+  "reviewers": ["group:mission-group@tacitflow.local"],
+  "dimension_assessments": {
+    "description_fidelity": "faithful",
+    "operational_relevance": "high",
+    "normative_alignment": "acceptable",
+    "safety_risk": "low",
+    "quality_risk": "low",
+    "evidence_strength": "moderate",
+    "consent_status": "granted"
+  },
+  "summary": "Recurs across 4 cases; promote to Advisory as a conditional cue, not a rule."
+}

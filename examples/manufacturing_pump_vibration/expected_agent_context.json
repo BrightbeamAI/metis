@@ -1,0 +1,98 @@
+{
+  "task_id": "tsk_runtime_manufacturing-pump-vibration",
+  "runtime_context": {
+    "site": "plant_a",
+    "area": "utilities",
+    "line": "line_3",
+    "equipment_family": "centrifugal_pump",
+    "equipment_id": "PUMP-A",
+    "operating_mode": "high_load",
+    "shift_pattern": "night",
+    "role": "operator",
+    "risk_class": "moderate",
+    "trigger_context": "pre_alarm",
+    "environmental_conditions": {},
+    "exclusion_conditions": []
+  },
+  "procedural_memory": [
+    {
+      "source": "SOP-17",
+      "content": "Reduce load only when the alarm threshold X is crossed.",
+      "metadata": {}
+    }
+  ],
+  "semantic_memory": [
+    {
+      "source": "equipment_metadata",
+      "content": "Pump A is a centrifugal pump on Line 3.",
+      "metadata": {
+        "equipment_family": "centrifugal_pump",
+        "equipment_id": "PUMP-A"
+      }
+    },
+    {
+      "source": "vibration_concepts",
+      "content": "Low-frequency vibration can precede bearing distress.",
+      "metadata": {
+        "equipment_family": "centrifugal_pump"
+      }
+    }
+  ],
+  "episodic_memory": [
+    {
+      "source": "case-1",
+      "content": "Three similar cases led to alarm events within 20 minutes.",
+      "metadata": {
+        "equipment_family": "centrifugal_pump"
+      }
+    }
+  ],
+  "tacit_memory": [
+    {
+      "memory_id": "TM-00001",
+      "fragment_id": "TF-00001",
+      "authority_layer": "advisory",
+      "content": "Experienced operators reduce throughput earlier when high-load operation coincides with low-frequency vibration and a dull acoustic cue.",
+      "use_constraints": [
+        "Present as an advisory cue only.",
+        "Do not automatically reduce throughput.",
+        "Ask the human operator to confirm the acoustic cue.",
+        "Escalate if risk class is high."
+      ],
+      "citations": [
+        "evidence:13",
+        "evidence:16",
+        "art_01HF7YAT08002F3EYDSFX57R58",
+        "art_01HF7YAT0A0032WAP17VWEHP6J",
+        "art_01HF7YAT0C003PN6DMP7VQVM7W"
+      ],
+      "audit_refs": [
+        13,
+        16
+      ]
+    }
+  ],
+  "blocked_tacit_memory": [],
+  "governance_notes": [
+    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Respect every use constraint and the conditions of applicability.",
+    "Blocked tacit results are recorded for audit and must not be treated as usable guidance."
+  ],
+  "required_human_actions": [
+    "Do not automatically reduce throughput.",
+    "Ask the human operator to confirm the acoustic cue.",
+    "Escalate if risk class is high."
+  ],
+  "citations": [
+    "evidence:13",
+    "evidence:16",
+    "art_01HF7YAT08002F3EYDSFX57R58",
+    "art_01HF7YAT0A0032WAP17VWEHP6J",
+    "art_01HF7YAT0C003PN6DMP7VQVM7W"
+  ],
+  "audit_refs": [
+    13,
+    16,
+    24
+  ]
+}

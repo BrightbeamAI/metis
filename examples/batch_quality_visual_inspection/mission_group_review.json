@@ -1,0 +1,16 @@
+{
+  "fragment_id": "TF-00001",
+  "outcome": "promoted_to_advisory",
+  "reviewers": [
+    "group:mission-group@tacitflow.local"
+  ],
+  "dimension_assessments": {
+    "description_fidelity": "faithful",
+    "operational_relevance": "medium",
+    "normative_alignment": "acceptable",
+    "quality_risk": "medium",
+    "evidence_strength": "weak",
+    "consent_status": "granted"
+  },
+  "summary": "Promote as advisory context only; weak evidence, requires exemplar review."
+}

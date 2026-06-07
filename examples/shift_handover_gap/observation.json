@@ -1,0 +1,13 @@
+{
+  "observation_id": "OBS-SH-1",
+  "work_as_imagined": "A completed handover form means the handover is complete.",
+  "work_as_done": "The team lead senses the handover is incomplete even though the form is filled.",
+  "source": "synthetic",
+  "context": {
+    "site": "plant_a",
+    "area": "control_room",
+    "operating_mode": "handover",
+    "shift_pattern": "night_to_day",
+    "trigger_context": "incomplete_handover"
+  }
+}

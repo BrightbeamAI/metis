@@ -1,0 +1,7 @@
+{
+  "equipment_id": "PUMP-A",
+  "equipment_family": "centrifugal_pump",
+  "line": "line_3",
+  "site": "plant_a",
+  "content": "Pump A is a centrifugal pump on Line 3 at Plant A. Variable-speed drive; bearing-monitored."
+}

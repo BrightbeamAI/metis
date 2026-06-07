@@ -1,0 +1,14 @@
+id: suggest_conditions
+purpose: suggest_conditions
+description: Suggest structured conditions of applicability. Advisory only; humans confirm.
+system: "You propose structured conditions of applicability. You never finalise them."
+template: |
+  Propose structured conditions of applicability and any exclusion conditions for this fragment.
+  Use only these keys: site, area, line, equipment_family, equipment_id, product_family,
+  material_lot, operating_mode, shift_pattern, role, risk_class, trigger_context.
+  Return JSON {"conditions": {...}, "exclusions": [{...}]}.
+  Fragment: {fragment}
+  Observed context: {context}
+output_format: json
+notes:
+  - "Conditions are confirmed by a human; the retrieval gate enforces them deterministically."

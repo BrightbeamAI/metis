@@ -1,0 +1,152 @@
+{
+  "$defs": {
+    "BlockedItem": {
+      "additionalProperties": false,
+      "properties": {
+        "fragment_id": {
+          "title": "Fragment Id",
+          "type": "string"
+        },
+        "memory_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Id"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "fragment_id",
+        "reason"
+      ],
+      "title": "BlockedItem",
+      "type": "object"
+    },
+    "EligibleItem": {
+      "additionalProperties": false,
+      "properties": {
+        "fragment_id": {
+          "title": "Fragment Id",
+          "type": "string"
+        },
+        "memory_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Id"
+        },
+        "authority_layer": {
+          "title": "Authority Layer",
+          "type": "string"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "use_constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Use Constraints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fragment_id",
+        "authority_layer"
+      ],
+      "title": "EligibleItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "decision_type": {
+      "default": "tacit.retrieve",
+      "title": "Decision Type",
+      "type": "string"
+    },
+    "policy_id": {
+      "default": "tacitflow/retrieval/1.0",
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "requested_role": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requested Role"
+    },
+    "runtime_context": {
+      "additionalProperties": true,
+      "title": "Runtime Context",
+      "type": "object"
+    },
+    "hints_observed": {
+      "additionalProperties": true,
+      "title": "Hints Observed",
+      "type": "object"
+    },
+    "eligible": {
+      "items": {
+        "$ref": "#/$defs/EligibleItem"
+      },
+      "title": "Eligible",
+      "type": "array"
+    },
+    "blocked": {
+      "items": {
+        "$ref": "#/$defs/BlockedItem"
+      },
+      "title": "Blocked",
+      "type": "array"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "decided_at": {
+      "title": "Decided At",
+      "type": "string"
+    }
+  },
+  "title": "RetrievalDecision",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_retrieval_decision.schema.json"
+}

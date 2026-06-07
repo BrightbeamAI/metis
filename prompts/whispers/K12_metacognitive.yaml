@@ -1,0 +1,13 @@
+category: K12_metacognitive
+domain: metacognitive_affective
+trigger: operator hesitates, seeks help, or escalates at the edge of competence
+primary_whisper: "You chose to check rather than proceed. What made you pause and seek confirmation?"
+follow_ups:
+  - "What signals tell you it is time to escalate?"
+  - "What should the system never treat as routine here?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: medium
+risk_notes:
+  - "Escalation judgement must be validated carefully; never automate the decision to NOT escalate."
+do_not_ask:
+  - "Do not frame help-seeking as a weakness."

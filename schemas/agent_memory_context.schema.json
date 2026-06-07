@@ -1,0 +1,209 @@
+{
+  "$defs": {
+    "BlockedTacitMemory": {
+      "additionalProperties": false,
+      "properties": {
+        "fragment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fragment Id"
+        },
+        "memory_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Memory Id"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "BlockedTacitMemory",
+      "type": "object"
+    },
+    "MemoryEntry": {
+      "additionalProperties": true,
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source",
+        "content"
+      ],
+      "title": "MemoryEntry",
+      "type": "object"
+    },
+    "TacitMemoryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "memory_id": {
+          "title": "Memory Id",
+          "type": "string"
+        },
+        "fragment_id": {
+          "title": "Fragment Id",
+          "type": "string"
+        },
+        "authority_layer": {
+          "title": "Authority Layer",
+          "type": "string"
+        },
+        "content": {
+          "title": "Content",
+          "type": "string"
+        },
+        "use_constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Use Constraints",
+          "type": "array"
+        },
+        "citations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Citations",
+          "type": "array"
+        },
+        "audit_refs": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Audit Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "memory_id",
+        "fragment_id",
+        "authority_layer",
+        "content"
+      ],
+      "title": "TacitMemoryEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "runtime_context": {
+      "additionalProperties": true,
+      "title": "Runtime Context",
+      "type": "object"
+    },
+    "procedural_memory": {
+      "items": {
+        "$ref": "#/$defs/MemoryEntry"
+      },
+      "title": "Procedural Memory",
+      "type": "array"
+    },
+    "semantic_memory": {
+      "items": {
+        "$ref": "#/$defs/MemoryEntry"
+      },
+      "title": "Semantic Memory",
+      "type": "array"
+    },
+    "episodic_memory": {
+      "items": {
+        "$ref": "#/$defs/MemoryEntry"
+      },
+      "title": "Episodic Memory",
+      "type": "array"
+    },
+    "tacit_memory": {
+      "items": {
+        "$ref": "#/$defs/TacitMemoryEntry"
+      },
+      "title": "Tacit Memory",
+      "type": "array"
+    },
+    "blocked_tacit_memory": {
+      "items": {
+        "$ref": "#/$defs/BlockedTacitMemory"
+      },
+      "title": "Blocked Tacit Memory",
+      "type": "array"
+    },
+    "governance_notes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Governance Notes",
+      "type": "array"
+    },
+    "required_human_actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Human Actions",
+      "type": "array"
+    },
+    "citations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Citations",
+      "type": "array"
+    },
+    "audit_refs": {
+      "items": {
+        "type": "integer"
+      },
+      "title": "Audit Refs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "task_id"
+  ],
+  "title": "AgentMemoryContext",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/agent_memory_context.schema.json"
+}

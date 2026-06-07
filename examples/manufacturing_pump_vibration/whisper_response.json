@@ -1,0 +1,7 @@
+{
+  "prompt_category": "K7_sensory",
+  "question": "You noticed something before the formal measure changed. What cue made you pause?",
+  "response_type": "confirm",
+  "operator_statement": "Experienced operators reduce throughput earlier when high-load operation coincides with low-frequency vibration and a dull acoustic cue.",
+  "applies_only_when": "centrifugal pump, high load, pre-alarm; not during startup"
+}

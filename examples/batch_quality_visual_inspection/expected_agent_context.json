@@ -1,0 +1,86 @@
+{
+  "task_id": "tsk_runtime_batch-quality-visual-inspection",
+  "runtime_context": {
+    "site": "plant_b",
+    "area": "finishing",
+    "product_family": "resin_batch",
+    "operating_mode": "inspection",
+    "role": "quality_specialist",
+    "risk_class": "moderate",
+    "trigger_context": "pre_lab_result",
+    "environmental_conditions": {},
+    "exclusion_conditions": []
+  },
+  "procedural_memory": [
+    {
+      "source": "QA-04",
+      "content": "Release a batch unless a lab measure flags drift beyond tolerance.",
+      "metadata": {}
+    }
+  ],
+  "semantic_memory": [
+    {
+      "source": "resin_metadata",
+      "content": "Resin batches are graded on surface sheen and clarity.",
+      "metadata": {
+        "product_family": "resin_batch"
+      }
+    }
+  ],
+  "episodic_memory": [
+    {
+      "source": "bq-case-1",
+      "content": "Two 'looks off' calls later matched lab-confirmed drift.",
+      "metadata": {
+        "product_family": "resin_batch"
+      }
+    }
+  ],
+  "tacit_memory": [
+    {
+      "memory_id": "TM-00001",
+      "fragment_id": "TF-00001",
+      "authority_layer": "advisory",
+      "content": "A quality specialist flags a resin batch as 'looks off' before the lab measure confirms drift, based on surface sheen against annotated exemplars.",
+      "use_constraints": [
+        "Present as an advisory cue requiring exemplar comparison.",
+        "Do not convert into a universal rule.",
+        "Ask a human to confirm against annotated exemplars before action.",
+        "Escalate if risk class is high."
+      ],
+      "citations": [
+        "evidence:13",
+        "evidence:16",
+        "art_01HF7YAT08002F3EYDSFX57R58",
+        "art_01HF7YAT0A0032WAP17VWEHP6J",
+        "art_01HF7YAT0C003PN6DMP7VQVM7W"
+      ],
+      "audit_refs": [
+        13,
+        16
+      ]
+    }
+  ],
+  "blocked_tacit_memory": [],
+  "governance_notes": [
+    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Respect every use constraint and the conditions of applicability.",
+    "Blocked tacit results are recorded for audit and must not be treated as usable guidance."
+  ],
+  "required_human_actions": [
+    "Ask a human to confirm against annotated exemplars before action.",
+    "Escalate if risk class is high."
+  ],
+  "citations": [
+    "evidence:13",
+    "evidence:16",
+    "art_01HF7YAT08002F3EYDSFX57R58",
+    "art_01HF7YAT0A0032WAP17VWEHP6J",
+    "art_01HF7YAT0C003PN6DMP7VQVM7W"
+  ],
+  "audit_refs": [
+    13,
+    16,
+    24
+  ]
+}

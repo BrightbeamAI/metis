@@ -1,0 +1,75 @@
+"""CHAP artefact construction (chap-task.schema.json, Artefact definition).
+
+CHAP allows implementations to add artefact kinds with a ``schema`` reference. All
+TacitFlow artefact kinds (``tacit.*``) are declared this way; ``capture_fragment`` is a
+standard CHAP kind we also honour.
+"""
+from __future__ import annotations
+
+from typing import Any
+
+from .canonical import content_hash
+
+SCHEMA_BASE = "https://tacitflow.dev/schemas/0.1"
+STANDARD_KINDS = {
+    "draft",
+    "decision",
+    "override",
+    "abstention",
+    "escalation",
+    "citation_set",
+    "snapshot",
+    "capture_fragment",
+    "route_decision",
+}
+
+
+def schema_uri_for(kind: str) -> str | None:
+    """Return a schema URI for non-standard (tacit.*) artefact kinds."""
+    if kind in STANDARD_KINDS:
+        return None
+    slug = kind.replace(".", "_")
+    return f"{SCHEMA_BASE}/{slug}.schema.json"
+
+
+def build_artefact(
+    *,
+    artefact_id: str,
+    kind: str,
+    produced_by: str,
+    produced_at: str,
+    content: Any,
+    task: str | None = None,
+    based_on: str | None = None,
+    logical_id: str | None = None,
+    tags: list[str] | None = None,
+    routing_hints: dict[str, Any] | None = None,
+    citations: list[dict[str, Any]] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    art: dict[str, Any] = {
+        "id": artefact_id,
+        "kind": kind,
+        "produced_by": produced_by,
+        "produced_at": produced_at,
+        "content": content,
+        "content_hash": content_hash(content),
+    }
+    schema = schema_uri_for(kind)
+    if schema:
+        art["schema"] = schema
+    if task:
+        art["task"] = task
+    if based_on:
+        art["based_on"] = based_on
+    if logical_id:
+        art["logical_id"] = logical_id
+    if tags:
+        art["tags"] = tags
+    if routing_hints:
+        art["routing_hints"] = routing_hints
+    if citations:
+        art["citations"] = citations
+    if metadata:
+        art["metadata"] = metadata
+    return art

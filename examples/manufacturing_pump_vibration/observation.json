@@ -1,0 +1,13 @@
+{
+  "observation_id": "OBS-1",
+  "work_as_imagined": "Reduce load only when the alarm threshold is crossed.",
+  "work_as_done": "Reduce throughput earlier when high-load operation coincides with low-frequency vibration and a dull acoustic cue.",
+  "source": "synthetic",
+  "context": {
+    "site": "plant_a", "area": "utilities", "line": "line_3",
+    "equipment_family": "centrifugal_pump", "equipment_id": "PUMP-A",
+    "operating_mode": "high_load", "shift_pattern": "night",
+    "trigger_context": "pre_alarm",
+    "exclusion_conditions": [{"operating_mode": "startup"}]
+  }
+}

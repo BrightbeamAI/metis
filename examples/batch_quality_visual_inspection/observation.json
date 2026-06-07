@@ -1,0 +1,13 @@
+{
+  "observation_id": "OBS-BQ-1",
+  "work_as_imagined": "Pass the batch unless the lab measure flags drift.",
+  "work_as_done": "Flag the batch as 'looks off' before the lab measure confirms drift.",
+  "source": "synthetic",
+  "context": {
+    "site": "plant_b",
+    "area": "finishing",
+    "product_family": "resin_batch",
+    "operating_mode": "inspection",
+    "trigger_context": "pre_lab_result"
+  }
+}

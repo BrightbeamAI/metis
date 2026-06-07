@@ -1,0 +1,89 @@
+{
+  "memory_id": "TM-00001",
+  "fragment_id": "TF-00001",
+  "memory_type": "tacit",
+  "title": "Felt-incomplete handover despite a complete form",
+  "content": "Team leads sense an incomplete handover when open threads are ticked off on the form but not confirmed verbally between outgoing and incoming shifts.",
+  "category": "K14_collaborative",
+  "domain": "social_normative",
+  "source_pathway": "exogenous",
+  "conditions": {
+    "site": "plant_a",
+    "area": "control_room",
+    "operating_mode": "handover",
+    "shift_pattern": "night_to_day",
+    "trigger_context": "incomplete_handover",
+    "environmental_conditions": {},
+    "exclusion_conditions": []
+  },
+  "provenance": {
+    "observed_by": "human:operator@plant_a",
+    "originating_participant": "human:operator@plant_a",
+    "capture_cell": "wsp_shift_handover",
+    "source_pathway": "exogenous",
+    "source_event": "OBS-SH-1",
+    "source_logs": [],
+    "source_artefacts": [
+      "art_01HF7YAT08002F3EYDSFX57R58",
+      "art_01HF7YAT0A0032WAP17VWEHP6J",
+      "art_01HF7YAT0C003PN6DMP7VQVM7W"
+    ],
+    "timestamp": "2026-06-07T15:17:29.476398+00:00",
+    "capture_method": "observe->infer->whisper->confirm (synthetic)",
+    "human_confirmed_by": "human:operator@plant_a",
+    "mission_group_reviewed_by": "group:mission-group@tacitflow.local",
+    "model_provider": "ollama",
+    "model_name": "gemma4",
+    "model_input_refs": [],
+    "model_output_status": "draft_pending_human_review",
+    "human_review_status": "tier1_confirmed",
+    "model_assist_refs": [
+      "MA-0001",
+      "MA-0002"
+    ]
+  },
+  "evidence": {
+    "recurrence_count": 3,
+    "supporting_cases": [],
+    "comparison_baseline": null,
+    "outcome_link": "reduced repeat incidents across shift boundaries",
+    "uncertainty": null,
+    "counterexamples": [],
+    "review_notes": [],
+    "evidence_strength": "moderate"
+  },
+  "authority_layer": "advisory",
+  "validation_state": "promoted_to_advisory",
+  "confidence": 0.3,
+  "use_constraints": [
+    "Present as a handover checklist prompt, not automation.",
+    "Ask the incoming lead to confirm open threads verbally.",
+    "Do not auto-close the handover.",
+    "Escalate if risk class is high."
+  ],
+  "retrieval_policy": {
+    "match": "conditions_match",
+    "presentation": "advisory_only"
+  },
+  "agent_visibility": "advisory_context",
+  "agent_instruction": "Present as a handover checklist prompt, not automation.",
+  "linked_procedural_refs": [
+    "HANDOVER-SOP"
+  ],
+  "linked_semantic_refs": [
+    "shift_metadata"
+  ],
+  "linked_episodic_refs": [
+    "sh-case-1"
+  ],
+  "linked_chap_evidence_refs": [
+    13,
+    16
+  ],
+  "model_assist_refs": [
+    "MA-0001",
+    "MA-0002"
+  ],
+  "review_due_at": null,
+  "revocation_status": "active"
+}

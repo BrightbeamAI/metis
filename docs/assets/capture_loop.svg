@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 250" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="TacitFlow capture loop">
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#EA4700"/><stop offset="1" stop-color="#FF9900"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5A5A5A"/>
+    </marker>
+  </defs>
+  <rect width="920" height="250" fill="#F2F5FA"/>
+  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The capture loop</text>
+  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Remember. Every step is a signed CHAP event.</text>
+
+  <!-- 5 loop steps -->
+  <g>
+    <rect x="28"  y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+    <text x="103" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Observe</text>
+    <text x="103" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">work-as-done</text>
+
+    <rect x="196" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+    <text x="271" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Infer</text>
+    <text x="271" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">candidate only</text>
+
+    <rect x="364" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+    <text x="439" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Whisper</text>
+    <text x="439" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">bounded probe</text>
+
+    <rect x="532" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+    <text x="607" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Confirm</text>
+    <text x="607" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">Tier-1 fidelity</text>
+
+    <rect x="700" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
+    <text x="775" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Remember</text>
+    <text x="775" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">store fragment</text>
+  </g>
+  <line x1="178" y1="119" x2="196" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="346" y1="119" x2="364" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="514" y1="119" x2="532" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="682" y1="119" x2="700" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- outcomes -->
+  <line x1="775" y1="146" x2="775" y2="176" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="28" y="176" width="270" height="50" rx="10" fill="#5A5A5A"/>
+  <text x="163" y="200" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Evidence layer</text>
+  <text x="163" y="217" font-size="11" fill="#FFFFFF" text-anchor="middle">not operational, not agent-visible</text>
+
+  <rect x="325" y="176" width="250" height="50" rx="10" fill="#FFFFFF" stroke="#5A5A5A" stroke-width="1.5"/>
+  <text x="450" y="200" font-size="13" font-weight="bold" fill="#282829" text-anchor="middle">Mission Group Tier-2 review</text>
+  <text x="450" y="217" font-size="11" fill="#5A5A5A" text-anchor="middle">human decision, deterministic</text>
+
+  <rect x="602" y="176" width="248" height="50" rx="10" fill="url(#ember)"/>
+  <text x="726" y="200" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Advisory / Controlled</text>
+  <text x="726" y="217" font-size="11" fill="#FFFFFF" text-anchor="middle">becomes governed tacit memory</text>
+
+  <line x1="298" y1="201" x2="325" y2="201" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="575" y1="201" x2="602" y2="201" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
+</svg>

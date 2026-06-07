@@ -1,0 +1,12 @@
+{
+  "recurrence_count": 2,
+  "supporting_cases": [],
+  "comparison_baseline": null,
+  "outcome_link": null,
+  "uncertainty": "Subjective visual judgement; weak evidence so far.",
+  "counterexamples": [
+    "A glossy batch once passed the lab measure cleanly."
+  ],
+  "review_notes": [],
+  "evidence_strength": "weak"
+}

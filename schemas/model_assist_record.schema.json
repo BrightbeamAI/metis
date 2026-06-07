@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "AssistPurpose": {
+      "enum": [
+        "draft_whisper",
+        "classify_fragment",
+        "structure_candidate",
+        "summarise_confirmation",
+        "suggest_conditions",
+        "review_summary",
+        "advisory_wording"
+      ],
+      "title": "AssistPurpose",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "assist_id": {
+      "title": "Assist Id",
+      "type": "string"
+    },
+    "provider": {
+      "title": "Provider",
+      "type": "string"
+    },
+    "model_name": {
+      "title": "Model Name",
+      "type": "string"
+    },
+    "model_url": {
+      "title": "Model Url",
+      "type": "string"
+    },
+    "purpose": {
+      "$ref": "#/$defs/AssistPurpose"
+    },
+    "prompt_template": {
+      "title": "Prompt Template",
+      "type": "string"
+    },
+    "input_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Input Refs",
+      "type": "array"
+    },
+    "output_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Ref"
+    },
+    "output_format": {
+      "default": "json",
+      "title": "Output Format",
+      "type": "string"
+    },
+    "output": {
+      "anyOf": [
+        {},
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output"
+    },
+    "used_live_model": {
+      "default": false,
+      "title": "Used Live Model",
+      "type": "boolean"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "human_review_required": {
+      "default": true,
+      "title": "Human Review Required",
+      "type": "boolean"
+    },
+    "human_review_status": {
+      "default": "pending",
+      "title": "Human Review Status",
+      "type": "string"
+    },
+    "chap_artefact_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chap Artefact Ref"
+    },
+    "chap_evidence_ref": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chap Evidence Ref"
+    }
+  },
+  "required": [
+    "assist_id",
+    "provider",
+    "model_name",
+    "model_url",
+    "purpose",
+    "prompt_template"
+  ],
+  "title": "ModelAssistRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/model_assist_record.schema.json"
+}

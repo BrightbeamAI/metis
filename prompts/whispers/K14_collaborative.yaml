@@ -1,0 +1,13 @@
+category: K14_collaborative
+domain: social_normative
+trigger: operator coordinates a handover or cross-actor dependency beyond the form
+primary_whisper: "The handover form was complete, but you flagged something extra. What felt unfinished?"
+follow_ups:
+  - "What do incoming staff often miss that is not on the form?"
+  - "Which threads need a verbal confirm, not just a tick?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Coordination knowledge is social; validate with both sides of the handover."
+do_not_ask:
+  - "Do not attribute blame for an incomplete handover."

@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "AuthorityLayer": {
+      "enum": [
+        "evidence",
+        "advisory",
+        "controlled"
+      ],
+      "title": "AuthorityLayer",
+      "type": "string"
+    },
+    "ValidationState": {
+      "enum": [
+        "captured",
+        "worker_confirmed",
+        "tier1_confirmed",
+        "tier2_pending",
+        "promoted_to_advisory",
+        "promoted_to_controlled",
+        "held",
+        "rejected",
+        "re_elicit",
+        "withdrawn",
+        "superseded",
+        "expired"
+      ],
+      "title": "ValidationState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "from_layer": {
+      "$ref": "#/$defs/AuthorityLayer"
+    },
+    "to_layer": {
+      "$ref": "#/$defs/AuthorityLayer"
+    },
+    "new_state": {
+      "$ref": "#/$defs/ValidationState"
+    },
+    "promoted_by": {
+      "title": "Promoted By",
+      "type": "string"
+    },
+    "review_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Review Ref"
+    },
+    "change_control": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Change Control"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "promoted_at": {
+      "title": "Promoted At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fragment_id",
+    "from_layer",
+    "to_layer",
+    "new_state",
+    "promoted_by"
+  ],
+  "title": "PromotionRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_promotion_record.schema.json"
+}

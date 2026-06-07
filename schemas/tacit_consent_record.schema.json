@@ -1,0 +1,98 @@
+{
+  "$defs": {
+    "AttributionMode": {
+      "enum": [
+        "named",
+        "role",
+        "anonymous",
+        "group"
+      ],
+      "title": "AttributionMode",
+      "type": "string"
+    },
+    "ConsentStatus": {
+      "enum": [
+        "not_required",
+        "pending",
+        "granted",
+        "withdrawn",
+        "policy_exception"
+      ],
+      "title": "ConsentStatus",
+      "type": "string"
+    },
+    "Visibility": {
+      "enum": [
+        "worker_only",
+        "mission_group",
+        "workspace",
+        "agent_visible"
+      ],
+      "title": "Visibility",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "consent_required": {
+      "default": true,
+      "title": "Consent Required",
+      "type": "boolean"
+    },
+    "consent_status": {
+      "$ref": "#/$defs/ConsentStatus",
+      "default": "pending"
+    },
+    "attribution_mode": {
+      "$ref": "#/$defs/AttributionMode",
+      "default": "role"
+    },
+    "visibility": {
+      "$ref": "#/$defs/Visibility",
+      "default": "mission_group"
+    },
+    "withdrawal_allowed": {
+      "default": true,
+      "title": "Withdrawal Allowed",
+      "type": "boolean"
+    },
+    "withdrawal_constraints": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Withdrawal Constraints"
+    },
+    "worker_visible_record": {
+      "default": true,
+      "title": "Worker Visible Record",
+      "type": "boolean"
+    },
+    "policy_exception": {
+      "default": false,
+      "title": "Policy Exception",
+      "type": "boolean"
+    },
+    "policy_exception_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Policy Exception Reason"
+    }
+  },
+  "title": "ConsentRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tacitflow.dev/schemas/0.1/tacit_consent_record.schema.json"
+}

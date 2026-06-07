@@ -1,0 +1,13 @@
+category: K3_rhythmic
+domain: procedural_embodied
+trigger: operator pauses, waits, or changes tempo differently from the prescribed timing
+primary_whisper: "You waited longer than the written procedure suggests. Was there a specific cue that made you wait?"
+follow_ups:
+  - "Does the timing depend on the material, equipment state, or shift?"
+  - "What should the system not infer from this timing?"
+allowed_response_types: [confirm, correct, dismiss, defer]
+operator_burden_level: low
+risk_notes:
+  - "Timing can be safety-critical; require recurrence before promotion."
+do_not_ask:
+  - "Do not frame the pause as a performance deviation."
