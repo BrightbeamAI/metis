@@ -21,7 +21,7 @@ situated work observation (a cue an operator acts on, a timing they adjust, a "l
 catch) into a partial, validated, context-bound fragment, then into a governed memory object an AI
 agent can retrieve only through an explicit governance gate.
 
-It is a working reference implementation of "the fourth stratum" from the paper *The Fourth Stratum:
+It is a working reference implementation of "governed tacit fragment" from the paper *Operationalising
 Tacit Knowledge as a Governed Memory Layer for Agentic AI*. It runs entirely on your machine, uses a
 local Ollama model (Gemma) for bounded drafting help, and records every step on a signed,
 append-only CHAP evidence chain. It runs on CHAP (the Collaborative Human-Agent Protocol,
