@@ -2,7 +2,7 @@
   <img src="docs/assets/brightbeam-logo.png" alt="Brightbeam" width="210">
 </p>
 
-<h1 align="center">TacitFlow</h1>
+<h1 align="center">TacitFlow: Governed Tacit Memory for AI Agents</h1>
 
 <p align="center"><b>Capture how expert work actually gets done, govern it, and serve it to AI agents as memory they are allowed to use.</b></p>
 
@@ -16,54 +16,56 @@
 
 ---
 
-TacitFlow is a local-first Python toolkit for **governed tacit fragment capture**. It turns a
-situated work observation (a cue an operator acts on, a timing they adjust, a "looks off" they
-catch) into a partial, validated, context-bound fragment, then into a governed memory object an AI
-agent can retrieve only through an explicit governance gate.
+AI agents now act inside real workflows, but the knowledge that makes work go right was often never
+written down. A technician hears a pump sounds wrong before any alarm. An inspector sees a batch
+"looks off" before the lab confirms it. Manuals do not capture this, and naively mining it from
+workers is unsafe and easy to get wrong.
 
-It is a working reference implementation of "governed tacit fragment" from the paper *Operationalising
-Tacit Knowledge as a Governed Memory Layer for Agentic AI*. It runs entirely on your machine, uses a
-local Ollama model (Gemma) for bounded drafting help, and records every step on a signed,
-append-only CHAP evidence chain. It runs on CHAP (the Collaborative Human-Agent Protocol,
-<https://github.com/BrightbeamAI/chap>) so capture, review, retrieval, and revocation are structured
-collaboration events, not ad hoc logs.
+TacitFlow is a local-first Python toolkit that captures these moments as **governed tacit
+fragments**, has a human group validate them, and serves only the validated ones to an AI agent,
+under the exact conditions where they hold, with a full audit trail. It implements the governed
+tacit-memory layer from the paper *Operationalising Tacit Knowledge as a Governed Memory Layer for
+Agentic AI*, and it runs on [CHAP](https://github.com/BrightbeamAI/chap) so every step is a signed,
+replayable collaboration event.
 
 <p align="center"><img src="docs/assets/capture_loop.svg" alt="The capture loop" width="100%"></p>
 
-## Quickstart (about 30 seconds, no cloud, no GPU)
+## What is a tacit fragment?
 
-```bash
-git clone https://github.com/BrightbeamAI/tacitflow && cd tacitflow
-pip install -e .
-tacitflow demo manufacturing-pump-vibration
-```
+Most of what makes someone good at their job never reaches a document. A tacit fragment is a small,
+structured, governed record of one such piece of practice. It is deliberately partial: it is not a
+worker's whole expertise, and it is never treated as fact.
 
-The demo prints a 19 step walkthrough and writes a replayable evidence chain. Then inspect it:
+Every fragment carries the things that make it safe to reuse:
 
-```bash
-tacitflow fragment list
-tacitflow memory list
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_matching.json      # allowed
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json  # blocked, with a reason
-tacitflow audit read
-```
+- **what** was observed and worker-confirmed, and its category (the K1 to K17 taxonomy of tacit knowledge),
+- **the conditions** under which it applies (site, equipment, operating mode, shift, role, risk, and exclusions),
+- **where it came from**: provenance, the worker, and their consent,
+- **the evidence** behind it (recurrence, supporting cases, counterexamples),
+- **an authority layer**: Evidence (learning only), Advisory (conditional guidance), or Controlled (formal instruction),
+- **use constraints** that travel with it.
 
-Prefer to click through it? Open the **[interactive demo](docs/demo.html)**: pick a scenario, step
-through the loop, and drive the retrieval gate yourself. For a guided tour, open the illustrated
-**[explainer](docs/explainer.html)**. You can also run `tacitflow demo manufacturing-pump-vibration --open`.
+That structure is the point. A document chunk has no conditions, consent, or authority, and a
+training example is treated as ground truth. A tacit fragment is neither. It is situated guidance an
+agent may use only where it applies, and must stop using the moment it does not.
 
-## Use it in practice (Python)
+## A concrete example
+
+A pump SOP says: reduce load only when the alarm threshold is crossed. Experienced operators reduce
+throughput earlier, when high load coincides with low-frequency vibration and a dull acoustic cue.
+TacitFlow captures that gap, a human group promotes it to an advisory cue, and an agent can then use
+it, but only on the right pump in the right state.
 
 ```python
 from tacitflow import TacitFlowEngine
 from tacitflow.conditions.context import TacitContext
 from tacitflow.consent.model import ConsentRecord, ConsentStatus
 
-eng = TacitFlowEngine()             # local and deterministic, no cloud APIs
+eng = TacitFlowEngine()              # local and deterministic, no cloud APIs
 eng.join_default_participants()
 
-# 1. Capture a situated observation through Observe to Remember.
-result = eng.capture_observation(
+# Capture what the operator does that the SOP does not say.
+frag = eng.capture_observation(
     {
         "observation_id": "OBS-1",
         "work_as_imagined": "Reduce load only when the alarm threshold is crossed.",
@@ -72,106 +74,63 @@ result = eng.capture_observation(
     },
     consent=ConsentRecord(consent_status=ConsentStatus.granted),
     category="K7_sensory",
-)
-fragment = result.fragment          # lands in the Evidence layer, not yet usable
+).fragment                            # lands in the Evidence layer, not yet usable
 
-# 2. A Mission Group promotes it. This is a human, deterministic decision.
-eng.tier2_review(fragment.fragment_id, "promoted_to_advisory",
-                 summary="Recurs across cases, advisory cue only.")
+# A human Mission Group promotes it. A model never makes this call.
+eng.tier2_review(frag.fragment_id, "promoted_to_advisory", summary="advisory cue only")
 
-# 3. An agent asks for memory under a runtime context. Tacit memory passes the gate.
-ctx = TacitContext(equipment_family="centrifugal_pump", operating_mode="high_load", risk_class="moderate")
-agent_ctx = eng.agent_context("tsk_42", ctx)
-for entry in agent_ctx.tacit_memory:
-    print(entry.content)
-    print(entry.use_constraints)     # the agent must respect these
+# An agent asks for guidance. The gate returns it only when the context matches.
+match = TacitContext(equipment_family="centrifugal_pump", operating_mode="high_load", risk_class="moderate")
+other = TacitContext(equipment_family="gear_pump", operating_mode="low_load", risk_class="moderate")
+
+print(len(eng.retrieve(match).eligible))      # 1  (returned, with its use constraints)
+print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 ```
 
-Change the runtime context (a different pump, a high risk class, a withdrawn consent) and the same
-fragment is withheld, with a recorded reason. That is the whole point.
-
-## How it works
-
-**Capture loop.** Observe a work event, Infer a candidate (a hypothesis, never trusted), Whisper a
-short bounded question to the worker, Confirm with them (Tier-1, descriptive fidelity only), and
-Remember the result as an Evidence-layer fragment.
-
-**Governance.** A Mission Group runs Tier-2 review across fidelity, operational relevance, normative
-alignment, and risk, then promotes the fragment to Advisory or Controlled, or holds, rejects, or
-re-elicits it. Evidence-layer fragments can never drive a decision or reach an agent. A local model
-can draft a review summary, but it never makes the decision.
-
-**Memory and retrieval.** A promoted fragment becomes a `TacitMemoryObject`. A `MemoryBroker`
-assembles an `AgentMemoryContext` that combines procedural, semantic, episodic, and tacit memory, and
-tacit memory is reached only through a condition-aware gate that carries the use constraints with it.
-
-<p align="center"><img src="docs/assets/memory_stack.svg" alt="Four memory stores and the memory broker" width="100%"></p>
+Change the pump, raise the risk class, or withdraw consent, and the same fragment is withheld with a
+recorded reason. Retrieval is a governance decision, not a similarity search.
 
 <p align="center"><img src="docs/assets/retrieval_gate.svg" alt="The condition-aware retrieval gate" width="100%"></p>
 
-## Command-line interface
+## Quickstart
+
+No cloud and no GPU. The demo and tests run without any model using deterministic fixtures.
 
 ```bash
-tacitflow init                                   # create a local project (.tacitflow/)
-tacitflow demo <scenario>                        # run a full local walkthrough
-tacitflow capture --example <scenario>           # run the capture loop for a synthetic example
-tacitflow fragment list | show <id>              # inspect captured fragments
-tacitflow memory list | show <id>                # inspect governed tacit memory
-tacitflow memory query --context <file.json>     # build an AgentMemoryContext
-tacitflow retrieve --context <file.json>         # run the gate against a runtime context
-tacitflow audit read | export --out evidence.jsonl
-tacitflow model check | pull gemma4 | run --prompt "..."
-tacitflow config set model.provider ollama
+git clone https://github.com/BrightbeamAI/tacitflow && cd tacitflow
+pip install -e .
+tacitflow demo manufacturing-pump-vibration
 ```
 
-Scenarios: `manufacturing-pump-vibration`, `batch-quality-visual-inspection`, `shift-handover-gap`.
+The demo runs the whole flow locally and writes a replayable evidence chain. Inspect it with
+`tacitflow fragment list`, `tacitflow memory list`, `tacitflow retrieve --context <file>`, and
+`tacitflow audit read`.
 
-## Local model (optional)
+Prefer to click through it? Open the **[interactive demo](docs/demo.html)**: pick a scenario, step
+through the loop, and drive the gate yourself by editing the context and watching it allow or block.
+For a guided tour, open the illustrated **[explainer](docs/explainer.html)**.
 
-TacitFlow assists capture with a local model and never calls a cloud API. The demo and the tests run
-without any model using deterministic fixtures. To use a real local model:
+## How it works
 
-```bash
-# install Ollama from https://ollama.com, then:
-ollama pull gemma4
-tacitflow config set model.name gemma4
-tacitflow model check
-```
+**Capture loop.** Observe a work event, infer a candidate (a hypothesis, never trusted), whisper one
+short bounded question to the worker, confirm with them (descriptive fidelity only), and remember the
+result as an Evidence-layer fragment.
 
-Model output is always an advisory draft, recorded as a `ModelAssistRecord`. It can never promote,
-validate, retrieve, authorise, or revoke a fragment. See [docs/local_model_runtime.md](docs/local_model_runtime.md).
+**Governance.** A human Mission Group reviews each fragment across fidelity, operational relevance,
+normative alignment, and risk, then promotes it to Advisory or Controlled, or holds, rejects, or
+re-elicits it. Evidence-layer fragments can never drive a decision or reach an agent. A local model
+may draft a review summary, but it never decides.
 
-## Repository map
+**Memory and retrieval.** A promoted fragment becomes a governed memory object. A broker assembles an
+agent context from procedural, semantic, episodic, and tacit memory, and tacit memory is reached only
+through the condition-aware gate, which carries the use constraints with it.
 
-| Path | What is there |
-|------|----------------|
-| `tacitflow/` | the toolkit: `fragment/`, `taxonomy/`, `conditions/`, `consent/`, `capture/`, `validation/`, `governance/`, `retrieval/`, `memory/`, `models/`, `audit/`, `storage/`, `cli/`, `api/`, `integrations/chap/`, plus `engine.py` and `scenarios.py` |
-| `examples/` | three runnable synthetic examples with inputs, contexts, and expected outputs ([index](examples/README.md)) |
-| `docs/` | concept and reference docs, plus the visual `explainer.html` ([index](docs/README.md)) |
-| `schemas/` | JSON Schemas for every `tacit.*` object |
-| `profiles/` | the `tacitflow/1.0` CHAP profile |
-| `prompts/` | whisper templates (K2 to K14) and model-assist prompt templates |
-| `templates/` | capture canvas, review checklist, consent and revocation records |
-| `tests/` | pytest suite, runs without a live model |
-| `scripts/` | `acceptance_check.py`, `generate_examples.py` |
+## Learn more
 
-## How TacitFlow relates to CHAP
-
-TacitFlow does not define a protocol. It runs on **CHAP** (<https://github.com/BrightbeamAI/chap>),
-which gives it workspaces, participants, tasks, artefacts, whisper and review and control events, and
-a signed hash-linked evidence chain. Because CHAP ships as TypeScript, TacitFlow includes a Python
-adapter (`tacitflow/integrations/chap/`) that emits and validates CHAP-compatible records rather than
-re-implementing the protocol. Details and the full mapping are in [docs/chap_integration.md](docs/chap_integration.md).
-
-## Develop
-
-```bash
-make dev      # editable install with dev and api extras
-make test     # pytest, no live model needed
-make lint     # ruff
-make demo     # the end-to-end local demo
-python scripts/acceptance_check.py
-```
+- **[Interactive demo](docs/demo.html)** and **[explainer](docs/explainer.html)**: the fastest way to get it.
+- **[Documentation](docs/README.md)**: architecture, governance, retrieval, the K1 to K17 taxonomy, agent use.
+- **[ABOUT.md](ABOUT.md)**: repository map, the four memory stores, the CHAP relationship, and how to develop.
+- **[CHAP](https://github.com/BrightbeamAI/chap)**: the protocol TacitFlow runs on.
 
 ## Ethical use
 
@@ -180,10 +139,7 @@ audio, video, biometrics, screenshots, or keystrokes, fragments are never treate
 audit chain is append-only. Production use needs worker consultation, legal review, and domain
 validation. Read [ETHICAL_USE.md](ETHICAL_USE.md) first.
 
-## Documentation and license
+## License
 
-Start at [docs/README.md](docs/README.md), the visual [explainer](docs/explainer.html), and the
-interactive [demo](docs/demo.html). The explainer and demo are self-contained static HTML: open them
-locally in a browser, or host the `docs/` folder on any static host. If you use TacitFlow in
-research, please also cite the paper *The Fourth Stratum: Tacit Knowledge as a Governed Memory Layer
-for Agentic AI*. Licensed under Apache-2.0 ([LICENSE](LICENSE)).
+Apache-2.0. See [LICENSE](LICENSE). If you use TacitFlow in research, please also cite
+*Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*.
