@@ -183,8 +183,7 @@ validation. Read [ETHICAL_USE.md](ETHICAL_USE.md) first.
 ## Documentation and license
 
 Start at [docs/README.md](docs/README.md), the visual [explainer](docs/explainer.html), and the
-interactive [demo](docs/demo.html). The explainer and demo are static HTML: open them locally, or
-enable GitHub Pages (a workflow is included in `.github/workflows/pages.yml`) to host them, after
-which they are served from the `docs/` folder. If you use TacitFlow in research, please also cite
-the paper *The Fourth Stratum: Tacit Knowledge as a Governed Memory Layer for Agentic AI*. Licensed
-under Apache-2.0 ([LICENSE](LICENSE)).
+interactive [demo](docs/demo.html). The explainer and demo are self-contained static HTML: open them
+locally in a browser, or host the `docs/` folder on any static host. If you use TacitFlow in
+research, please also cite the paper *The Fourth Stratum: Tacit Knowledge as a Governed Memory Layer
+for Agentic AI*. Licensed under Apache-2.0 ([LICENSE](LICENSE)).
