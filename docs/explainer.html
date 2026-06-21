@@ -383,8 +383,8 @@
   <h2>Runs on <span class="em">CHAP</span></h2>
   <p class="sub">TacitFlow does not invent a protocol. It runs on CHAP, the Collaborative Human-Agent
   Protocol, so capture, review, retrieval, and revocation are structured collaboration events on a
-  signed, append-only evidence chain. Because CHAP ships as TypeScript, TacitFlow includes a Python
-  adapter that emits and validates CHAP-compatible records. Repo:
+  append-only, hash-linked evidence chain. TacitFlow runs on the official chap-coordinator Python
+  reference implementation; the adapter drives a real Coordinator rather than re-implementing the protocol. Repo:
   <a href="https://github.com/BrightbeamAI/chap">github.com/BrightbeamAI/chap</a>.</p>
   <table>
     <tr><th>TacitFlow concept</th><th>CHAP concept</th></tr>
@@ -395,7 +395,7 @@
     <tr><td>Mission Group review</td><td><code class="inline">review.request</code> and <code class="inline">decide.*</code></td></tr>
     <tr><td>Retrieval decision</td><td>Routing decision artefact</td></tr>
     <tr><td>Revocation, supersession</td><td><code class="inline">control.*</code> events plus records</td></tr>
-    <tr><td>Audit trail</td><td>Ed25519 plus JCS hash-linked evidence chain</td></tr>
+    <tr><td>Audit trail</td><td>Hash-linked (JCS) evidence chain; Ed25519 signing via the security-signed/1.0 profile</td></tr>
   </table>
 </div></section>
 

@@ -1,4 +1,8 @@
-"""Replay and verify an exported evidence chain (independent of the live adapter)."""
+"""Replay and verify an exported evidence chain, independent of the live Coordinator.
+
+Reproduces the Coordinator's hash linkage (``prev = sha256( JCS(envelope) || prev )``) over
+the exported JSON-RPC envelopes and confirms prev_hash continuity.
+"""
 from __future__ import annotations
 
 import json
@@ -6,9 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from ..integrations.chap.canonical import ZERO_HASH, sha256_hex
-from ..integrations.chap.crypto import derive_private_key, verify
-from ..integrations.chap.envelope import canonical_without_sig
+from chap_coordinator import ZERO_HASH, canonicalize, sha256_hex
 
 
 @dataclass
@@ -27,17 +29,12 @@ def replay(path: str | Path) -> ReplayResult:
     records = load_jsonl(path)
     errors: list[str] = []
     methods: list[str] = []
-    expected_prev = ZERO_HASH
+    prev = ZERO_HASH
     for rec in records:
-        env = rec["envelope"]
-        canonical = canonical_without_sig(env)
-        if sha256_hex(canonical) != rec["envelope_hash"]:
-            errors.append(f"seq {rec['seq']}: envelope_hash mismatch")
-        if rec["prev_hash"] != expected_prev:
-            errors.append(f"seq {rec['seq']}: prev_hash break")
-        pub = derive_private_key(rec["from"]).public_key()
-        if not verify(canonical, rec["sig"], pub):
-            errors.append(f"seq {rec['seq']}: signature invalid")
-        methods.append(rec.get("method_or_type", "?"))
-        expected_prev = sha256_hex(canonical + rec["sig"].encode("utf-8"))
+        env = rec.get("envelope") or {}
+        ph = rec.get("prev_hash")
+        if ph is not None and ph != prev:
+            errors.append(f"seq {rec.get('seq')}: prev_hash break")
+        methods.append(rec.get("method_or_type") or env.get("method", "?"))
+        prev = sha256_hex(canonicalize(env) + prev.encode("utf-8"))
     return ReplayResult(ok=not errors, checked=len(records), errors=errors, methods=methods)

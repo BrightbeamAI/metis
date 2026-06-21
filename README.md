@@ -25,8 +25,8 @@ TacitFlow is a local-first Python toolkit that captures these moments as **gover
 fragments**, has a human group validate them, and serves only the validated ones to an AI agent,
 under the exact conditions where they hold, with a full audit trail. It implements the governed
 tacit-memory layer from the paper *Operationalising Tacit Knowledge as a Governed Memory Layer for
-Agentic AI*, and it runs on [CHAP](https://github.com/BrightbeamAI/chap) so every step is a signed,
-replayable collaboration event.
+Agentic AI*, and it runs on [CHAP](https://github.com/BrightbeamAI/chap) so every step is recorded
+on a hash-linked, replayable evidence chain.
 
 <p align="center"><img src="docs/assets/capture_loop.svg" alt="The capture loop" width="100%"></p>
 

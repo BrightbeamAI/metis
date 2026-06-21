@@ -53,9 +53,11 @@ See [docs/memory_architecture.md](docs/memory_architecture.md) for the full mode
 
 TacitFlow does not define a protocol. It runs on CHAP, which provides workspaces, participants,
 tasks, artefacts, whisper and review and control events, and a signed, hash-linked evidence chain.
-Because CHAP ships as TypeScript, TacitFlow includes a Python adapter (`tacitflow/integrations/chap/`)
-that emits and validates CHAP-compatible records rather than re-implementing the protocol. A
-compliance checker asserts that TacitFlow introduces no new envelope or wire methods; the `tacit.*`
+TacitFlow depends on the official `chap-coordinator` Python reference implementation. The adapter
+(`tacitflow/integrations/chap/`) drives a real Coordinator via JSON-RPC dispatch and reuses its
+canonical JCS, id, and hash-linked evidence-chain primitives rather than re-implementing the protocol.
+A compliance checker reads the method allow-list straight from the Coordinator, so TacitFlow cannot use
+a method the reference does not implement; the `tacit.*`
 names are artefact and task kinds declared by the `tacitflow/1.0` profile, which is how CHAP is meant
 to be extended.
 

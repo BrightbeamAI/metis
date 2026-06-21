@@ -1,19 +1,18 @@
-"""CHAP integration layer, TacitFlow's protocol foundation (a faithful Python adapter).
+"""CHAP integration layer.
 
-CHAP itself is defined by the supplied specification, schemas, and TypeScript reference.
-This package emits and validates CHAP-compatible workspaces, participants, tasks,
-artefacts, whisper/review/routing/control/handoff events, and an append-only Ed25519+JCS
-evidence chain. It does not reimplement CHAP as a new protocol.
+TacitFlow runs on the official ``chap-coordinator`` reference implementation. This package
+adapts TacitFlow's domain onto a real Coordinator and exposes the canonical CHAP primitives.
+It does not reimplement the protocol.
 """
-from .adapter import CHAPAdapter
+from chap_coordinator import IdFactory
+
+from .adapter import ChainView, CHAPAdapter, VerificationResult
 from .canonical import ZERO_HASH, canonicalize, content_hash, sha256_hex
-from .evidence import EvidenceChain, EvidenceEntry
-from .ids import IdFactory
 
 __all__ = [
     "CHAPAdapter",
-    "EvidenceChain",
-    "EvidenceEntry",
+    "ChainView",
+    "VerificationResult",
     "IdFactory",
     "canonicalize",
     "content_hash",

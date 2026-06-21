@@ -31,11 +31,11 @@
     "source_event": "OBS-1",
     "source_logs": [],
     "source_artefacts": [
-      "art_01HF7YAT08002F3EYDSFX57R58",
-      "art_01HF7YAT0A0032WAP17VWEHP6J",
-      "art_01HF7YAT0C003PN6DMP7VQVM7W"
+      "art_01HF7YAT02000KRVQKEBZ99Y1A",
+      "art_01HF7YAT040017HQF6WQYJKW2M",
+      "art_01HF7YAT06001VAK6TB3XVXT3Y"
     ],
-    "timestamp": "2026-06-07T15:17:29.454551+00:00",
+    "timestamp": "2026-06-21T17:16:51.947063+00:00",
     "capture_method": "observe->infer->whisper->confirm (synthetic)",
     "human_confirmed_by": "human:operator@plant_a",
     "mission_group_reviewed_by": "group:mission-group@tacitflow.local",
@@ -86,8 +86,8 @@
     "case-1"
   ],
   "linked_chap_evidence_refs": [
-    13,
-    16
+    21,
+    25
   ],
   "model_assist_refs": [
     "MA-0001",

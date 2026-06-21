@@ -30,8 +30,10 @@ def test_export_replays_independently(tmp_path, manufacturing_run):
     assert result.methods[0] == "workspace.create"
 
 
-def test_signatures_are_ed25519_over_jcs():
-    a = CHAPAdapter("wsp_ev3", "Sig test", deterministic=True)
-    entry = a.chain.entries[0]
-    assert entry.sig.startswith("ed25519:")
-    assert entry.envelope_hash.startswith("sha256:")
+def test_chain_is_hash_linked():
+    a = CHAPAdapter("wsp_ev3", "Chain test", deterministic=True)
+    a.join("human:carol@x", "operator")
+    # The canonical chain is hash-linked: genesis prev is zero, the head is a sha256 digest.
+    assert a.chain.entries[0].prev_hash.endswith("0" * 8)
+    assert a.chain.head.startswith("sha256:")
+    assert a.verify().ok

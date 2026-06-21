@@ -17,10 +17,11 @@ The **local model layer** (`models/`) provides an Ollama client (default Gemma),
 structured output models, and the `ModelAssistRecord`. It assists capture and structuring; it never
 governs.
 
-The **CHAP integration layer** (`integrations/chap/`) is the protocol foundation: a Python adapter
-that builds signed envelopes, an append-only evidence chain, and CHAP-compatible workspaces,
-participants, tasks, and artefacts. The `CHAPAdapter` is the single object the rest of the toolkit
-uses to speak CHAP.
+The **CHAP integration layer** (`integrations/chap/`) is the protocol foundation: an adapter that
+drives the official `chap-coordinator` reference implementation. It dispatches JSON-RPC envelopes to a
+real Coordinator, which owns the workspace, participants, tasks, and the append-only, hash-linked
+evidence chain. The `CHAPAdapter` is the single object the rest of the toolkit uses to speak CHAP, so
+moving to the reference implementation did not touch any domain code.
 
 A thin façade, `TacitFlowEngine`, wires these together so the CLI, API, demo, and examples share one
 orchestration path.

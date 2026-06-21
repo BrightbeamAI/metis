@@ -37,8 +37,8 @@ def build() -> dict:
             "nonmatch_context": spec.nonmatch_context,
             "agent_context": run.agent_context.model_dump(mode="json"),
             "audit": [
-                {"seq": e.seq, "method_or_type": e.method_or_type, "from": e.sender}
-                for e in run.engine.adapter.chain.entries
+                {"seq": r["seq"], "method_or_type": r["method_or_type"], "from": r["from"]}
+                for r in run.engine.adapter.evidence_records()
             ],
         }
     return {"order": order, "scenarios": scenarios}

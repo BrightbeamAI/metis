@@ -1,75 +1,67 @@
 # CHAP integration
 
-**TacitFlow does not define its own protocol. TacitFlow uses CHAP as the protocol foundation.**
+**TacitFlow does not define its own protocol. It runs on CHAP, the Collaborative Human-Agent
+Protocol** (<https://github.com/BrightbeamAI/chap>).
 
-CHAP (the Collaborative Human-Agent Protocol) lives at <https://github.com/BrightbeamAI/chap>.
-TacitFlow validates against that specification and its JSON Schemas, and ships a Python adapter
-under `tacitflow/integrations/chap/` rather than re-implementing the protocol.
+## What TacitFlow uses
 
-## What we inspected
+TacitFlow depends on the official **`chap-coordinator`** Python reference implementation. The
+integration layer in `tacitflow/integrations/chap/` is a thin adapter (`CHAPAdapter`) that drives a
+real `chap_coordinator.Coordinator`: it dispatches JSON-RPC envelopes and the Coordinator owns the
+workspace, participants, tasks, and the append-only, hash-linked evidence chain. TacitFlow reuses the
+package's canonical JCS, id, and signing primitives directly, so it maintains no copy of the protocol
+mechanics.
 
-The supplied CHAP repository is the TypeScript reference for the Collaborative Human-Agent Protocol
-(v0.2). We treated its specification, JSON Schemas, profile documents, and method catalogue as the
-source of truth. The pieces that matter for TacitFlow:
+```python
+from chap_coordinator import Coordinator, CoordinatorOptions
+coord = Coordinator(CoordinatorOptions(deterministic_ids=True, deterministic_clock=True, enable_chain=True))
+coord.dispatch({"jsonrpc": "2.0", "id": "1", "method": "workspace.create", "params": {"workspace": "wsp_demo"}})
+```
 
-- **Envelope** (`schemas/core/chap-envelope.schema.json`): every message carries `chap`, `id`
-  (ULID), `ts`, `workspace` (`wsp_…`), `from`/`to` (participant URIs), `type`
-  (request/response/notification), `method` (`namespace.verb`), `params`, and an `evidence`
-  block with `prev_hash` and an Ed25519 `sig`.
-- **Participants** (`chap-participant.schema.json`): URI schemes `human:`, `agent:`, `service:`,
-  `group:`, `workspace:`, each with a JWK set.
-- **Tasks and Artefacts** (`chap-task.schema.json`): tasks are `tsk_…`; artefacts are `art_…` with
-  a `kind`, a `content_hash`, and, for implementation-defined kinds, a `schema` reference.
-  `capture_fragment` is already a standard artefact kind.
-- **Evidence chain** (`chap-evidence.schema.json`, SPECIFICATION §10): an append-only, per-workspace
-  chain where `entry_n.prev_hash = SHA-256( JCS(envelope_{n-1} without evidence.sig) || sig_{n-1} )`,
-  genesis `sha256:0…0`, signed with Ed25519 over the JCS (RFC 8785) canonicalisation.
-- **Methods** (`schemas/profiles/chap-methods.schema.json`) across Core and the profile suite:
-  `capture.append`, `whisper.ask`/`whisper.answer`, `review.request`/`decide.approve`/`reject`/
-  `override`/`abstain.declare`/`escalate.raise`, `task.route`/`review.depth`/`escalate.auto`,
-  `control.pause`/`resume`/`cancel`/`supersede`/`snapshot`/`rollback`, `handoff.propose`/`accept`/
-  `decline`, and `audit.read`/`export`.
+`CHAPAdapter` is the single seam between TacitFlow and CHAP. Because the rest of the toolkit talks only
+to the adapter, adopting the reference implementation did not change any domain, capture, governance,
+retrieval, or memory code.
 
-Because the reference is TypeScript (not Python-native), TacitFlow implements a faithful **Python
-adapter** (`tacitflow/integrations/chap/`) that emits and validates CHAP-compatible records against
-these structures. It reproduces the Ed25519 + JCS evidence chain exactly (see
-`integrations/chap/canonical.py`, `crypto.py`, `evidence.py`) and a compliance checker
-(`integrations/chap/compliance.py`) asserts that every envelope, artefact, and evidence entry
-conforms, and that TacitFlow introduces no envelope keys or methods outside the CHAP catalogue.
+## Which CHAP methods TacitFlow dispatches
+
+`workspace.create`, `participant.join`, `task.create`, `task.complete`, `whisper.ask`,
+`whisper.answer`, `review.request`, `decide.approve` / `decide.reject` / `abstain.declare` /
+`escalate.raise`, and `control.cancel` / `control.supersede`. Every one of these is implemented by the
+reference Coordinator. `audit.read` is available for reading the chain.
 
 ## Mapping
 
-| TacitFlow concept      | CHAP concept                                                      |
-| ---------------------- | ----------------------------------------------------------------- |
-| Capture Cell           | CHAP workspace with human, agent, service, and group participants |
-| Operator               | CHAP human participant                                            |
-| Whisperer agent        | CHAP agent participant using whisper capability                   |
-| Mission Group          | CHAP group participant using review capability                    |
-| Runtime Orchestrator   | CHAP coordinator plus routing/control/modes capabilities          |
-| Tacit fragment         | CHAP artefact of kind `tacit.fragment`                            |
-| Tacit memory object    | CHAP artefact of kind `tacit.memory_object`                       |
-| Agent memory context   | CHAP artefact of kind `tacit.agent_memory_context`                |
-| Local model assistance | CHAP artefact of kind `tacit.model_assist_record`                 |
-| Operator confirmation  | CHAP artefact plus evidence entry                                 |
-| Mission Group review   | CHAP review decision and evidence entry                           |
-| Retrieval decision     | CHAP artefact of kind `tacit.retrieval_decision`                  |
-| Revocation             | CHAP control event plus `tacit.revocation_record`                 |
-| Handoff                | CHAP handoff capability                                           |
-| Audit trail            | CHAP evidence chain                                               |
+| TacitFlow concept | CHAP representation |
+|-------------------|---------------------|
+| Capture Cell | a workspace, created with `workspace.create` |
+| Operator, Whisperer, Mission Group, Agent | participants, joined with `participant.join` |
+| A produced record (observation, inference candidate, fragment, memory object, retrieval decision, model-assist record, promotion/rejection records) | a CHAP task created with `task.create` and completed with `task.complete`, carrying the artefact as the task output |
+| Whisper prompt and answer | `whisper.ask` / `whisper.answer` |
+| Operator confirmation (Tier-1) | a completed-task record artefact |
+| Mission Group Tier-2 review | `review.request` then `decide.approve` / `decide.reject` (`abstain.declare` for hold, `escalate.raise` for re-elicit) |
+| Revocation / supersession | `control.cancel` / `control.supersede`, plus the `tacit.revocation_record` / `tacit.supersession_record` |
+| Audit trail | the Coordinator's append-only, hash-linked evidence chain |
 
-## Which CHAP capabilities are used, and why
+The `tacit.*` names are CHAP task **kinds** and artefact **kinds** declared by the
+[`tacitflow/1.0` profile](../profiles/tacitflow.md). CHAP is designed to be extended this way, so this
+adds no new protocol.
 
-- **Core** (workspace, participants, tasks, artefacts, evidence): the foundation for every action.
-- **Whisper**: low-burden contextual probes during capture.
-- **Review**: operator confirmation (Tier-1) and Mission Group decisions (Tier-2).
-- **Routing**: retrieval and escalation decisions (`route_decision` shape).
-- **Handoff**: shift and responsibility transfer (Example 3).
-- **Control**: revoke, supersede, pause, rollback, lifecycle control.
-- **Modes**: shadow / trial / production-style governance via the workspace mode and mode ceiling.
-- **Security/signing**: Ed25519 signatures over JCS give stronger accountability (deterministic
-  demo keys; real keys in production).
-- **Audit / SCITT**: the exported JSONL chain is replayable and can be externally anchored.
+## Integrity and conformance
 
-Artefact *kinds* and task *kinds* prefixed `tacit.` are profile extensions (see
-[tacitflow_profile.md](tacitflow_profile.md)), not new protocol, CHAP explicitly allows
-implementation-defined artefact kinds with a `schema` reference.
+The Coordinator is created with `enable_chain=True`, so each audit entry links to the previous by
+`sha256( JCS(envelope) || prev_hash )`. `CHAPAdapter.verify()` and `tacitflow.audit.replay` recompute
+that linkage to confirm the chain has not been edited, including the head. Ed25519 per-message signing
+is available through CHAP's optional `security-signed/1.0` profile.
+
+`tacitflow/integrations/chap/compliance.py` reads its method allow-list straight from the reference
+Coordinator (`set(Coordinator()._handlers.keys())`). TacitFlow therefore cannot dispatch a method the
+reference does not implement: such a call would error and never be audited. This is a stronger
+guarantee than the previous hand-rolled adapter could give.
+
+## What stays TacitFlow's
+
+CHAP provides the collaboration and evidence layer. TacitFlow owns everything that is about *tacit
+practice*: the `TacitFragment` model and K1 to K17 taxonomy, structured conditions, consent, the
+authority layers and validation state machine, the capture loop, Tier-1/Tier-2 governance, the
+condition-aware retrieval gate, the four-store memory model, and the local model layer. None of those
+are part of CHAP.

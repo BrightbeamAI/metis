@@ -49,15 +49,15 @@
         "Escalate if risk class is high."
       ],
       "citations": [
-        "evidence:13",
-        "evidence:16",
-        "art_01HF7YAT08002F3EYDSFX57R58",
-        "art_01HF7YAT0A0032WAP17VWEHP6J",
-        "art_01HF7YAT0C003PN6DMP7VQVM7W"
+        "evidence:21",
+        "evidence:25",
+        "art_01HF7YAT02000KRVQKEBZ99Y1A",
+        "art_01HF7YAT040017HQF6WQYJKW2M",
+        "art_01HF7YAT06001VAK6TB3XVXT3Y"
       ],
       "audit_refs": [
-        13,
-        16
+        21,
+        25
       ]
     }
   ],
@@ -72,15 +72,15 @@
     "Escalate if risk class is high."
   ],
   "citations": [
-    "evidence:13",
-    "evidence:16",
-    "art_01HF7YAT08002F3EYDSFX57R58",
-    "art_01HF7YAT0A0032WAP17VWEHP6J",
-    "art_01HF7YAT0C003PN6DMP7VQVM7W"
+    "evidence:21",
+    "evidence:25",
+    "art_01HF7YAT02000KRVQKEBZ99Y1A",
+    "art_01HF7YAT040017HQF6WQYJKW2M",
+    "art_01HF7YAT06001VAK6TB3XVXT3Y"
   ],
   "audit_refs": [
-    13,
-    16,
-    24
+    21,
+    25,
+    39
   ]
 }

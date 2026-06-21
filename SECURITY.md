@@ -11,12 +11,11 @@ public issue for anything that could expose worker data or break the audit chain
 ## Security-relevant design notes
 
 - **Append-only evidence.** TacitFlow records every governance action as a
-  CHAP-compatible evidence entry in a hash-linked, optionally Ed25519-signed chain.
+  CHAP evidence entry in the official chap-coordinator's append-only, hash-linked chain.
   History is never rewritten; corrections and revocations are appended.
-- **Signing.** The CHAP adapter signs envelopes with Ed25519 over the RFC 8785 (JCS)
-  canonicalisation of the envelope with `evidence.sig` removed, exactly as the CHAP
-  specification requires. Test/demo runs use deterministic keys; production deployments
-  should manage real participant keys.
+- **Integrity.** The chain links each entry by `sha256( JCS(envelope) || prev_hash )`, so any later
+  edit to a recorded envelope is detectable by replaying the chain. Ed25519 per-message signing is
+  available through CHAP's optional `security-signed/1.0` profile for stronger non-repudiation.
 - **No secret material in fragments.** Do not place credentials, tokens, or personal
   identifiers in fragment content. Provenance references participants by URI, not by
   personal data.

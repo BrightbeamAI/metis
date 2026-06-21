@@ -1,7 +1,7 @@
-"""Export the CHAP-compatible evidence chain as portable JSONL.
+"""Export the CHAP evidence chain as portable JSONL.
 
-Each line is one evidence entry plus the full signed envelope, so the export is both an
-audit log and a replayable record. The chain is append-only and never mutated.
+Each line is one audit entry (the dispatched JSON-RPC envelope plus its chain link), so the
+export is both an audit log and a replayable record. The chain is append-only.
 """
 from __future__ import annotations
 
@@ -10,18 +10,12 @@ from pathlib import Path
 from typing import Any
 
 
-def _entries(source: Any):
-    chain = getattr(source, "chain", source)
-    return chain.entries
-
-
 def export_records(source: Any) -> list[dict[str, Any]]:
-    records = []
-    for entry in _entries(source):
-        rec = entry.to_record()
-        rec["envelope"] = entry.envelope
-        records.append(rec)
-    return records
+    """Return the evidence records from an adapter (or anything with evidence_records())."""
+    if hasattr(source, "evidence_records"):
+        return source.evidence_records()
+    adapter = getattr(source, "adapter", source)
+    return adapter.evidence_records()
 
 
 def export_jsonl(source: Any, path: str | Path) -> int:
