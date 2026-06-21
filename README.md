@@ -102,6 +102,10 @@ pip install -e .
 tacitflow demo manufacturing-pump-vibration
 ```
 
+TacitFlow depends on the official `chap-coordinator` package. If your environment cannot resolve it
+from PyPI, install it from the CHAP repo first:
+`pip install "chap-coordinator @ git+https://github.com/BrightbeamAI/chap.git#subdirectory=packages/coordinator-py"`.
+
 The demo runs the whole flow locally and writes a replayable evidence chain. Inspect it with
 `tacitflow fragment list`, `tacitflow memory list`, `tacitflow retrieve --context <file>`, and
 `tacitflow audit read`.

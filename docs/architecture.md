@@ -57,5 +57,5 @@ records blocked tacit results (with reasons) for audit without exposing them as 
 ## Audit and evidence flow
 
 Every action flows through the `CHAPAdapter` into the evidence chain. `audit/` exports the chain to
-portable JSONL and verifies it by independent replay (recomputing hashes and signatures). The chain
+portable JSONL and verifies it by independent replay (recomputing the hash links). The chain
 is append-only; corrections and revocations are appended, never rewritten.

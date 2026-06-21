@@ -210,7 +210,7 @@ const STEP_HELP = {
   16:"Under a matching runtime context the gate allows retrieval.",
   17:"Under a non-matching context the same fragment is blocked, with a recorded reason.",
   18:"The agent receives procedural, semantic, episodic, and tacit memory, kept distinct.",
-  19:"Every step above is a signed entry on an append-only, replayable evidence chain."
+  19:"Every step above is an entry on an append-only, hash-linked, replayable evidence chain."
 };
 
 let SC = null, STEP = 0;
@@ -362,7 +362,7 @@ function renderStores(){
 }
 
 function renderAudit(){
-  el("auditsub").textContent="A signed, append-only CHAP evidence chain. "+SC.audit.length+" entries, verified by independent replay.";
+  el("auditsub").textContent="An append-only, hash-linked CHAP evidence chain. "+SC.audit.length+" entries, verified by independent replay.";
   el("audit").innerHTML='<tr><th>seq</th><th>method</th><th>from</th></tr>'+
     SC.audit.map(e=>'<tr><td>'+e.seq+'</td><td>'+esc(e.method_or_type)+'</td><td>'+esc(e.from)+'</td></tr>').join('');
 }

@@ -12,8 +12,8 @@ allowed to use. It implements the governed tacit-memory layer from the paper *Op
 Knowledge as a Governed Memory Layer for Agentic AI*.
 
 It runs on [CHAP](https://github.com/BrightbeamAI/chap), the Collaborative Human-Agent Protocol, so
-every capture, review, retrieval, and revocation is a structured, signed, append-only collaboration
-event rather than an ad hoc log.
+every capture, review, retrieval, and revocation is a structured, append-only, hash-linked
+collaboration event rather than an ad hoc log.
 
 ## The four memory stores
 
@@ -52,7 +52,7 @@ See [docs/memory_architecture.md](docs/memory_architecture.md) for the full mode
 ## How TacitFlow relates to CHAP
 
 TacitFlow does not define a protocol. It runs on CHAP, which provides workspaces, participants,
-tasks, artefacts, whisper and review and control events, and a signed, hash-linked evidence chain.
+tasks, artefacts, whisper and review and control events, and an append-only, hash-linked evidence chain.
 TacitFlow depends on the official `chap-coordinator` Python reference implementation. The adapter
 (`tacitflow/integrations/chap/`) drives a real Coordinator via JSON-RPC dispatch and reuses its
 canonical JCS, id, and hash-linked evidence-chain primitives rather than re-implementing the protocol.
@@ -69,7 +69,7 @@ to be extended.
 | Whisper, operator confirmation | `whisper.ask` / `whisper.answer` |
 | Mission Group review | `review.request` and `decide.*` |
 | Revocation, supersession | `control.*` events plus records |
-| Audit trail | Ed25519 plus JCS hash-linked evidence chain |
+| Audit trail | Hash-linked (JCS) evidence chain; Ed25519 signing via the security-signed/1.0 profile |
 
 Full detail and the complete mapping are in [docs/chap_integration.md](docs/chap_integration.md), and
 the profile is in [profiles/tacitflow.md](profiles/tacitflow.md).

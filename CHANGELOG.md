@@ -16,8 +16,9 @@ First public release.
 - The condition-aware retrieval gate and the four-store memory model with a `MemoryBroker`.
 - A local Ollama and Gemma model layer for bounded, advisory assistance, with deterministic
   fixtures so the demo and tests run without a live model.
-- A Python adapter for CHAP: signed, append-only, hash-linked evidence, plus a compliance
-  checker. Runs on CHAP (https://github.com/BrightbeamAI/chap), adds no new protocol.
+- Runs on the official `chap-coordinator` Python reference implementation through a thin adapter;
+  the Coordinator owns the append-only, hash-linked evidence chain and TacitFlow adds no new protocol.
+  The compliance check reads its method allow-list straight from the Coordinator.
 - A Typer CLI, an optional FastAPI server, JSON Schemas, the `tacitflow/1.0` profile, whisper
   and model prompt libraries, and templates.
 - Three runnable synthetic examples with expected outputs.

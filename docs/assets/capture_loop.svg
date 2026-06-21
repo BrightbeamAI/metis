@@ -9,7 +9,7 @@
   </defs>
   <rect width="920" height="250" fill="#F2F5FA"/>
   <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The capture loop</text>
-  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Remember. Every step is a signed CHAP event.</text>
+  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Remember. Every step is a recorded CHAP event.</text>
 
   <!-- 5 loop steps -->
   <g>
