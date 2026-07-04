@@ -11,9 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from chap_coordinator import Coordinator
-
-from .canonical import content_hash
+from chap_coordinator import Coordinator, content_hash
 
 # The authoritative method set is whatever the reference Coordinator implements.
 COORDINATOR_METHODS: set[str] = set(Coordinator()._handlers.keys())

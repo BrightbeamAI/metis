@@ -230,7 +230,8 @@ class CHAPAdapter:
                     urgency: str = "low", category: str | None = None) -> str:
         self._ensure_member(sender)
         self._ensure_member(to)
-        res = self._dispatch("whisper.ask", **{"from": sender}, to=to, task_id=task_id,
+        res = self._dispatch("whisper.ask", **{"from": sender}, to=[to] if isinstance(to, str) else to,
+                             task_id=task_id,
                              question=question, options=options, deadline_ms=deadline_ms,
                              default_if_lapsed=default_if_lapsed, urgency=urgency)
         wid = res["whisper_id"]

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .canonical import content_hash
+from chap_coordinator import content_hash
 
 SCHEMA_BASE = "https://tacitflow.dev/schemas/0.1"
 STANDARD_KINDS = {
