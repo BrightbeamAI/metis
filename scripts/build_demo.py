@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tacitflow.scenarios import SPECS, run_spec
+from metis.scenarios import SPECS, run_spec
 
 
 def build() -> dict:

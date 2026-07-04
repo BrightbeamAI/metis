@@ -1,6 +1,6 @@
 # Condition-aware retrieval
 
-The retrieval gate is one of the most important parts of TacitFlow. It is **not** semantic search.
+The retrieval gate is one of the most important parts of Metis. It is **not** semantic search.
 It does not ask "which fragment is most similar to this situation?" It asks "is this fragment
 *allowed* to be used in this situation?"
 
@@ -8,7 +8,7 @@ It does not ask "which fragment is most similar to this situation?" It asks "is 
 
 A fragment is bound to the conditions under which a judgement was made. A cue that is valid for a
 centrifugal pump under high load at pre-alarm may be irrelevant, or unsafe, for a gear pump at
-startup. Semantic similarity would happily return the fragment anyway. TacitFlow's gate refuses
+startup. Semantic similarity would happily return the fragment anyway. Metis's gate refuses
 unless the structured conditions are satisfied, and it fails closed: an unknown runtime value never
 counts as a match.
 

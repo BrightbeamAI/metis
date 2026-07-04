@@ -1,5 +1,5 @@
-from tacitflow.audit.replay import replay
-from tacitflow.scenarios import SCENARIOS, run_manufacturing
+from metis.audit.replay import replay
+from metis.scenarios import SCENARIOS, run_manufacturing
 
 
 def test_demo_runs_end_to_end_and_produces_replayable_evidence(tmp_path):

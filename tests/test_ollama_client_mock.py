@@ -1,6 +1,6 @@
-from tacitflow.models.model_config import ModelConfig
-from tacitflow.models.ollama_client import OllamaClient
-from tacitflow.models.structured_outputs import AssistPurpose
+from metis.models.model_config import ModelConfig
+from metis.models.ollama_client import OllamaClient
+from metis.models.structured_outputs import AssistPurpose
 
 
 def test_client_unavailable_in_deterministic_mode():

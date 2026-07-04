@@ -2,7 +2,7 @@
   <img src="docs/assets/brightbeam-logo.png" alt="Brightbeam" width="210">
 </p>
 
-<h1 align="center">TacitFlow: Governed Tacit Memory for AI Agents</h1>
+<h1 align="center">Metis: Governed Tacit Memory for AI Agents</h1>
 
 <p align="center"><b>Capture how expert work actually gets done, govern it, and serve it to AI agents as memory they are allowed to use.</b></p>
 
@@ -21,7 +21,7 @@ written down. A technician hears a pump sounds wrong before any alarm. An inspec
 "looks off" before the lab confirms it. Manuals do not capture this, and naively mining it from
 workers is unsafe and easy to get wrong.
 
-TacitFlow is a local-first Python toolkit that captures these moments as **governed tacit
+Metis is a local-first Python toolkit that captures these moments as **governed tacit
 fragments**, has a human group validate them, and serves only the validated ones to an AI agent,
 under the exact conditions where they hold, with a full audit trail. It implements the governed
 tacit-memory layer from the paper *Operationalising Tacit Knowledge as a Governed Memory Layer for
@@ -53,15 +53,15 @@ agent may use only where it applies, and must stop using the moment it does not.
 
 A pump SOP says: reduce load only when the alarm threshold is crossed. Experienced operators reduce
 throughput earlier, when high load coincides with low-frequency vibration and a dull acoustic cue.
-TacitFlow captures that gap, a human group promotes it to an advisory cue, and an agent can then use
+Metis captures that gap, a human group promotes it to an advisory cue, and an agent can then use
 it, but only on the right pump in the right state.
 
 ```python
-from tacitflow import TacitFlowEngine
-from tacitflow.conditions.context import TacitContext
-from tacitflow.consent.model import ConsentRecord, ConsentStatus
+from metis import MetisEngine
+from metis.conditions.context import TacitContext
+from metis.consent.model import ConsentRecord, ConsentStatus
 
-eng = TacitFlowEngine()              # local and deterministic, no cloud APIs
+eng = MetisEngine()              # local and deterministic, no cloud APIs
 eng.join_default_participants()
 
 # Capture what the operator does that the SOP does not say.
@@ -97,18 +97,20 @@ recorded reason. Retrieval is a governance decision, not a similarity search.
 No cloud and no GPU. The demo and tests run without any model using deterministic fixtures.
 
 ```bash
-git clone https://github.com/BrightbeamAI/tacitflow && cd tacitflow
+git clone https://github.com/BrightbeamAI/metis && cd metis
 pip install -e .
-tacitflow demo manufacturing-pump-vibration
+metis demo manufacturing-pump-vibration
 ```
 
-TacitFlow depends on the official `chap-coordinator` package. If your environment cannot resolve it
+Metis depends on the official `chap-coordinator` package. If your environment cannot resolve it
 from PyPI, install it from the CHAP repo first:
 `pip install "chap-coordinator @ git+https://github.com/BrightbeamAI/chap.git#subdirectory=packages/coordinator-py"`.
 
+The installable package name is `metis-memory` (import `metis`, CLI `metis`).
+
 The demo runs the whole flow locally and writes a replayable evidence chain. Inspect it with
-`tacitflow fragment list`, `tacitflow memory list`, `tacitflow retrieve --context <file>`, and
-`tacitflow audit read`.
+`metis fragment list`, `metis memory list`, `metis retrieve --context <file>`, and
+`metis audit read`.
 
 Prefer to click through it? Open the **[interactive demo](docs/demo.html)**: pick a scenario, step
 through the loop, and drive the gate yourself by editing the context and watching it allow or block.
@@ -134,16 +136,16 @@ through the condition-aware gate, which carries the use constraints with it.
 - **[Interactive demo](docs/demo.html)** and **[explainer](docs/explainer.html)**: the fastest way to get it.
 - **[Documentation](docs/README.md)**: architecture, governance, retrieval, the K1 to K17 taxonomy, agent use.
 - **[ABOUT.md](ABOUT.md)**: repository map, the four memory stores, the CHAP relationship, and how to develop.
-- **[CHAP](https://github.com/BrightbeamAI/chap)**: the protocol TacitFlow runs on.
+- **[CHAP](https://github.com/BrightbeamAI/chap)**: the protocol Metis runs on.
 
 ## Ethical use
 
-TacitFlow captures fragments of human work. Do not use it for covert worker monitoring. It records no
+Metis captures fragments of human work. Do not use it for covert worker monitoring. It records no
 audio, video, biometrics, screenshots, or keystrokes, fragments are never treated as fact, and the
 audit chain is append-only. Production use needs worker consultation, legal review, and domain
 validation. Read [ETHICAL_USE.md](ETHICAL_USE.md) first.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE). If you use TacitFlow in research, please also cite
+Apache-2.0. See [LICENSE](LICENSE). If you use Metis in research, please also cite
 *Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*.

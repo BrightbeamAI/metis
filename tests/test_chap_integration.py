@@ -1,4 +1,4 @@
-from tacitflow.integrations.chap import compliance
+from metis.integrations.chap import compliance
 
 
 def test_adapter_emits_only_catalogue_methods(manufacturing_run):
@@ -34,7 +34,7 @@ def test_observation_maps_to_chap_artefact(captured_fragment):
     compliance.validate_artefact(obs_arts[0])
 
 
-def test_tacitflow_uses_capture_append_for_fragments(manufacturing_run):
+def test_metis_uses_capture_append_for_fragments(manufacturing_run):
     # tacit.* artefacts are carried by existing CHAP methods, not a new one
     methods_for_fragment = []
     for e in manufacturing_run.engine.adapter.chain.entries:

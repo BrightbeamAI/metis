@@ -1,4 +1,4 @@
-"""Programmatic check of the TacitFlow acceptance criteria (build prompt section 34).
+"""Programmatic check of the Metis acceptance criteria (build prompt section 34).
 
 Run: python scripts/acceptance_check.py
 Exits non-zero if any criterion fails.
@@ -11,11 +11,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tacitflow.integrations.chap import compliance
-from tacitflow.memory.tacit import TacitMemoryObject
-from tacitflow.models.model_config import ModelConfig
-from tacitflow.models.ollama_client import OllamaClient
-from tacitflow.scenarios import run_manufacturing
+from metis.integrations.chap import compliance
+from metis.memory.tacit import TacitMemoryObject
+from metis.models.model_config import ModelConfig
+from metis.models.ollama_client import OllamaClient
+from metis.scenarios import run_manufacturing
 
 checks: list[tuple[str, bool]] = []
 
@@ -43,7 +43,7 @@ for a in eng.adapter.artefacts.values():
         compliance.validate_artefact(a)
     except compliance.ComplianceError:
         ok = False
-check("4. TacitFlow artefacts conform to CHAP conventions", ok)
+check("4. Metis artefacts conform to CHAP conventions", ok)
 kinds = {a["kind"] for a in eng.adapter.artefacts.values()}
 methods = {e.envelope.get("method") for e in eng.adapter.chain.entries}
 check("5. Actions visible as CHAP whisper/review/control/model-assist/evidence",
@@ -64,11 +64,11 @@ check("15. Gate blocks under non-matching context", len(run.nonmatch_decision.el
 
 # 16/17: Evidence-layer fragment
 fresh = run_manufacturing  # not needed; build a quick evidence-layer fragment
-from tacitflow.conditions.context import TacitContext
-from tacitflow.consent.model import ConsentRecord, ConsentStatus
-from tacitflow.fragment.model import TacitFragment
-from tacitflow.retrieval.gate import RetrievalGate
-from tacitflow.taxonomy.categories import Category
+from metis.conditions.context import TacitContext
+from metis.consent.model import ConsentRecord, ConsentStatus
+from metis.fragment.model import TacitFragment
+from metis.retrieval.gate import RetrievalGate
+from metis.taxonomy.categories import Category
 
 ev = TacitFragment.new(fragment_id="EV-1", title="t", content="c", category=Category.K7_sensory,
                        consent=ConsentRecord(consent_status=ConsentStatus.granted),
@@ -83,8 +83,8 @@ except ValueError:
 check("17. Evidence-layer cannot become agent-visible memory", vis)
 
 # 18. endogenous cannot self-promote
-from tacitflow.governance.policy import GovernancePolicy
-from tacitflow.taxonomy.categories import AuthorityLayer, SourcePathway
+from metis.governance.policy import GovernancePolicy
+from metis.taxonomy.categories import AuthorityLayer, SourcePathway
 
 endo = TacitFragment.new(fragment_id="EN-1", title="t", content="c", category=Category.K9_heuristic,
                          source_pathway=SourcePathway.endogenous,
@@ -99,7 +99,7 @@ check("19. Local model outputs cannot promote/retrieve/authorise",
 
 # 20. withdrawn consent blocks retrieval
 eng.governance.withdraw_consent(run.fragment.fragment_id, by="human:operator@plant_a")
-from tacitflow.conditions.context import TacitContext as TC
+from metis.conditions.context import TacitContext as TC
 
 blocked = not RetrievalGate().evaluate(run.fragment, TC.model_validate(run.match_decision.runtime_context)).ok
 check("20. Withdrawn consent blocks retrieval", blocked)
@@ -118,11 +118,11 @@ with tempfile.NamedTemporaryFile(suffix=".jsonl", delete=False) as fh:
     n = eng.export_audit(fh.name)
 check("22. Audit/evidence chain exported as JSONL", n > 0)
 
-# 23/24. README is TacitFlow-first and engineer-first; CHAP is the foundation, linked.
+# 23/24. README is Metis-first and engineer-first; CHAP is the foundation, linked.
 readme = (Path(__file__).resolve().parents[1] / "README.md").read_text()
 head = readme[:600]
-check("23. README is TacitFlow-first and engineer-first",
-      "TacitFlow" in head and "Quickstart" in readme and "pip install -e ." in readme)
+check("23. README is Metis-first and engineer-first",
+      "Metis" in head and "Quickstart" in readme and "pip install -e ." in readme)
 check("24. CHAP documented as the foundation and linked (not the main product)",
       "github.com/BrightbeamAI/chap" in readme and "runs on" in readme.lower()
       and not head.lstrip().lower().startswith("chap"))
@@ -130,7 +130,7 @@ check("24. CHAP documented as the foundation and linked (not the main product)",
 # 25. evidence verifies (proxy for replayable/passing)
 check("25. Evidence chain verifies", eng.verify().ok)
 
-print("\nTacitFlow acceptance check\n" + "=" * 60)
+print("\nMetis acceptance check\n" + "=" * 60)
 passed = 0
 for label, ok in checks:
     print(f"[{'PASS' if ok else 'FAIL'}] {label}")

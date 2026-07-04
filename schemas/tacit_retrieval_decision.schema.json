@@ -95,7 +95,7 @@
       "type": "string"
     },
     "policy_id": {
-      "default": "tacitflow/retrieval/1.0",
+      "default": "metis/retrieval/1.0",
       "title": "Policy Id",
       "type": "string"
     },
@@ -148,5 +148,5 @@
   "title": "RetrievalDecision",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tacitflow.dev/schemas/0.1/tacit_retrieval_decision.schema.json"
+  "$id": "https://metis.dev/schemas/0.1/tacit_retrieval_decision.schema.json"
 }

@@ -12,7 +12,7 @@ That gap is a diagnostic signal, a good place to ask a bounded question.
 ## Run it
 
 ```bash
-tacitflow demo manufacturing-pump-vibration
+metis demo manufacturing-pump-vibration
 ```
 
 This runs the full loop locally with deterministic fixtures (or a live Gemma model via
@@ -50,9 +50,9 @@ This runs the full loop locally with deterministic fixtures (or a live Gemma mod
 ## Try the gate directly
 
 ```bash
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_matching.json
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
-tacitflow memory query --context examples/manufacturing_pump_vibration/context_matching.json
+metis retrieve --context examples/manufacturing_pump_vibration/context_matching.json
+metis retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
+metis memory query --context examples/manufacturing_pump_vibration/context_matching.json
 ```
 
 The advisory memory is presented with use constraints, "present as an advisory cue only", "do

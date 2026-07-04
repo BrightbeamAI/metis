@@ -12,17 +12,17 @@ Three small, fully local, synthetic examples. Each runs end to end with determin
 ## Run any example
 
 ```bash
-tacitflow demo manufacturing-pump-vibration
-tacitflow demo batch-quality-visual-inspection
-tacitflow demo shift-handover-gap
+metis demo manufacturing-pump-vibration
+metis demo batch-quality-visual-inspection
+metis demo shift-handover-gap
 ```
 
 Then inspect the gate directly with the example contexts:
 
 ```bash
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_matching.json
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
-tacitflow memory query --context examples/manufacturing_pump_vibration/context_matching.json
+metis retrieve --context examples/manufacturing_pump_vibration/context_matching.json
+metis retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
+metis memory query --context examples/manufacturing_pump_vibration/context_matching.json
 ```
 
 ## What is in each folder

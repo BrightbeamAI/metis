@@ -8,16 +8,16 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tacitflow.conditions.context import TacitContext  # noqa: E402
-from tacitflow.consent.model import ConsentRecord, ConsentStatus  # noqa: E402
-from tacitflow.engine import TacitFlowEngine  # noqa: E402
-from tacitflow.fragment.model import EvidenceStrength, FragmentEvidence  # noqa: E402
-from tacitflow.scenarios import run_manufacturing  # noqa: E402
+from metis.conditions.context import TacitContext  # noqa: E402
+from metis.consent.model import ConsentRecord, ConsentStatus  # noqa: E402
+from metis.engine import MetisEngine  # noqa: E402
+from metis.fragment.model import EvidenceStrength, FragmentEvidence  # noqa: E402
+from metis.scenarios import run_manufacturing  # noqa: E402
 
 
 @pytest.fixture
-def engine() -> TacitFlowEngine:
-    eng = TacitFlowEngine(deterministic=True, use_live_model=False)
+def engine() -> MetisEngine:
+    eng = MetisEngine(deterministic=True, use_live_model=False)
     eng.join_default_participants()
     return eng
 

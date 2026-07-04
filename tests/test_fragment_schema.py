@@ -2,10 +2,10 @@ import jsonschema
 import pytest
 from pydantic import ValidationError
 
-from tacitflow.consent.model import ConsentRecord, ConsentStatus
-from tacitflow.fragment.model import TacitFragment
-from tacitflow.memory.tacit import AgentVisibility, TacitMemoryObject
-from tacitflow.taxonomy.categories import AuthorityLayer, Category, ValidationState
+from metis.consent.model import ConsentRecord, ConsentStatus
+from metis.fragment.model import TacitFragment
+from metis.memory.tacit import AgentVisibility, TacitMemoryObject
+from metis.taxonomy.categories import AuthorityLayer, Category, ValidationState
 
 
 def test_fragment_requires_core_fields():

@@ -1,6 +1,6 @@
 import jsonschema
 
-from tacitflow.memory.agent_context import AgentMemoryContext
+from metis.memory.agent_context import AgentMemoryContext
 
 
 def test_agent_context_schema_validates(manufacturing_run):

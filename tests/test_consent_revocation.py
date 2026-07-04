@@ -1,6 +1,6 @@
-from tacitflow.consent.revocation import RevocationReason
-from tacitflow.retrieval.gate import RetrievalGate
-from tacitflow.taxonomy.categories import RevocationStatus
+from metis.consent.revocation import RevocationReason
+from metis.retrieval.gate import RetrievalGate
+from metis.taxonomy.categories import RevocationStatus
 
 GATE = RetrievalGate()
 
@@ -41,6 +41,6 @@ def test_revocation_record_retained_and_auditable(captured_fragment):
 def test_supersession(captured_fragment):
     engine, res = captured_fragment
     _promote(engine, res)
-    engine.governance.supersede(res.fragment.fragment_id, "TF-NEW", by="group:mission-group@tacitflow.local")
+    engine.governance.supersede(res.fragment.fragment_id, "TF-NEW", by="group:mission-group@metis.local")
     assert res.fragment.revocation_status == RevocationStatus.superseded
     assert any(a["kind"] == "tacit.supersession_record" for a in engine.adapter.artefacts.values())

@@ -1,11 +1,11 @@
 import datetime as dt
 
-from tacitflow.conditions.context import TacitContext
-from tacitflow.consent.model import ConsentRecord, ConsentStatus
-from tacitflow.fragment.model import TacitFragment
-from tacitflow.retrieval.blocked_reasons import BlockedReason
-from tacitflow.retrieval.gate import RetrievalGate
-from tacitflow.taxonomy.categories import (
+from metis.conditions.context import TacitContext
+from metis.consent.model import ConsentRecord, ConsentStatus
+from metis.fragment.model import TacitFragment
+from metis.retrieval.blocked_reasons import BlockedReason
+from metis.retrieval.gate import RetrievalGate
+from metis.taxonomy.categories import (
     AuthorityLayer,
     Category,
     RevocationStatus,

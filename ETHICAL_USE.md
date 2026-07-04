@@ -1,11 +1,11 @@
 # Ethical Use
 
-TacitFlow is a research and practitioner reference toolkit. It captures fragments of
+Metis is a research and practitioner reference toolkit. It captures fragments of
 human practice. That makes its misuse a real risk. Read this before you deploy it.
 
 ## Hard constraints (enforced by the reference implementation)
 
-- **No covert surveillance.** TacitFlow does not record audio, video, biometrics,
+- **No covert surveillance.** Metis does not record audio, video, biometrics,
   screenshots, keystrokes, or any hidden behavioural data, and the reference
   implementation provides no path to do so. Capture is consented, narrow, and
   visible to the worker.
@@ -41,6 +41,6 @@ Production use of anything resembling this toolkit requires, at minimum:
 - domain validation of every fragment by qualified reviewers,
 - organisational governance for promotion, revocation, and review cadence.
 
-TacitFlow is **not** a production quality-management system, a worker-monitoring
+Metis is **not** a production quality-management system, a worker-monitoring
 platform, or a tool for covertly extracting expertise. If you cannot meet the
 constraints above, do not deploy it.

@@ -1,9 +1,9 @@
 import pytest
 
-from tacitflow.consent.model import ConsentRecord, ConsentStatus
-from tacitflow.fragment.model import EvidenceStrength, FragmentEvidence
-from tacitflow.taxonomy.categories import AuthorityLayer, SourcePathway, ValidationState
-from tacitflow.validation.states import InvalidTransition, assert_transition, can_transition
+from metis.consent.model import ConsentRecord, ConsentStatus
+from metis.fragment.model import EvidenceStrength, FragmentEvidence
+from metis.taxonomy.categories import AuthorityLayer, SourcePathway, ValidationState
+from metis.validation.states import InvalidTransition, assert_transition, can_transition
 
 
 def test_legal_and_illegal_transitions():
@@ -24,9 +24,9 @@ def test_mission_group_promotes_to_advisory(captured_fragment):
 
 
 def test_endogenous_cannot_self_promote(engine):
-    from tacitflow.fragment.model import TacitFragment
-    from tacitflow.governance.policy import GovernancePolicy
-    from tacitflow.taxonomy.categories import Category
+    from metis.fragment.model import TacitFragment
+    from metis.governance.policy import GovernancePolicy
+    from metis.taxonomy.categories import Category
     f = TacitFragment.new(fragment_id="EF-1", title="t", content="c", category=Category.K9_heuristic,
                           source_pathway=SourcePathway.endogenous,
                           consent=ConsentRecord(consent_status=ConsentStatus.granted),
@@ -36,9 +36,9 @@ def test_endogenous_cannot_self_promote(engine):
 
 
 def test_endogenous_needs_higher_bar_even_with_review(engine):
-    from tacitflow.fragment.model import TacitFragment
-    from tacitflow.governance.policy import GovernancePolicy
-    from tacitflow.taxonomy.categories import Category
+    from metis.fragment.model import TacitFragment
+    from metis.governance.policy import GovernancePolicy
+    from metis.taxonomy.categories import Category
     weak = TacitFragment.new(fragment_id="EF-2", title="t", content="c", category=Category.K9_heuristic,
                              source_pathway=SourcePathway.endogenous,
                              consent=ConsentRecord(consent_status=ConsentStatus.granted))

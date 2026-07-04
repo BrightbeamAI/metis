@@ -10,7 +10,7 @@ A team lead senses a handover is incomplete even though the form is filled in. T
 ## Run it
 
 ```bash
-tacitflow demo shift-handover-gap
+metis demo shift-handover-gap
 ```
 
 This runs the full capture loop, promotes the fragment to the Advisory layer, builds a governed
@@ -33,6 +33,6 @@ The folder mirrors Example 1: `observation.json`, `context_matching.json`,
 `expected_audit.jsonl`.
 
 ```bash
-tacitflow retrieve --context examples/shift_handover_gap/context_matching.json
-tacitflow memory query --context examples/shift_handover_gap/context_matching.json
+metis retrieve --context examples/shift_handover_gap/context_matching.json
+metis memory query --context examples/shift_handover_gap/context_matching.json
 ```

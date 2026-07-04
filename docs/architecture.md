@@ -1,6 +1,6 @@
 # Architecture
 
-TacitFlow follows one ordering principle: **TacitFlow domain model first, tacit memory second,
+Metis follows one ordering principle: **Metis domain model first, tacit memory second,
 local AI assistance third, CHAP integration underneath.** No protocol machinery is duplicated.
 
 ## Layers
@@ -23,7 +23,7 @@ real Coordinator, which owns the workspace, participants, tasks, and the append-
 evidence chain. The `CHAPAdapter` is the single object the rest of the toolkit uses to speak CHAP, so
 moving to the reference implementation did not touch any domain code.
 
-A thin façade, `TacitFlowEngine`, wires these together so the CLI, API, demo, and examples share one
+A thin façade, `MetisEngine`, wires these together so the CLI, API, demo, and examples share one
 orchestration path.
 
 ## The capture loop

@@ -1,6 +1,6 @@
 # Local model runtime
 
-TacitFlow uses a local model runtime for bounded, assistive tasks. It defaults to **Ollama** and the
+Metis uses a local model runtime for bounded, assistive tasks. It defaults to **Ollama** and the
 **Gemma** family and must not call cloud LLM APIs.
 
 ## Install Ollama and pull a model
@@ -11,16 +11,16 @@ Install Ollama from <https://ollama.com>, start it (`ollama serve`), and pull a 
 ollama pull gemma4
 ```
 
-## Configure TacitFlow
+## Configure Metis
 
 ```bash
-tacitflow config set model.provider ollama
-tacitflow config set model.name gemma4
-tacitflow config set model.url http://localhost:11434
-tacitflow model check
+metis config set model.provider ollama
+metis config set model.name gemma4
+metis config set model.url http://localhost:11434
+metis model check
 ```
 
-Configuration is stored in `.tacitflow/config.json`. `tacitflow model check` reports whether Ollama
+Configuration is stored in `.metis/config.json`. `metis model check` reports whether Ollama
 is reachable and whether the configured model is present.
 
 ## Which steps use model assistance

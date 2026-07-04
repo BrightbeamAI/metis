@@ -10,5 +10,5 @@ dist/
 venv/
 *.db
 *.sqlite3
-.tacitflow/
+.metis/
 .DS_Store

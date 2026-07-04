@@ -3,7 +3,7 @@
 This complements the top-level [ETHICAL_USE.md](../ETHICAL_USE.md), which is the authoritative
 statement.
 
-TacitFlow exists to make tacit-knowledge capture **governed and inspectable**, precisely because the
+Metis exists to make tacit-knowledge capture **governed and inspectable**, precisely because the
 naïve version of this idea, quietly mining what workers know, is harmful. The design choices follow
 from that: capture is consented and worker-visible; whispers are bounded and non-accusatory and never
 ask a worker to justify their performance; fragments are never ground truth; Evidence-layer fragments

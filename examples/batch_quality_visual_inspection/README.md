@@ -11,7 +11,7 @@ turn into a universal rule, so the evidence stays weak and the fragment stays ad
 ## Run it
 
 ```bash
-tacitflow demo batch-quality-visual-inspection
+metis demo batch-quality-visual-inspection
 ```
 
 This runs the full Observe, Infer, Whisper, Confirm, Remember loop, promotes the fragment to the
@@ -35,6 +35,6 @@ The folder mirrors Example 1: `observation.json`, `context_matching.json`,
 `expected_audit.jsonl`.
 
 ```bash
-tacitflow retrieve --context examples/batch_quality_visual_inspection/context_matching.json
-tacitflow memory query --context examples/batch_quality_visual_inspection/context_matching.json
+metis retrieve --context examples/batch_quality_visual_inspection/context_matching.json
+metis memory query --context examples/batch_quality_visual_inspection/context_matching.json
 ```

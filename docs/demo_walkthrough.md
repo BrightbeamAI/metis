@@ -1,14 +1,14 @@
 # Demo walkthrough
 
 ```bash
-tacitflow init
-tacitflow demo manufacturing-pump-vibration
+metis init
+metis demo manufacturing-pump-vibration
 ```
 
 The manufacturing pump-vibration demo runs the whole pipeline locally, no cloud APIs, and prints
 nineteen labelled steps:
 
-1. TacitFlow workspace created.
+1. Metis workspace created.
 2. Participants added (operator, whisperer agent, Mission Group, assistant agent).
 3. Procedural memory loaded (SOP-17).
 4. Semantic memory loaded (equipment + vibration concepts).
@@ -31,15 +31,15 @@ nineteen labelled steps:
 Then explore the result:
 
 ```bash
-tacitflow fragment list
-tacitflow fragment show TF-00001
-tacitflow memory list
-tacitflow memory show TM-00001
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_matching.json
-tacitflow retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
-tacitflow memory query --context examples/manufacturing_pump_vibration/context_matching.json
-tacitflow audit read
-tacitflow audit export --out evidence.jsonl
+metis fragment list
+metis fragment show TF-00001
+metis memory list
+metis memory show TM-00001
+metis retrieve --context examples/manufacturing_pump_vibration/context_matching.json
+metis retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
+metis memory query --context examples/manufacturing_pump_vibration/context_matching.json
+metis audit read
+metis audit export --out evidence.jsonl
 ```
 
 Under the matching context the advisory fragment is eligible and presented with its use constraints;
@@ -50,6 +50,6 @@ is the full CHAP evidence chain, independently replayable and verifiable.
 The other two examples run the same way:
 
 ```bash
-tacitflow capture --example batch-quality-visual-inspection
-tacitflow capture --example shift-handover-gap
+metis capture --example batch-quality-visual-inspection
+metis capture --example shift-handover-gap
 ```

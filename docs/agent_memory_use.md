@@ -1,12 +1,12 @@
-# How an AI agent should use TacitFlow output
+# How an AI agent should use Metis output
 
-TacitFlow gives an agent an `AgentMemoryContext`. Using it correctly is part of the governance.
+Metis gives an agent an `AgentMemoryContext`. Using it correctly is part of the governance.
 
 **Tacit memory is not ground truth.** It is a validated, situated trace of human practice, not a
 fact. **It is not an SOP**, procedural memory is where formal rules live. **It is not a training
 example.** It is governed, situated guidance.
 
-An agent consuming TacitFlow output must:
+An agent consuming Metis output must:
 
 - **Respect the use constraints** attached to every tacit entry. If the constraint says "present as
   an advisory cue only" or "do not automatically reduce throughput", the agent must not act

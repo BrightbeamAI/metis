@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tacitflow.audit.export import export_records
-from tacitflow.scenarios import SPECS, run_spec
+from metis.audit.export import export_records
+from metis.scenarios import SPECS, run_spec
 
 DIRS = {
     "manufacturing-pump-vibration": "manufacturing_pump_vibration",
@@ -48,7 +48,7 @@ for key, spec in SPECS.items():
         write_json(base / "mission_group_review.json", {
             "fragment_id": run.fragment.fragment_id,
             "outcome": "promoted_to_advisory",
-            "reviewers": [spec_uri := "group:mission-group@tacitflow.local"],
+            "reviewers": [spec_uri := "group:mission-group@metis.local"],
             "dimension_assessments": spec.review_dimensions,
             "summary": spec.review_summary,
         })

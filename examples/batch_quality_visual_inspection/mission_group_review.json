@@ -2,7 +2,7 @@
   "fragment_id": "TF-00001",
   "outcome": "promoted_to_advisory",
   "reviewers": [
-    "group:mission-group@tacitflow.local"
+    "group:mission-group@metis.local"
   ],
   "dimension_assessments": {
     "description_fidelity": "faithful",

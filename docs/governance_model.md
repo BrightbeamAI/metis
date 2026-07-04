@@ -1,6 +1,6 @@
 # Governance model
 
-TacitFlow's governance is deterministic and human-reviewed. A local model may draft text, but it
+Metis's governance is deterministic and human-reviewed. A local model may draft text, but it
 never makes a governance decision.
 
 ## Capture Cell, Mission Group, Runtime Orchestrator

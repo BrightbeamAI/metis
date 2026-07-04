@@ -1,12 +1,12 @@
-# Contributing to TacitFlow
+# Contributing to Metis
 
-Thanks for your interest. TacitFlow is a reference toolkit, so clarity and correctness
+Thanks for your interest. Metis is a reference toolkit, so clarity and correctness
 matter more than feature breadth.
 
 ## Ground rules
 
-1. **TacitFlow-first, CHAP underneath.** New collaboration mechanics should reuse CHAP
-   (via `tacitflow/integrations/chap/`), not introduce a parallel protocol.
+1. **Metis-first, CHAP underneath.** New collaboration mechanics should reuse CHAP
+   (via `metis/integrations/chap/`), not introduce a parallel protocol.
 2. **Governance stays deterministic and human-reviewed.** Local model assistance is
    only ever advisory. Do not add a code path where a model promotes, validates,
    retrieves, authorises, or revokes a fragment.

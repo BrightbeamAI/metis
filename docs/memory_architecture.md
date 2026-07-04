@@ -1,6 +1,6 @@
 # Memory architecture
 
-TacitFlow models four memory stores and shows how an AI agent uses them together.
+Metis models four memory stores and shows how an AI agent uses them together.
 
 **Procedural memory** holds what is formally prescribed: SOPs, workflows, checklists, policies.
 **Semantic memory** holds general organisational knowledge: concepts, facts, equipment and product
@@ -9,7 +9,7 @@ CHAP evidence events. **Tacit memory**, the fourth stratum, holds validated frag
 human practice, each carrying provenance, conditions, authority, validation state, consent, review
 status, and retrieval constraints.
 
-TacitFlow primarily builds the fourth store. The first three are represented by simple stores
+Metis primarily builds the fourth store. The first three are represented by simple stores
 (`memory/procedural.py`, `semantic.py`, `episodic.py`) that the broker queries directly, because
 formal procedures, general facts, and past cases are not access-controlled in the way situated
 guidance must be.

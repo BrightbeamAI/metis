@@ -1,6 +1,6 @@
 # Security
 
-TacitFlow is a local-first reference toolkit. It does not require, and by default does
+Metis is a local-first reference toolkit. It does not require, and by default does
 not contact, any cloud service or external model API.
 
 ## Reporting a vulnerability
@@ -10,7 +10,7 @@ public issue for anything that could expose worker data or break the audit chain
 
 ## Security-relevant design notes
 
-- **Append-only evidence.** TacitFlow records every governance action as a
+- **Append-only evidence.** Metis records every governance action as a
   CHAP evidence entry in the official chap-coordinator's append-only, hash-linked chain.
   History is never rewritten; corrections and revocations are appended.
 - **Integrity.** The chain links each entry by `sha256( JCS(envelope) || prev_hash )`, so any later
@@ -25,7 +25,7 @@ public issue for anything that could expose worker data or break the audit chain
 
 ## Threat model boundaries
 
-TacitFlow governs how tacit fragments are captured, validated, and retrieved. It does
+Metis governs how tacit fragments are captured, validated, and retrieved. It does
 not provide authentication, authorisation, or transport security for a multi-tenant
 deployment; those are the responsibility of the surrounding CHAP Coordinator and host
 environment.

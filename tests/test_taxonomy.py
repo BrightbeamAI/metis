@@ -1,4 +1,4 @@
-from tacitflow.taxonomy.categories import (
+from metis.taxonomy.categories import (
     ALL_CATEGORIES,
     CATEGORY_META,
     AuthorityLayer,

@@ -9,5 +9,5 @@
 3. **Reduce load only when the alarm threshold X is crossed.**
 4. Log the alarm and the load-reduction action.
 
-> Note: SOP-17 is the *work-as-imagined* baseline. TacitFlow captures the gap between this
+> Note: SOP-17 is the *work-as-imagined* baseline. Metis captures the gap between this
 > and *work-as-done* as a diagnostic signal, not as proof of a better rule.

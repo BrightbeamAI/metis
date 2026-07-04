@@ -1,8 +1,8 @@
-# TacitFlow, developer tasks
+# Metis, developer tasks
 .PHONY: help install dev demo test lint format regen verify clean
 
 help:
-	@echo "TacitFlow make targets:"
+	@echo "Metis make targets:"
 	@echo "  install   pip install -e ."
 	@echo "  dev       pip install -e '.[dev,api]'"
 	@echo "  demo      run the manufacturing pump vibration demo locally"
@@ -19,23 +19,23 @@ dev:
 	pip install -e '.[dev,api]'
 
 demo:
-	tacitflow demo manufacturing-pump-vibration
+	metis demo manufacturing-pump-vibration
 
 test:
 	pytest
 
 lint:
-	ruff check tacitflow tests scripts
+	ruff check metis tests scripts
 
 format:
-	ruff format tacitflow tests scripts
+	ruff format metis tests scripts
 
 regen:
 	python scripts/build_demo.py
 	python scripts/generate_examples.py
 
 verify:
-	ruff check tacitflow tests scripts
+	ruff check metis tests scripts
 	pytest
 	python scripts/acceptance_check.py
 

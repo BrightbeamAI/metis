@@ -245,5 +245,5 @@
   "title": "TacitMemoryObject",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tacitflow.dev/schemas/0.1/tacit_memory_object.schema.json"
+  "$id": "https://metis.dev/schemas/0.1/tacit_memory_object.schema.json"
 }

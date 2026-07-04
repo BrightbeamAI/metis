@@ -3,13 +3,13 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tacitflow"
+name = "metis-memory"
 version = "0.1.0"
 description = "A CHAP-aligned, local-first toolkit for capturing, validating, governing, and retrieving tacit fragments as governed tacit memory for AI agents."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
-authors = [{ name = "TacitFlow contributors" }]
+authors = [{ name = "Metis contributors" }]
 keywords = ["tacit-knowledge", "governance", "agentic-ai", "memory", "chap", "audit"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -32,18 +32,18 @@ api = ["fastapi>=0.110", "uvicorn>=0.23"]
 dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.23"]
 
 [project.scripts]
-tacitflow = "tacitflow.cli.main:main"
+metis = "metis.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/BrightbeamAI/tacitflow"
-Documentation = "https://github.com/BrightbeamAI/tacitflow/tree/main/docs"
+Homepage = "https://github.com/BrightbeamAI/metis"
+Documentation = "https://github.com/BrightbeamAI/metis/tree/main/docs"
 "CHAP protocol" = "https://github.com/BrightbeamAI/chap"
 
 [tool.setuptools.packages.find]
-include = ["tacitflow*"]
+include = ["metis*"]
 
 [tool.setuptools.package-data]
-"tacitflow" = ["py.typed"]
+"metis" = ["py.typed"]
 
 [tool.ruff]
 line-length = 100

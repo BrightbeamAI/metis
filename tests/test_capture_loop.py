@@ -1,4 +1,4 @@
-from tacitflow.taxonomy.categories import AuthorityLayer, ValidationState
+from metis.taxonomy.categories import AuthorityLayer, ValidationState
 
 
 def test_observation_creates_observation_artefact(captured_fragment):

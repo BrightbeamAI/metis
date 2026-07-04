@@ -1,6 +1,6 @@
 import jsonschema
 
-from tacitflow.models.structured_outputs import AssistPurpose, ModelAssistRecord
+from metis.models.structured_outputs import AssistPurpose, ModelAssistRecord
 
 
 def test_model_assist_record_schema():

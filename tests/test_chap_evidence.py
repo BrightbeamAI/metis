@@ -1,6 +1,6 @@
 
-from tacitflow.audit.replay import replay
-from tacitflow.integrations.chap.adapter import CHAPAdapter
+from metis.audit.replay import replay
+from metis.integrations.chap.adapter import CHAPAdapter
 
 
 def test_chain_links_and_verifies():
