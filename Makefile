@@ -44,6 +44,7 @@ verify:
 	$(PYTHON) scripts/acceptance_check.py
 
 build: clean
+	$(PYTHON) scripts/build_pypi_readme.py
 	$(PYTHON) -m build
 	$(PYTHON) -m twine check dist/*
 

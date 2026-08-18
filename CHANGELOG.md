@@ -3,6 +3,11 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [0.1.1]
+
+### Fixed
+- The PyPI project page now renders correctly (dedicated package description without repository-relative images).
+
 ## [0.1.0]
 
 First public release.
