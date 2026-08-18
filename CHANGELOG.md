@@ -23,4 +23,4 @@ First public release.
   and model prompt libraries, and templates.
 - Three runnable synthetic examples with expected outputs.
 - An illustrated HTML explainer and an interactive HTML demo that drives the retrieval gate.
-- A pytest suite (62 tests) that runs without a live model, plus an acceptance check script.
+- A pytest suite that runs without a live model, plus an acceptance check script.

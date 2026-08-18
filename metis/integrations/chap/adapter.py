@@ -18,7 +18,7 @@ from typing import Any
 
 from chap_coordinator import ZERO_HASH, Coordinator, CoordinatorOptions, canonicalize, sha256_hex
 
-from .artefacts import build_artefact
+from .artefacts import build_artefact, to_chap_canonical
 from .participants import type_of, validate_uri
 
 DEFAULT_PROFILES = [
@@ -136,6 +136,7 @@ class CHAPAdapter:
     # ---- low-level dispatch ----------------------------------------------------
     def _dispatch(self, method: str, **params: Any) -> dict[str, Any] | None:
         params.setdefault("workspace", self.workspace_id)
+        params = to_chap_canonical(params)
         self._req += 1
         envelope = {"jsonrpc": "2.0", "id": str(self._req), "method": method, "params": params}
         resp = self.coord.dispatch(envelope)

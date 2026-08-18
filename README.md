@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-1f6feb">
   <img src="https://img.shields.io/badge/license-Apache--2.0-2ea043">
-  <img src="https://img.shields.io/badge/tests-62%20passing-2ea043">
+  <img src="https://img.shields.io/badge/tests-passing-2ea043">
   <img src="https://img.shields.io/badge/local--first-no%20cloud%20APIs-5A5A5A">
   <img src="https://img.shields.io/badge/built%20on-CHAP-EA4700">
 </p>
@@ -24,8 +24,8 @@ workers is unsafe and easy to get wrong.
 Metis is a local-first Python toolkit that captures these moments as **governed tacit
 fragments**, has a human group validate them, and serves only the validated ones to an AI agent,
 under the exact conditions where they hold, with a full audit trail. It implements the governed
-tacit-memory layer from the paper *Operationalising Tacit Knowledge as a Governed Memory Layer for
-Agentic AI*, and it runs on [CHAP](https://github.com/BrightbeamAI/chap) so every step is recorded
+tacit-memory layer from the paper *Tacit Fragments: Operationalising Tacit Knowledge as a Governed
+Memory Layer for Agentic AI*, and it runs on [CHAP](https://github.com/BrightbeamAI/chap) so every step is recorded
 on a hash-linked, replayable evidence chain.
 
 <p align="center"><img src="docs/assets/capture_loop.svg" alt="The capture loop" width="100%"></p>
@@ -102,11 +102,9 @@ pip install -e .
 metis demo manufacturing-pump-vibration
 ```
 
-Metis depends on the official `chap-coordinator` package. If your environment cannot resolve it
-from PyPI, install it from the CHAP repo first:
-`pip install "chap-coordinator @ git+https://github.com/BrightbeamAI/chap.git#subdirectory=packages/coordinator-py"`.
-
-The installable package name is `metis-memory` (import `metis`, CLI `metis`).
+The installable package name is `metis-memory` (import `metis`, CLI `metis`). The official
+[`chap-coordinator`](https://pypi.org/project/chap-coordinator/) dependency installs from PyPI
+automatically.
 
 The demo runs the whole flow locally and writes a replayable evidence chain. Inspect it with
 `metis fragment list`, `metis memory list`, `metis retrieve --context <file>`, and
@@ -147,5 +145,23 @@ validation. Read [ETHICAL_USE.md](ETHICAL_USE.md) first.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE). If you use Metis in research, please also cite
-*Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*.
+Apache-2.0. See [LICENSE](LICENSE).
+
+## Citation
+
+Metis is the reference implementation for the paper *Tacit Fragments: Operationalising Tacit
+Knowledge as a Governed Memory Layer for Agentic AI*
+([preprint](https://www.preprints.org/manuscript/202608.0927), also included in this repository as
+[docs/tacit_fragments_preprint.pdf](docs/tacit_fragments_preprint.pdf)). If you use Metis in
+research, please cite:
+
+```bibtex
+@article{shahid2026tacitfragments,
+  title   = {Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI},
+  author  = {Shahid, Arsalan and Suttie, Gordon and Black, Philip and Garz{\'o}n-Vico, Antonio},
+  journal = {Preprints},
+  year    = {2026},
+  doi     = {10.20944/preprints202608.0927.v1},
+  url     = {https://www.preprints.org/manuscript/202608.0927}
+}
+```

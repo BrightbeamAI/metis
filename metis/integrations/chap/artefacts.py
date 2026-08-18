@@ -32,6 +32,25 @@ def schema_uri_for(kind: str) -> str | None:
     return f"{SCHEMA_BASE}/{slug}.schema.json"
 
 
+def to_chap_canonical(value: Any) -> Any:
+    """Make a JSON value safe for CHAP's canonical form (chap-coordinator >= 0.2.9).
+
+    CHAP canonical numbers must be integers; decimals are represented as strings
+    (for example ``0.3`` becomes ``"0.3"``) so hashes are deterministic across
+    implementations. Metis domain models keep native floats; this conversion is
+    applied only at the CHAP boundary.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        return int(value) if value.is_integer() else str(value)
+    if isinstance(value, dict):
+        return {k: to_chap_canonical(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [to_chap_canonical(v) for v in value]
+    return value
+
+
 def build_artefact(
     *,
     artefact_id: str,
@@ -47,6 +66,7 @@ def build_artefact(
     citations: list[dict[str, Any]] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    content = to_chap_canonical(content)
     art: dict[str, Any] = {
         "id": artefact_id,
         "kind": kind,

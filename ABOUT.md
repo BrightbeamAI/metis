@@ -8,8 +8,8 @@ and a runnable example, start with the [README](README.md). For depth on any top
 
 Metis is a local-first Python toolkit and reference architecture for capturing fragments of
 human practice, governing them, and serving the validated ones to AI agents as memory the agent is
-allowed to use. It implements the governed tacit-memory layer from the paper *Operationalising Tacit
-Knowledge as a Governed Memory Layer for Agentic AI*.
+allowed to use. It implements the governed tacit-memory layer from the paper *Tacit Fragments: Operationalising
+Tacit Knowledge as a Governed Memory Layer for Agentic AI*.
 
 It runs on [CHAP](https://github.com/BrightbeamAI/chap), the Collaborative Human-Agent Protocol, so
 every capture, review, retrieval, and revocation is a structured, append-only, hash-linked
@@ -100,7 +100,7 @@ make regen      # rebuild the interactive demo and example outputs
 make verify     # lint, test, and acceptance check
 ```
 
-The test suite (62 tests) runs without a live model. `scripts/acceptance_check.py` checks the
+The test suite runs without a live model. `scripts/acceptance_check.py` checks the
 project against its acceptance criteria, and the example expected-output files are generated from the
 implementation by `scripts/generate_examples.py` so they never drift.
 
