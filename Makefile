@@ -1,10 +1,12 @@
 # Metis, developer tasks
+PYTHON ?= python3
+
 .PHONY: help install dev demo test lint format regen verify build publish clean
 
 help:
 	@echo "Metis make targets:"
 	@echo "  install   pip install -e ."
-	@echo "  dev       pip install -e '.[dev,api]'"
+	@echo "  dev       pip install -e '.[dev,api]' (includes build and twine)"
 	@echo "  demo      run the manufacturing pump vibration demo locally"
 	@echo "  test      run the pytest suite (no live Ollama required)"
 	@echo "  lint      ruff check"
@@ -15,16 +17,16 @@ help:
 	@echo "  publish   upload dist/* to PyPI with twine (needs PyPI token)"
 
 install:
-	pip install -e .
+	$(PYTHON) -m pip install -e .
 
 dev:
-	pip install -e '.[dev,api]'
+	$(PYTHON) -m pip install -e '.[dev,api]'
 
 demo:
 	metis demo manufacturing-pump-vibration
 
 test:
-	pytest
+	$(PYTHON) -m pytest
 
 lint:
 	ruff check metis tests scripts
@@ -33,20 +35,20 @@ format:
 	ruff format metis tests scripts
 
 regen:
-	python scripts/build_demo.py
-	python scripts/generate_examples.py
+	$(PYTHON) scripts/build_demo.py
+	$(PYTHON) scripts/generate_examples.py
 
 verify:
 	ruff check metis tests scripts
-	pytest
-	python scripts/acceptance_check.py
+	$(PYTHON) -m pytest
+	$(PYTHON) scripts/acceptance_check.py
 
-build:
-	python -m build
-	twine check dist/*
+build: clean
+	$(PYTHON) -m build
+	$(PYTHON) -m twine check dist/*
 
 publish: build
-	twine upload dist/*
+	$(PYTHON) -m twine upload dist/*
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .ruff_cache || true
