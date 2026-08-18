@@ -100,7 +100,9 @@ make regen      # rebuild the interactive demo and example outputs
 make verify     # lint, test, and acceptance check
 ```
 
-The test suite runs without a live model. `scripts/acceptance_check.py` checks the
+The test suite runs without a live model. To release to PyPI: `make build` (sdist and
+wheel via `python -m build`, checked with twine), then `make publish` with a PyPI token. The
+distribution is `metis-memory`; the import package and CLI are `metis`. `scripts/acceptance_check.py` checks the
 project against its acceptance criteria, and the example expected-output files are generated from the
 implementation by `scripts/generate_examples.py` so they never drift.
 

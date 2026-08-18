@@ -9,7 +9,7 @@ description = "A CHAP-aligned, local-first toolkit for capturing, validating, go
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
-authors = [{ name = "Metis contributors" }]
+authors = [{ name = "Brightbeam AI", email = "oss@brightbeam.ai" }]
 keywords = ["tacit-knowledge", "governance", "agentic-ai", "memory", "chap", "audit"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -38,6 +38,7 @@ metis = "metis.cli.main:main"
 Homepage = "https://github.com/BrightbeamAI/metis"
 Documentation = "https://github.com/BrightbeamAI/metis/tree/main/docs"
 "CHAP protocol" = "https://github.com/BrightbeamAI/chap"
+Paper = "https://www.preprints.org/manuscript/202608.0927"
 
 [tool.setuptools.packages.find]
 include = ["metis*"]

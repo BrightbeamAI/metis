@@ -1,5 +1,5 @@
 # Metis, developer tasks
-.PHONY: help install dev demo test lint format regen verify clean
+.PHONY: help install dev demo test lint format regen verify build publish clean
 
 help:
 	@echo "Metis make targets:"
@@ -11,6 +11,8 @@ help:
 	@echo "  format    ruff format"
 	@echo "  regen     rebuild the interactive demo and the example expected outputs"
 	@echo "  verify    lint, test, and run the acceptance check"
+	@echo "  build     build sdist and wheel into dist/"
+	@echo "  publish   upload dist/* to PyPI with twine (needs PyPI token)"
 
 install:
 	pip install -e .
@@ -38,6 +40,13 @@ verify:
 	ruff check metis tests scripts
 	pytest
 	python scripts/acceptance_check.py
+
+build:
+	python -m build
+	twine check dist/*
+
+publish: build
+	twine upload dist/*
 
 clean:
 	rm -rf build dist *.egg-info .pytest_cache .ruff_cache || true

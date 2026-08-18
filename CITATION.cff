@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use Metis, please cite the paper below (preferred) or this software."
+title: "Metis: Governed Tacit Memory for AI Agents"
+type: software
+authors:
+  - family-names: Shahid
+    given-names: Arsalan
+    email: arsalan.shahid@brightbeam.com
+    affiliation: "Brightbeam AI"
+  - family-names: Suttie
+    given-names: Gordon
+    affiliation: "Brightbeam AI"
+  - family-names: Black
+    given-names: Philip
+    affiliation: "Brightbeam AI"
+  - family-names: "Garzón-Vico"
+    given-names: Antonio
+    affiliation: "University College Dublin"
+repository-code: "https://github.com/BrightbeamAI/metis"
+license: Apache-2.0
+version: 0.1.0
+keywords:
+  - tacit knowledge
+  - governed memory
+  - agentic AI
+  - CHAP
+preferred-citation:
+  type: article
+  title: "Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI"
+  authors:
+    - family-names: Shahid
+      given-names: Arsalan
+    - family-names: Suttie
+      given-names: Gordon
+    - family-names: Black
+      given-names: Philip
+    - family-names: "Garzón-Vico"
+      given-names: Antonio
+  journal: "Preprints"
+  year: 2026
+  doi: "10.20944/preprints202608.0927.v1"
+  url: "https://www.preprints.org/manuscript/202608.0927"
