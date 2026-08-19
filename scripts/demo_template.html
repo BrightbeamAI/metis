@@ -303,15 +303,22 @@ function applyContext(ctx, ov){
 }
 function buildPresets(){
   const m=SC.match_context, nm=SC.nonmatch_context, C=SC.fragment.conditions;
-  const presets=[
-    ["Matching context", ()=>applyContext(m,{})],
-    ["Wrong equipment", ()=>{const c={...m}; if(nm.equipment_family) c.equipment_family=nm.equipment_family; c.equipment_id=""; applyContext(c,{});}],
-    ["High risk", ()=>applyContext({...m,risk_class:"high"},{})],
-    ["Consent withdrawn", ()=>applyContext(m,{consent:"withdrawn"})],
-    ["Not yet promoted", ()=>applyContext(m,{authority:"evidence"})],
-  ];
+  const presets=[["Matching context", ()=>applyContext(m,{})]];
+  // One scenario-appropriate "wrong X" preset: flip the first condition this
+  // fragment actually constrains, preferring the scenario's non-matching value.
+  const WRONG=[["equipment_family","Wrong equipment"],["product_family","Wrong product"],
+               ["area","Wrong area"],["operating_mode","Wrong mode"],["site","Wrong site"]];
+  for(const [key,label] of WRONG){
+    if(C[key]===null||C[key]===undefined) continue;
+    const wrong=(nm[key]!==undefined&&nm[key]!==null&&nm[key]!==m[key])?nm[key]:("other_"+key);
+    presets.push([label, ()=>{const c={...m,[key]:wrong}; if(key==="equipment_family") c.equipment_id=""; applyContext(c,{});}]);
+    break;
+  }
+  presets.push(["High risk", ()=>applyContext({...m,risk_class:"high"},{})]);
   const ex=(C.exclusion_conditions||[])[0];
-  if(ex) presets.splice(3,0,["Excluded mode", ()=>applyContext({...m,...ex},{})]);
+  if(ex) presets.push(["Excluded mode", ()=>applyContext({...m,...ex},{})]);
+  presets.push(["Consent withdrawn", ()=>applyContext(m,{consent:"withdrawn"})]);
+  presets.push(["Not yet promoted", ()=>applyContext(m,{authority:"evidence"})]);
   el("presets").innerHTML="";
   presets.forEach(([label,fn])=>{ const b=document.createElement("button"); b.textContent=label; b.onclick=fn; el("presets").appendChild(b); });
 }
