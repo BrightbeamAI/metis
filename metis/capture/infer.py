@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..models.ollama_client import OllamaClient
+from ..models.ollama_client import OllamaClient, guess_category
 from ..models.structured_outputs import AssistPurpose
 from .observe import Observation
 
@@ -54,8 +54,7 @@ def infer_candidate(
                   "output": res.json(), "used_live_model": res.used_live_model}
     if category is None:
         # deterministic fallback classification (no model)
-        from ..models.ollama_client import _guess_category
-        category = _guess_category(observation.text)
+        category = guess_category(observation.text)
 
     candidate = InferenceCandidate(
         candidate_id=candidate_id, observation_id=observation.observation_id,

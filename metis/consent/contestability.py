@@ -2,10 +2,11 @@
 request re-elicitation of a fragment. Each action is an auditable, CHAP-recorded event."""
 from __future__ import annotations
 
-import datetime as _dt
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 
 class ContestAction(str, Enum):
@@ -24,4 +25,4 @@ class ContestabilityRecord(BaseModel):
     raised_by: str  # CHAP participant URI
     rationale: str
     proposed_correction: str | None = None
-    raised_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    raised_at: str = Field(default_factory=clock.now_iso)

@@ -1,10 +1,11 @@
 """The tacit.retrieval_decision artefact content."""
 from __future__ import annotations
 
-import datetime as _dt
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 
 class BlockedItem(BaseModel):
@@ -37,4 +38,4 @@ class RetrievalDecision(BaseModel):
     eligible: list[EligibleItem] = Field(default_factory=list)
     blocked: list[BlockedItem] = Field(default_factory=list)
     rationale: str = ""
-    decided_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    decided_at: str = Field(default_factory=clock.now_iso)

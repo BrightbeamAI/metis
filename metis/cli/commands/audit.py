@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import shutil
 
 import typer
 
 from ...audit.replay import replay
-from ..state import evidence_path, load_state  # noqa: F401
+from ..state import evidence_path
 
 audit_app = typer.Typer(help="Read, verify, and export the CHAP-compatible audit chain.")
 
@@ -20,7 +21,6 @@ def audit_read(limit: int = typer.Option(40, "--limit")) -> None:
     if result.errors:
         for e in result.errors:
             typer.echo(f"  ERROR: {e}")
-    import json
     for line in path.read_text().splitlines()[:limit]:
         rec = json.loads(line)
         typer.echo(f"  seq={rec['seq']:>3} {rec['method_or_type']:<22} from={rec['from']}")

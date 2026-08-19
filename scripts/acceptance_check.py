@@ -63,7 +63,6 @@ check("14. Gate allows under matching context", len(run.match_decision.eligible)
 check("15. Gate blocks under non-matching context", len(run.nonmatch_decision.eligible) == 0 and len(run.nonmatch_decision.blocked) == 1)
 
 # 16/17: Evidence-layer fragment
-fresh = run_manufacturing  # not needed; build a quick evidence-layer fragment
 from metis.conditions.context import TacitContext
 from metis.consent.model import ConsentRecord, ConsentStatus
 from metis.fragment.model import TacitFragment
@@ -92,10 +91,14 @@ endo = TacitFragment.new(fragment_id="EN-1", title="t", content="c", category=Ca
 ok18, _ = GovernancePolicy().can_promote(endo, AuthorityLayer.advisory, mission_group_reviewed=False)
 check("18. Endogenous fragments cannot self-promote", ok18 is False)
 
-# 19. model cannot promote/retrieve/authorise (no such API; assists are advisory)
+# 19. model outputs are advisory: the client exposes no governance verbs, and
+# every assist record produced in the demo run requires human review.
+_client = OllamaClient(ModelConfig())
+_assists = [a for a in eng.adapter.artefacts.values() if a["kind"] == "tacit.model_assist_record"]
 check("19. Local model outputs cannot promote/retrieve/authorise",
-      not hasattr(OllamaClient(ModelConfig()), "promote")
-      and all(a.human_review_required for r in [run] for a in []) is True or True)
+      not any(hasattr(_client, verb) for verb in ("promote", "validate", "retrieve", "authorise", "revoke"))
+      and len(_assists) > 0
+      and all(a["content"]["human_review_required"] for a in _assists))
 
 # 20. withdrawn consent blocks retrieval
 eng.governance.withdraw_consent(run.fragment.fragment_id, by="human:operator@plant_a")

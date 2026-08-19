@@ -48,7 +48,7 @@ class ModelRunResult:
             return {"raw_text": self.text}
 
 
-def _guess_category(text: str) -> str:
+def guess_category(text: str) -> str:
     low = text.lower()
     for keywords, category in _CATEGORY_KEYWORDS:
         if any(k in low for k in keywords):
@@ -127,10 +127,10 @@ class OllamaClient:
     def _fallback(self, purpose: str, prompt: str) -> ModelRunResult:
         excerpt = " ".join(prompt.split())[:240]
         if purpose == AssistPurpose.classify_fragment.value:
-            out = {"category": _guess_category(prompt), "rationale": "deterministic-fixture", "alternatives": []}
+            out = {"category": guess_category(prompt), "rationale": "deterministic-fixture", "alternatives": []}
         elif purpose == AssistPurpose.structure_candidate.value:
             out = {"title": "Candidate fragment (draft)", "content": excerpt,
-                   "category": _guess_category(prompt), "suggested_conditions": {}}
+                   "category": guess_category(prompt), "suggested_conditions": {}}
         elif purpose == AssistPurpose.draft_whisper.value:
             out = {"question": "You acted differently from the written procedure. What cue prompted that?",
                    "follow_ups": ["Does this apply only under specific conditions?"]}

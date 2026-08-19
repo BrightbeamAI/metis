@@ -18,13 +18,22 @@ from ..scenarios import run_manufacturing
 
 router = APIRouter()
 
-# A single in-memory engine, seeded with the manufacturing scenario for immediate data.
-ENGINE = run_manufacturing().engine
+# A single in-memory engine, created lazily on first request and seeded with the
+# manufacturing scenario so the API serves data immediately. Importing this module
+# does no work.
+_engine: MetisEngine | None = None
+
+
+def get_engine() -> MetisEngine:
+    global _engine
+    if _engine is None:
+        _engine = run_manufacturing().engine
+    return _engine
 
 
 def reset_engine(engine: MetisEngine | None = None) -> None:
-    global ENGINE
-    ENGINE = engine or run_manufacturing().engine
+    global _engine
+    _engine = engine
 
 
 class CaptureRequest(BaseModel):
@@ -60,17 +69,17 @@ class RevokeRequest(BaseModel):
 
 @router.get("/workspace")
 def get_workspace() -> dict[str, Any]:
-    return ENGINE.adapter.descriptor()
+    return get_engine().adapter.descriptor()
 
 
 @router.get("/fragments")
 def list_fragments() -> list[dict[str, Any]]:
-    return [f.model_dump(mode="json") for f in ENGINE.fragments.all()]
+    return [f.model_dump(mode="json") for f in get_engine().fragments.all()]
 
 
 @router.get("/fragments/{fragment_id}")
 def get_fragment(fragment_id: str) -> dict[str, Any]:
-    frag = ENGINE.fragments.get(fragment_id)
+    frag = get_engine().fragments.get(fragment_id)
     if not frag:
         raise HTTPException(404, "fragment not found")
     return frag.model_dump(mode="json")
@@ -78,12 +87,12 @@ def get_fragment(fragment_id: str) -> dict[str, Any]:
 
 @router.get("/memory")
 def list_memory() -> list[dict[str, Any]]:
-    return [m.model_dump(mode="json") for m in ENGINE.tacit_store.all()]
+    return [m.model_dump(mode="json") for m in get_engine().tacit_store.all()]
 
 
 @router.get("/memory/{memory_id}")
 def get_memory(memory_id: str) -> dict[str, Any]:
-    m = ENGINE.tacit_store.get(memory_id)
+    m = get_engine().tacit_store.get(memory_id)
     if not m:
         raise HTTPException(404, "memory object not found")
     return m.model_dump(mode="json")
@@ -91,14 +100,14 @@ def get_memory(memory_id: str) -> dict[str, Any]:
 
 @router.post("/memory/query")
 def memory_query(req: ContextRequest) -> dict[str, Any]:
-    amc = ENGINE.agent_context(req.task_id, TacitContext.model_validate(req.context), role=req.role, emit=True)
+    amc = get_engine().agent_context(req.task_id, TacitContext.model_validate(req.context), role=req.role, emit=True)
     return amc.model_dump(mode="json")
 
 
 @router.post("/capture")
 def capture(req: CaptureRequest) -> dict[str, Any]:
     consent = ConsentRecord(consent_status=ConsentStatus.granted)
-    result = ENGINE.capture_observation(
+    result = get_engine().capture_observation(
         dict(observation_id=req.observation_id, work_as_imagined=req.work_as_imagined,
              work_as_done=req.work_as_done, text=req.text,
              context=TacitContext.model_validate(req.context), source="api"),
@@ -118,7 +127,7 @@ def confirm(req: CaptureRequest) -> dict[str, Any]:
 
 @router.post("/review")
 def review(req: ReviewRequest) -> dict[str, Any]:
-    out = ENGINE.tier2_review(req.fragment_id, req.outcome, summary=req.summary,
+    out = get_engine().tier2_review(req.fragment_id, req.outcome, summary=req.summary,
                               change_control=req.change_control)
     return {"outcome": req.outcome, "memory_id": out.get("memory").memory_id if out.get("memory") else None}
 
@@ -132,36 +141,36 @@ def promote(req: ReviewRequest) -> dict[str, Any]:
 
 @router.post("/retrieve")
 def retrieve(req: ContextRequest) -> dict[str, Any]:
-    decision = ENGINE.retrieve(TacitContext.model_validate(req.context), role=req.role)
+    decision = get_engine().retrieve(TacitContext.model_validate(req.context), role=req.role)
     return decision.model_dump(mode="json")
 
 
 @router.post("/revoke")
 def revoke(req: RevokeRequest) -> dict[str, Any]:
-    art = ENGINE.governance.revoke(req.fragment_id, reason=RevocationReason(req.reason), by=req.by)
+    art = get_engine().governance.revoke(req.fragment_id, reason=RevocationReason(req.reason), by=req.by)
     return {"revocation_record_artefact": art}
 
 
 @router.get("/audit")
 def audit() -> list[dict[str, Any]]:
-    return ENGINE.adapter.evidence_records()
+    return get_engine().adapter.evidence_records()
 
 
 @router.post("/audit/export")
 def audit_export(out: str = "evidence.jsonl") -> dict[str, Any]:
-    n = ENGINE.export_audit(out)
-    return {"exported": n, "path": out, "verified": ENGINE.verify().ok}
+    n = get_engine().export_audit(out)
+    return {"exported": n, "path": out, "verified": get_engine().verify().ok}
 
 
 @router.get("/model/status")
 def model_status() -> dict[str, Any]:
-    c = ENGINE.model_client
+    c = get_engine().model_client
     return {"provider": c.config.provider, "model": c.config.name, "url": c.config.url,
             "available": c.available()}
 
 
 @router.post("/model/run")
 def model_run(prompt: str, purpose: str = "draft_whisper") -> dict[str, Any]:
-    res = ENGINE.model_client.run(purpose, prompt)
+    res = get_engine().model_client.run(purpose, prompt)
     return {"used_live_model": res.used_live_model, "output": res.json(),
             "note": "advisory draft only; not a governance decision"}

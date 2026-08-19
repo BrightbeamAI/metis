@@ -7,6 +7,7 @@ truth). A ``state.json`` snapshot mirrors live fragment/memory/store state so re
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -54,8 +55,10 @@ def save_state(engine, *, scenario: str | None = None) -> Path:
         store = SqliteStore(home() / "metis.db")
         store.persist_engine(engine)
         store.close()
-    except Exception:
-        pass
+    except Exception as exc:
+        # state.json and evidence.jsonl above are the primary store; the SQLite
+        # mirror is a convenience. Its failure must be visible, never silent.
+        print(f"warning: state saved, but the SQLite mirror failed: {exc}", file=sys.stderr)
     return state_path()
 
 

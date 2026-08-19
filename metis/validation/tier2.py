@@ -6,9 +6,9 @@ draft a review *summary*, but it never makes the decision.
 """
 from __future__ import annotations
 
-import datetime as _dt
-
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 TIER2_DIMENSIONS = [
     "description_fidelity",
@@ -45,7 +45,7 @@ class MissionGroupReview(BaseModel):
     dimension_assessments: dict[str, str] = Field(default_factory=dict)
     summary: str = ""
     model_assist_ref: str | None = None  # the draft summary, if a model helped
-    reviewed_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    reviewed_at: str = Field(default_factory=clock.now_iso)
 
     def model_post_init(self, __context) -> None:  # noqa: D401
         if self.outcome not in TIER2_OUTCOMES:

@@ -268,29 +268,45 @@ class Governance:
     # ---- contestability --------------------------------------------------------
     def contest(self, fragment_id: str, action: ContestAction, *, raised_by: str,
                 rationale: str, proposed_correction: str | None = None) -> dict[str, Any]:
+        """Record a worker or reviewer contest action as an auditable event.
+
+        Every action first appends a ``tacit.validation_event`` carrying the
+        contestability record, then routes: withdraw revokes via consent
+        withdrawal; re-elicitation and challenge/correct escalate the fragment's
+        task to the Mission Group for the appropriate follow-up.
+        """
         action = ContestAction(action)
         record = ContestabilityRecord(fragment_id=fragment_id, action=action, raised_by=raised_by,
                                       rationale=rationale, proposed_correction=proposed_correction)
-        if action == ContestAction.withdraw:
-            return {"revocation": self.withdraw_consent(fragment_id, by=raised_by, note=rationale)}
-        if action == ContestAction.request_re_elicitation:
-            frag = self.fragments.require(fragment_id)
-            ref = self._ensure_refs(frag)
-            self.adapter._emit("escalate.raise", sender=raised_by, params={
-                "workspace": self.adapter.workspace_id, "from": raised_by,
-                "task_id": ref["task"], "reason": rationale, "ts": self.adapter.now_iso()},
-                to=self.mission_group.uri)
-            req = ReElicitationRequest(fragment_id=fragment_id, requested_by=raised_by, reason=rationale)
-            art = self.adapter.append_artefact("tacit.re_elicitation_request", produced_by=raised_by,
-                content=req.model_dump(mode="json"), task=ref["task"], based_on=ref["artefact"])
-            return {"re_elicitation_request": art}
-        # challenge / correct -> raise to Mission Group, carried as a decision artefact
         frag = self.fragments.require(fragment_id)
         ref = self._ensure_refs(frag)
-        art = self.adapter.decide("escalate.raise", sender=raised_by, based_on=ref["artefact"],
-            task_id=ref["task"], content={"contestability": record.model_dump(mode="json")},
-            to=self.mission_group.uri)
+        rec_art = self.adapter.append_artefact(
+            "tacit.validation_event", produced_by=raised_by,
+            content={"event": "contestability", **record.model_dump(mode="json")},
+            task=ref["task"], based_on=ref["artefact"])
         frag.add_lineage(state=frag.validation_state.value, by=raised_by,
-                         note=f"contested: {action.value}", chap_evidence_seq=self._ev(art))
+                         note=f"contested: {action.value}", chap_evidence_seq=self._ev(rec_art))
         self.fragments.put(frag)
-        return {"contestability_decision": art}
+        result: dict[str, Any] = {"contestability_record": rec_art}
+
+        if action == ContestAction.withdraw:
+            result["revocation"] = self.withdraw_consent(fragment_id, by=raised_by, note=rationale)
+            return result
+
+        if action == ContestAction.request_re_elicitation:
+            self.adapter.escalate(sender=raised_by, original_task_id=ref["task"],
+                                  assignee=self.mission_group.uri, kind="tacit.re_elicit",
+                                  task_input={"fragment_id": fragment_id, "reason": rationale})
+            req = ReElicitationRequest(fragment_id=fragment_id, requested_by=raised_by, reason=rationale)
+            result["re_elicitation_request"] = self.adapter.append_artefact(
+                "tacit.re_elicitation_request", produced_by=raised_by,
+                content=req.model_dump(mode="json"), task=ref["task"], based_on=ref["artefact"])
+            return result
+
+        # challenge / correct: escalate to the Mission Group for Tier-2 re-review.
+        result["escalated_task"] = self.adapter.escalate(
+            sender=raised_by, original_task_id=ref["task"],
+            assignee=self.mission_group.uri, kind="tacit.validate.tier2",
+            task_input={"fragment_id": fragment_id, "contest": action.value,
+                        "reason": rationale, "proposed_correction": proposed_correction})
+        return result

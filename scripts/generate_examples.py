@@ -48,7 +48,7 @@ for key, spec in SPECS.items():
         write_json(base / "mission_group_review.json", {
             "fragment_id": run.fragment.fragment_id,
             "outcome": "promoted_to_advisory",
-            "reviewers": [spec_uri := "group:mission-group@metis.local"],
+            "reviewers": ["group:mission-group@metis.local"],
             "dimension_assessments": spec.review_dimensions,
             "summary": spec.review_summary,
         })

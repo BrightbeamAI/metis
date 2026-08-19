@@ -1,10 +1,9 @@
 """Promotion records (tacit.promotion_record)."""
 from __future__ import annotations
 
-import datetime as _dt
-
 from pydantic import BaseModel, ConfigDict, Field
 
+from .. import clock
 from ..taxonomy.categories import AuthorityLayer, ValidationState
 
 
@@ -19,4 +18,4 @@ class PromotionRecord(BaseModel):
     review_ref: str | None = None
     change_control: dict | None = None
     rationale: str = ""
-    promoted_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    promoted_at: str = Field(default_factory=clock.now_iso)

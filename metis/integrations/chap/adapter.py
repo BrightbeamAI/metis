@@ -190,14 +190,6 @@ class CHAPAdapter:
                            "delegator": delegator, "artefacts": []}
         return tid
 
-    def update_task(self, task_id: str, state: str, *, sender: str, note: str | None = None) -> None:
-        try:
-            self._dispatch("task.update", **{"from": sender}, task_id=task_id, state=state, progress_note=note)
-        except RuntimeError:
-            pass
-        if task_id in self.tasks:
-            self.tasks[task_id]["state"] = state
-
     def _record_task(self, kind: str, *, sender: str, task_input: dict[str, Any]) -> str:
         self._ensure_member(sender)
         res = self._dispatch("task.create", **{"from": sender}, kind=kind,
@@ -206,10 +198,9 @@ class CHAPAdapter:
 
     # ---- artefacts (recorded as completed CHAP tasks) --------------------------
     def append_artefact(self, kind: str, *, produced_by: str, content: Any, task: str | None = None,
-                        based_on: str | None = None, method: str = "capture.append",
-                        to: str | list[str] | None = None, extra_params: dict[str, Any] | None = None,
-                        tags: list[str] | None = None, logical_id: str | None = None,
-                        routing_hints: dict[str, Any] | None = None, msg_type: str = "request") -> str:
+                        based_on: str | None = None, tags: list[str] | None = None,
+                        logical_id: str | None = None,
+                        routing_hints: dict[str, Any] | None = None) -> str:
         self._ensure_member(produced_by)
         artefact_id = self.coord.ids.artefact_id()
         artefact = build_artefact(
@@ -268,20 +259,31 @@ class CHAPAdapter:
         return _Entry(seq=self._last_seq())
 
     def decide(self, method: str, *, sender: str, based_on: str | None, task_id: str,
-               content: dict[str, Any], to: str | None = None) -> None:
+               content: dict[str, Any]) -> None:
         self._ensure_member(sender)
         comment = content.get("summary") or content.get("outcome") or ""
         if method == "abstain.declare":
             self._dispatch("abstain.declare", **{"from": sender}, task_id=task_id, reason=comment or "held")
         elif method == "escalate.raise":
-            self._dispatch("escalate.raise", **{"from": sender}, original_task_id=task_id,
-                           new_task={"kind": "tacit.re_elicit",
-                                     "input": {"about": based_on, "reason": comment},
-                                     "assignee": sender})
+            self.escalate(sender=sender, original_task_id=task_id, assignee=sender,
+                          kind="tacit.re_elicit", task_input={"about": based_on, "reason": comment})
         else:
             tags = [content["outcome"]] if content.get("outcome") else []
             self._dispatch(method, **{"from": sender}, task_id=task_id, comment=comment, tags=tags)
         return None
+
+    def escalate(self, *, sender: str, original_task_id: str, assignee: str, kind: str,
+                 task_input: dict[str, Any] | None = None) -> str:
+        """Escalate a task: the coordinator marks the original escalated and creates a
+        successor task for ``assignee``. Returns the new task id."""
+        self._ensure_member(sender)
+        self._ensure_member(assignee)
+        res = self._dispatch("escalate.raise", **{"from": sender}, original_task_id=original_task_id,
+                             new_task={"kind": kind, "input": task_input or {}, "assignee": assignee})
+        new_id = res["new_task_id"]
+        self.tasks[new_id] = {"id": new_id, "kind": kind, "assignee": assignee,
+                              "delegator": sender, "artefacts": []}
+        return new_id
 
     # ---- control/1.0 -----------------------------------------------------------
     def control_event(self, method: str, *, sender: str, params: dict[str, Any], to: str | None = None) -> _Entry:

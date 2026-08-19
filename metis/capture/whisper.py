@@ -48,7 +48,10 @@ def build_whisper(
 ) -> tuple[WhisperPrompt, dict[str, Any] | None]:
     try:
         template = load_whisper_template(whisper_template_for(Category(category)))
-    except Exception:
+    except FileNotFoundError:
+        # By design: categories without an in-flow template (for example K8, which
+        # uses exemplar re-elicitation) and installs without the prompts/ directory
+        # use the generic low-burden wording. Malformed templates still raise.
         template = _GENERIC
 
     options = [{"id": r, "label": r} for r in template.get("allowed_response_types", ["confirm", "correct", "dismiss", "defer"])]

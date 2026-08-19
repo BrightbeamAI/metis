@@ -10,6 +10,7 @@ import datetime as _dt
 
 from ..conditions.context import TacitContext
 from ..fragment.store import FragmentStore
+from ..retrieval.decision import BlockedItem, EligibleItem, RetrievalDecision
 from ..retrieval.gate import RetrievalGate
 from .agent_context import (
     AgentMemoryContext,
@@ -107,12 +108,10 @@ class MemoryBroker:
                 ctx.required_human_actions.append(a)
 
         if emit and self.adapter is not None:
-            self._emit(task_id, ctx, requester or self.adapter.coordinator)
+            self._record_decision(task_id, ctx, requester or self.adapter.coordinator)
         return ctx
 
-    def _emit(self, task_id: str, ctx: AgentMemoryContext, requester: str) -> None:
-        from ..retrieval.decision import BlockedItem, EligibleItem, RetrievalDecision
-
+    def _record_decision(self, task_id: str, ctx: AgentMemoryContext, requester: str) -> None:
         decision = RetrievalDecision(
             requested_role=None,
             runtime_context=ctx.runtime_context,
@@ -125,7 +124,7 @@ class MemoryBroker:
         )
         self.adapter.append_artefact(
             "tacit.retrieval_decision", produced_by=requester,
-            content=decision.model_dump(mode="json"), task=task_id, method="task.route")
+            content=decision.model_dump(mode="json"), task=task_id)
         art = self.adapter.append_artefact(
             "tacit.agent_memory_context", produced_by=requester,
             content=ctx.model_dump(mode="json"), task=task_id)

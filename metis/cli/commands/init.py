@@ -16,8 +16,8 @@ def init(
     try:
         from ...storage.sqlite_store import SqliteStore
         SqliteStore(base / "metis.db").close()
-    except Exception:
-        pass
+    except Exception as exc:
+        typer.secho(f"warning: could not initialise the SQLite store: {exc}", err=True)
     typer.echo(f"Initialised Metis project at {base}")
     typer.echo(f"  config: {config_path(home)}")
     typer.echo("  default model: ollama / gemma4 (local). Run `metis model check`.")

@@ -6,11 +6,12 @@ be treated as ground truth. It is always a draft suggestion pending human review
 """
 from __future__ import annotations
 
-import datetime as _dt
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 
 class AssistPurpose(str, Enum):
@@ -37,7 +38,7 @@ class ModelAssistRecord(BaseModel):
     output_format: str = "json"
     output: Any | None = None
     used_live_model: bool = False
-    created_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    created_at: str = Field(default_factory=clock.now_iso)
     human_review_required: bool = True
     human_review_status: str = "pending"
     chap_artefact_ref: str | None = None

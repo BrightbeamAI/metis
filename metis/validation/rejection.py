@@ -1,9 +1,9 @@
 """Rejection records (tacit.rejection_record). Rejected fragments are retained, never deleted."""
 from __future__ import annotations
 
-import datetime as _dt
-
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 
 class RejectionRecord(BaseModel):
@@ -14,4 +14,4 @@ class RejectionRecord(BaseModel):
     reason: str
     review_ref: str | None = None
     retained_for_audit: bool = True
-    rejected_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    rejected_at: str = Field(default_factory=clock.now_iso)

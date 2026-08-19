@@ -34,12 +34,12 @@ def test_observation_maps_to_chap_artefact(captured_fragment):
     compliance.validate_artefact(obs_arts[0])
 
 
-def test_metis_uses_capture_append_for_fragments(manufacturing_run):
-    # tacit.* artefacts are carried by existing CHAP methods, not a new one
+def test_fragment_records_are_carried_by_coordinator_methods(manufacturing_run):
+    # tacit.* artefacts ride on methods the reference Coordinator implements
     methods_for_fragment = []
     for e in manufacturing_run.engine.adapter.chain.entries:
         params = e.envelope.get("params", {})
-        art = params.get("artefact")
+        art = params.get("output") or params.get("artefact")
         if isinstance(art, dict) and art.get("kind") == "tacit.fragment":
             methods_for_fragment.append(e.envelope["method"])
-    assert methods_for_fragment and all(m in compliance.CHAP_METHODS for m in methods_for_fragment)
+    assert methods_for_fragment and all(m in compliance.COORDINATOR_METHODS for m in methods_for_fragment)

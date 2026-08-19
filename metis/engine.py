@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from . import clock
 from .capture.loop import CaptureLoop, CaptureResult
 from .conditions.context import TacitContext
 from .consent.model import ConsentRecord
@@ -42,6 +43,9 @@ class MetisEngine:
         mode: str = "trial",
     ) -> None:
         self.adapter = CHAPAdapter(workspace_id, name, deterministic=deterministic, mode=mode)
+        # Deterministic engines drive every domain timestamp from the coordinator
+        # clock so demo output and the evidence chain are byte-stable across runs.
+        clock.set_source(self.adapter.now_iso if deterministic else None)
         self.fragments = FragmentStore()
         self.tacit_store = TacitMemoryStore()
         self.gate = RetrievalGate()
@@ -104,7 +108,7 @@ class MetisEngine:
             task_id = self.adapter.create_task("tacit.retrieve", assignee=self.agent_uri,
                                                delegator=self.agent_uri, task_input=context.model_dump(mode="json", exclude_none=True))
             self.adapter.append_artefact("tacit.retrieval_decision", produced_by=self.agent_uri,
-                content=decision.model_dump(mode="json"), task=task_id, method="task.route")
+                content=decision.model_dump(mode="json"), task=task_id)
         return decision
 
     def agent_context(self, task_id: str, context: TacitContext, *, role: str | None = None, emit: bool = True) -> AgentMemoryContext:

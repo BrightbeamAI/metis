@@ -1,9 +1,9 @@
 """Re-elicitation requests (tacit.re_elicitation_request)."""
 from __future__ import annotations
 
-import datetime as _dt
-
 from pydantic import BaseModel, ConfigDict, Field
+
+from .. import clock
 
 
 class ReElicitationRequest(BaseModel):
@@ -14,4 +14,4 @@ class ReElicitationRequest(BaseModel):
     reason: str
     what_to_clarify: str | None = None
     review_ref: str | None = None
-    requested_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    requested_at: str = Field(default_factory=clock.now_iso)

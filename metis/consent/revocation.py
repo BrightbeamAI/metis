@@ -2,11 +2,11 @@
 tacit.supersession_record artefacts via a CHAP control event)."""
 from __future__ import annotations
 
-import datetime as _dt
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .. import clock
 from ..taxonomy.categories import RevocationStatus
 
 
@@ -30,7 +30,7 @@ class RevocationRecord(BaseModel):
     note: str | None = None
     retention_audit_only: bool = True  # the record is retained for audit, never deleted
     superseded_by: str | None = None  # fragment_id of the replacement
-    actioned_at: str = Field(default_factory=lambda: _dt.datetime.now(_dt.timezone.utc).isoformat())
+    actioned_at: str = Field(default_factory=clock.now_iso)
 
 
 def blocks_retrieval(status: RevocationStatus) -> bool:

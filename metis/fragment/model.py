@@ -7,12 +7,12 @@ kind ``tacit.fragment``.
 """
 from __future__ import annotations
 
-import datetime as _dt
 from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .. import clock
 from ..conditions.context import TacitContext
 from ..consent.model import ConsentRecord
 from ..taxonomy.categories import (
@@ -27,7 +27,7 @@ from ..taxonomy.categories import (
 
 
 def _now() -> str:
-    return _dt.datetime.now(_dt.timezone.utc).isoformat()
+    return clock.now_iso()
 
 
 class EvidenceStrength(str, Enum):

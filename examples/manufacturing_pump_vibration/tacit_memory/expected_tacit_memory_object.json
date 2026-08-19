@@ -36,7 +36,7 @@
       "art_01HF7YAT040017HQF6WQYJKW2M",
       "art_01HF7YAT06001VAK6TB3XVXT3Y"
     ],
-    "timestamp": "2026-08-19T09:34:12.272431+00:00",
+    "timestamp": "2023-11-14T22:14:10.000Z",
     "capture_method": "observe->infer->whisper->confirm (synthetic)",
     "human_confirmed_by": "human:operator@plant_a",
     "mission_group_reviewed_by": "group:mission-group@metis.local",
