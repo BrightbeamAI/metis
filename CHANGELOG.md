@@ -3,6 +3,27 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [0.1.2]
+
+### Fixed
+- Contestability works end to end: challenge, correct, withdraw, and re-elicitation
+  requests are recorded as auditable events and escalate to the Mission Group, with
+  test coverage for all four actions.
+- `metis.__version__` now reports the installed package version.
+
+### Changed
+- Failures are never silent. The SQLite mirror and project initialisation warn on
+  stderr when they cannot write; malformed whisper templates raise instead of being
+  replaced by the generic wording.
+- Deterministic engines produce byte-identical output across runs: every domain
+  timestamp derives from the engine clock, so exported evidence chains and example
+  files are reproducible.
+- Importing `metis.api` no longer does any work; the demo engine is created on the
+  first request.
+
+### Removed
+- Unused adapter parameters and an unused task-update method.
+
 ## [0.1.1]
 
 ### Fixed

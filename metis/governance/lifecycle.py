@@ -294,19 +294,20 @@ class Governance:
             return result
 
         if action == ContestAction.request_re_elicitation:
-            self.adapter.escalate(sender=raised_by, original_task_id=ref["task"],
-                                  assignee=self.mission_group.uri, kind="tacit.re_elicit",
-                                  task_input={"fragment_id": fragment_id, "reason": rationale})
+            # A fresh Mission Group task: the fragment's anchor task may already be
+            # terminal (completed at promotion), which cannot be escalated.
+            result["mission_group_task"] = self.adapter.create_task(
+                "tacit.re_elicit", assignee=self.mission_group.uri, delegator=raised_by,
+                task_input={"fragment_id": fragment_id, "reason": rationale})
             req = ReElicitationRequest(fragment_id=fragment_id, requested_by=raised_by, reason=rationale)
             result["re_elicitation_request"] = self.adapter.append_artefact(
                 "tacit.re_elicitation_request", produced_by=raised_by,
                 content=req.model_dump(mode="json"), task=ref["task"], based_on=ref["artefact"])
             return result
 
-        # challenge / correct: escalate to the Mission Group for Tier-2 re-review.
-        result["escalated_task"] = self.adapter.escalate(
-            sender=raised_by, original_task_id=ref["task"],
-            assignee=self.mission_group.uri, kind="tacit.validate.tier2",
+        # challenge / correct: a fresh Tier-2 re-review task for the Mission Group.
+        result["mission_group_task"] = self.adapter.create_task(
+            "tacit.validate.tier2", assignee=self.mission_group.uri, delegator=raised_by,
             task_input={"fragment_id": fragment_id, "contest": action.value,
                         "reason": rationale, "proposed_correction": proposed_correction})
         return result

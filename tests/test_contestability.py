@@ -18,7 +18,7 @@ def test_challenge_records_event_and_escalates_to_mission_group(captured_fragmen
     assert out["contestability_record"].startswith("art_")
     events = engine.adapter.artefacts_of_kind("tacit.validation_event")
     assert any(a["content"].get("event") == "contestability" for a in events)
-    task = engine.adapter.tasks[out["escalated_task"]]
+    task = engine.adapter.tasks[out["mission_group_task"]]
     assert task["assignee"] == engine.mission_group_uri
     assert task["kind"] == "tacit.validate.tier2"
     assert engine.verify().ok
@@ -54,6 +54,22 @@ def test_re_elicitation_creates_request_and_mission_group_task(captured_fragment
         raised_by=engine.operator_uri, rationale="conditions are too broad")
     assert out["re_elicitation_request"].startswith("art_")
     assert any(a["kind"] == "tacit.re_elicitation_request" for a in engine.adapter.artefacts.values())
-    assert any(t["kind"] == "tacit.re_elicit" and t["assignee"] == engine.mission_group_uri
-               for t in engine.adapter.tasks.values())
+    task = engine.adapter.tasks[out["mission_group_task"]]
+    assert task["kind"] == "tacit.re_elicit" and task["assignee"] == engine.mission_group_uri
+    assert engine.verify().ok
+
+
+def test_contest_works_on_a_promoted_fragment(captured_fragment):
+    # Regression: after promotion the fragment's anchor task is terminal, which
+    # must not prevent contesting the fragment.
+    engine, res = captured_fragment
+    frag = _promote(engine, res)
+    out = engine.governance.contest(
+        frag.fragment_id, ContestAction.challenge,
+        raised_by=engine.operator_uri, rationale="promoted, but the cue is disputed")
+    assert engine.adapter.tasks[out["mission_group_task"]]["assignee"] == engine.mission_group_uri
+    out2 = engine.governance.contest(
+        frag.fragment_id, ContestAction.request_re_elicitation,
+        raised_by=engine.operator_uri, rationale="needs re-elicitation")
+    assert out2["re_elicitation_request"].startswith("art_")
     assert engine.verify().ok
