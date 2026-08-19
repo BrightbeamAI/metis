@@ -8,6 +8,7 @@
     "area": "control_room",
     "operating_mode": "handover",
     "shift_pattern": "night_to_day",
-    "trigger_context": "incomplete_handover"
+    "trigger_context": "incomplete_handover",
+    "role": "team_lead"
   }
 }

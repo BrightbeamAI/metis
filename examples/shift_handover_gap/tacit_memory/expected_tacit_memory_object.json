@@ -12,6 +12,7 @@
     "area": "control_room",
     "operating_mode": "handover",
     "shift_pattern": "night_to_day",
+    "role": "team_lead",
     "trigger_context": "incomplete_handover",
     "environmental_conditions": {},
     "exclusion_conditions": []
@@ -28,7 +29,7 @@
       "art_01HF7YAT040017HQF6WQYJKW2M",
       "art_01HF7YAT06001VAK6TB3XVXT3Y"
     ],
-    "timestamp": "2026-08-18T00:54:29.583296+00:00",
+    "timestamp": "2026-08-19T09:34:12.296147+00:00",
     "capture_method": "observe->infer->whisper->confirm (synthetic)",
     "human_confirmed_by": "human:operator@plant_a",
     "mission_group_reviewed_by": "group:mission-group@metis.local",

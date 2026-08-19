@@ -8,6 +8,7 @@
     "area": "finishing",
     "product_family": "resin_batch",
     "operating_mode": "inspection",
-    "trigger_context": "pre_lab_result"
+    "trigger_context": "pre_lab_result",
+    "role": "quality_specialist"
   }
 }

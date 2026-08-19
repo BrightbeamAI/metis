@@ -132,7 +132,8 @@
 <section><div class="wrap">
   <h2>3. Drive the <span class="em">retrieval gate</span></h2>
   <p class="sub">This is a governance check, not similarity search. Edit the runtime context or use a
-  preset, and watch the gate allow or block the fragment. It fails closed when a required condition is missing.</p>
+  preset, and watch the gate allow or block the fragment. It fails closed when a required condition is
+  missing. A field accepts comma-separated values when the situation carries several at once.</p>
   <div class="presets" id="presets"></div>
   <div class="gate">
     <div class="card">
@@ -140,6 +141,7 @@
       <div class="toggles">
         <label><input type="checkbox" id="t_consent"> consent withdrawn</label>
         <label><input type="checkbox" id="t_revoked"> fragment revoked</label>
+        <label><input type="checkbox" id="t_expired"> review date expired</label>
       </div>
       <div class="field"><label>authority layer (override)</label>
         <select id="t_authority">
@@ -237,6 +239,7 @@ function gate(frag, ctx, ov){
     return {ok:false,reason:"endogenous_fragment_requires_review",detail:"needs Mission Group review"};
   if(authority==="evidence") return {ok:false,reason:"evidence_layer_not_authorised",detail:"Evidence-layer fragment"};
   if(!usable.includes(validation)) return {ok:false,reason:(validation==="expired"?"expired_review_date":"tier2_validation_missing"),detail:"validation_state="+validation};
+  if(ov.expired) return {ok:false,reason:"expired_review_date",detail:"review_due_at elapsed"};
   if(C.role!==null&&C.role!==undefined&&ctx.role&&!valueMatches(C.role,ctx.role)) return {ok:false,reason:"role_not_authorised",detail:"role="+ctx.role};
   if(["high","critical"].includes(ctx.risk_class)) return {ok:false,reason:"risk_class_requires_human_escalation",detail:"risk_class="+ctx.risk_class};
   const unmatched=[];
@@ -256,13 +259,18 @@ function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>
 
 function formContext(){
   const ctx={};
-  document.querySelectorAll("#fields input").forEach(i=>{ ctx[i.dataset.k]= i.value.trim()===""?null:i.value.trim(); });
+  document.querySelectorAll("#fields input").forEach(i=>{
+    const v=i.value.trim();
+    if(v==="") { ctx[i.dataset.k]=null; return; }
+    ctx[i.dataset.k]= v.includes(",") ? v.split(",").map(x=>x.trim()).filter(Boolean) : v;
+  });
   return ctx;
 }
 function overrides(){
   return {
     consent: el("t_consent").checked ? "withdrawn" : null,
     revoked: el("t_revoked").checked,
+    expired: el("t_expired").checked,
     authority: el("t_authority").value || null,
   };
 }
@@ -295,9 +303,13 @@ function buildFields(){
   document.querySelectorAll("#fields input").forEach(i=>i.addEventListener("input",evaluateGate));
 }
 function applyContext(ctx, ov){
-  document.querySelectorAll("#fields input").forEach(i=>{ i.value = (ctx[i.dataset.k]!==undefined&&ctx[i.dataset.k]!==null)?ctx[i.dataset.k]:""; });
+  document.querySelectorAll("#fields input").forEach(i=>{
+    const v=ctx[i.dataset.k];
+    i.value = (v===undefined||v===null) ? "" : (Array.isArray(v)?v.join(","):v);
+  });
   el("t_consent").checked = (ov&&ov.consent==="withdrawn")||false;
   el("t_revoked").checked = (ov&&ov.revoked)||false;
+  el("t_expired").checked = (ov&&ov.expired)||false;
   el("t_authority").value = (ov&&ov.authority)||"";
   evaluateGate();
 }
@@ -314,10 +326,20 @@ function buildPresets(){
     presets.push([label, ()=>{const c={...m,[key]:wrong}; if(key==="equipment_family") c.equipment_id=""; applyContext(c,{});}]);
     break;
   }
+  if(C.role!==null&&C.role!==undefined){
+    presets.push(["Unauthorised role", ()=>applyContext({...m,role:"visitor"},{})]);
+  }
   presets.push(["High risk", ()=>applyContext({...m,risk_class:"high"},{})]);
   const ex=(C.exclusion_conditions||[])[0];
-  if(ex) presets.push(["Excluded mode", ()=>applyContext({...m,...ex},{})]);
+  if(ex){
+    // Keep the positive condition satisfied AND trigger the exclusion, so the
+    // recorded reason is exclusion_condition_applies (not a plain mismatch).
+    const c={...m};
+    for(const [k,v] of Object.entries(ex)) c[k]=(m[k]&&m[k]!==v)?[m[k],v]:v;
+    presets.push(["Excluded mode", ()=>applyContext(c,{})]);
+  }
   presets.push(["Consent withdrawn", ()=>applyContext(m,{consent:"withdrawn"})]);
+  presets.push(["Review expired", ()=>applyContext(m,{expired:true})]);
   presets.push(["Not yet promoted", ()=>applyContext(m,{authority:"evidence"})]);
   el("presets").innerHTML="";
   presets.forEach(([label,fn])=>{ const b=document.createElement("button"); b.textContent=label; b.onclick=fn; el("presets").appendChild(b); });
