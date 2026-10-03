@@ -8,7 +8,7 @@ import typer
 
 from ..conditions.context import TacitContext
 from ..engine import MetisEngine
-from ..project import NoWorkspace, Project
+from ..project import NoWorkspace, Project, WorkspaceBusy
 from ..scenarios import SPECS, DemoRun, run_spec
 
 
@@ -27,11 +27,11 @@ def load_state(workspace: str | None = None) -> dict:
         raise typer.BadParameter(str(exc)) from exc
 
 
-def open_engine(workspace: str | None = None) -> tuple[Project, MetisEngine]:
+def open_engine(workspace: str | None = None, *, read_only: bool = False) -> tuple[Project, MetisEngine]:
     proj = project()
     try:
-        return proj, proj.open(workspace)
-    except NoWorkspace as exc:
+        return proj, proj.open(workspace, read_only=read_only)
+    except (NoWorkspace, WorkspaceBusy) as exc:
         raise typer.BadParameter(str(exc)) from exc
 
 

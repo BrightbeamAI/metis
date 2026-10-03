@@ -71,11 +71,22 @@ is append-only; corrections and revocations are appended, never rewritten.
 ## Persistence
 
 A local project (`metis/project.py`, `$METIS_HOME`) keeps the CHAP coordinator in its SQLite store
-(`chap.db`), so every command reopens a workspace and continues its chain. Each workspace also has
-its domain state (`state.json`) and an append-only ledger (`evidence.jsonl`): the adapter appends
-each new evidence entry to the ledger as it is recorded and flushes it to disk. On open, the ledger
-and the store are checked against each other, so a lost write is detected rather than tolerated.
-Running another scenario creates a new workspace; nothing is overwritten.
+(`chap.db`), so every command reopens a workspace and continues its chain. Each workspace keeps its
+domain state (fragments, memory objects, the procedural, semantic, and episodic entries, pending
+captures, counters) in its own SQLite database (`metis.db`), saved in one transaction so a crash
+leaves the previous state or the new one, never a partial write. Fragment rows carry category,
+layer, and state as columns, so the store answers SQL queries directly.
+
+Each workspace also has an append-only ledger (`evidence.jsonl`): the adapter appends each new
+evidence entry as it is recorded and flushes it to disk. On open, the ledger and the CHAP store
+are checked against each other, so a lost write is detected rather than tolerated, and the ledger
+refuses to append if another writer has touched it.
+
+A workspace has one writer at a time. A process that opens a workspace for writing holds an
+exclusive lock (`.lock`) until it exits; another process that tries to write the same workspace is
+refused with a clear message. Read-only opens take no lock and record nothing, so inspection and
+`metis audit verify` work while a writer such as `metis mcp` runs. Running another scenario creates
+a new workspace; nothing is overwritten.
 
 ## Timestamps
 

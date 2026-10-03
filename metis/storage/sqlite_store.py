@@ -1,23 +1,39 @@
-"""Local SQLite persistence for fragments, memory objects, artefacts, and evidence.
+"""SQLite persistence for a workspace's Metis domain state.
 
-This is a convenience backend for ``metis init`` and the CLI. The CHAP evidence chain
-remains the source of truth for audit; this store mirrors live state for querying.
+This is the authoritative store for tacit fragments, memory objects, the procedural,
+semantic, and episodic memory entries, pending captures, and the workspace's counters and
+CHAP references. Every save is one transaction, so a crash leaves either the previous state
+or the new one, never a partial write. Fragment and memory rows carry their category, layer,
+and state as columns, so the store can be queried directly with SQL. The CHAP evidence chain
+itself lives in the CHAP store (``chap.db``) and the append-only ledger.
 """
 from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 from ..fragment.model import TacitFragment
 
+SCHEMA_VERSION = 1
+
 _SCHEMA = """
-CREATE TABLE IF NOT EXISTS fragments (id TEXT PRIMARY KEY, json TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS memory_objects (id TEXT PRIMARY KEY, fragment_id TEXT, json TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS artefacts (id TEXT PRIMARY KEY, kind TEXT, json TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS evidence (seq INTEGER PRIMARY KEY, json TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS fragments (
+    id TEXT PRIMARY KEY, category TEXT, authority_layer TEXT, validation_state TEXT,
+    revocation_status TEXT, json TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS memory_objects (
+    id TEXT PRIMARY KEY, fragment_id TEXT, authority_layer TEXT, json TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS memory_entries (
+    store TEXT NOT NULL, position INTEGER NOT NULL, json TEXT NOT NULL,
+    PRIMARY KEY (store, position));
+CREATE TABLE IF NOT EXISTS pending_captures (
+    whisper_id TEXT PRIMARY KEY, worker TEXT, json TEXT NOT NULL);
 """
+
+_META_KEYS = ("version", "name", "site", "workspace", "counters", "governance_refs")
+_STORES = ("procedural", "semantic", "episodic")
 
 
 class SqliteStore:
@@ -25,47 +41,58 @@ class SqliteStore:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(str(self.path))
-        self.conn.executescript(_SCHEMA)
-        self.conn.commit()
+        with self.conn:
+            self.conn.executescript(_SCHEMA)
+            self.conn.execute("INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
+                              (json.dumps(SCHEMA_VERSION),))
 
-    # FragmentBackend protocol
-    def save_fragment(self, fragment: TacitFragment) -> None:
-        self.conn.execute(
-            "INSERT OR REPLACE INTO fragments (id, json) VALUES (?, ?)",
-            (fragment.fragment_id, fragment.model_dump_json()))
-        self.conn.commit()
+    def save_state(self, state: dict[str, Any]) -> None:
+        """Replace the stored domain state with ``state`` in one transaction."""
+        with self.conn:
+            for table in ("fragments", "memory_objects", "memory_entries", "pending_captures"):
+                self.conn.execute(f"DELETE FROM {table}")
+            self.conn.executemany(
+                "INSERT INTO fragments VALUES (?, ?, ?, ?, ?, ?)",
+                [(f["fragment_id"], f["category"], f["authority_layer"], f["validation_state"],
+                  f["revocation_status"], json.dumps(f)) for f in state.get("fragments", [])])
+            self.conn.executemany(
+                "INSERT INTO memory_objects VALUES (?, ?, ?, ?)",
+                [(m["memory_id"], m["fragment_id"], m["authority_layer"], json.dumps(m))
+                 for m in state.get("memory_objects", [])])
+            self.conn.executemany(
+                "INSERT INTO memory_entries VALUES (?, ?, ?)",
+                [(store, i, json.dumps(e)) for store in _STORES
+                 for i, e in enumerate(state.get(store, []))])
+            self.conn.executemany(
+                "INSERT INTO pending_captures VALUES (?, ?, ?)",
+                [(p["whisper_id"], p["worker"], json.dumps(p)) for p in state.get("pending_captures", [])])
+            self.conn.executemany(
+                "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
+                [(k, json.dumps(state.get(k))) for k in _META_KEYS])
 
-    def load_fragments(self) -> Iterable[TacitFragment]:
-        rows = self.conn.execute("SELECT json FROM fragments").fetchall()
+    def load_state(self) -> dict[str, Any] | None:
+        """The stored domain state, or ``None`` if nothing has been saved yet."""
+        meta = {k: json.loads(v) for k, v in self.conn.execute("SELECT key, value FROM meta")}
+        if "name" not in meta:
+            return None
+        state: dict[str, Any] = {k: meta.get(k) for k in _META_KEYS}
+        state["fragments"] = [json.loads(r[0]) for r in
+                              self.conn.execute("SELECT json FROM fragments ORDER BY id")]
+        state["memory_objects"] = [json.loads(r[0]) for r in
+                                   self.conn.execute("SELECT json FROM memory_objects ORDER BY id")]
+        for store in _STORES:
+            state[store] = [json.loads(r[0]) for r in self.conn.execute(
+                "SELECT json FROM memory_entries WHERE store = ? ORDER BY position", (store,))]
+        state["pending_captures"] = [json.loads(r[0]) for r in
+                                     self.conn.execute("SELECT json FROM pending_captures")]
+        return state
+
+    def persist_engine(self, engine: Any) -> None:
+        self.save_state(engine.export_state())
+
+    def load_fragments(self) -> list[TacitFragment]:
+        rows = self.conn.execute("SELECT json FROM fragments ORDER BY id").fetchall()
         return [TacitFragment.model_validate_json(r[0]) for r in rows]
-
-    def save_memory_object(self, memory_id: str, fragment_id: str, payload: dict) -> None:
-        self.conn.execute(
-            "INSERT OR REPLACE INTO memory_objects (id, fragment_id, json) VALUES (?, ?, ?)",
-            (memory_id, fragment_id, json.dumps(payload)))
-        self.conn.commit()
-
-    def save_artefact(self, artefact: dict) -> None:
-        self.conn.execute(
-            "INSERT OR REPLACE INTO artefacts (id, kind, json) VALUES (?, ?, ?)",
-            (artefact["id"], artefact.get("kind"), json.dumps(artefact)))
-        self.conn.commit()
-
-    def save_evidence(self, record: dict) -> None:
-        self.conn.execute(
-            "INSERT OR REPLACE INTO evidence (seq, json) VALUES (?, ?)",
-            (record["seq"], json.dumps(record)))
-        self.conn.commit()
-
-    def persist_engine(self, engine) -> None:
-        for frag in engine.fragments.all():
-            self.save_fragment(frag)
-        for mo in engine.tacit_store.all():
-            self.save_memory_object(mo.memory_id, mo.fragment_id, mo.model_dump(mode="json"))
-        for art in engine.adapter.artefacts.values():
-            self.save_artefact(art)
-        for rec in engine.adapter.evidence_records():
-            self.save_evidence(rec)
 
     def close(self) -> None:
         self.conn.close()

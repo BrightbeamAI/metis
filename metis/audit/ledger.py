@@ -19,9 +19,11 @@ class LedgerMismatch(RuntimeError):
 
 
 class EvidenceLedger:
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, *, read_only: bool = False) -> None:
         self.path = Path(path)
+        self.read_only = read_only
         self._count = self._read_count()
+        self._size = self.path.stat().st_size if self.path.exists() else 0
 
     def _read_count(self) -> int:
         if not self.path.exists():
@@ -45,6 +47,12 @@ class EvidenceLedger:
         new = entries[self._count:]
         if not new:
             return 0
+        if self.read_only:
+            raise PermissionError(f"{self.path} was opened read-only.")
+        size = self.path.stat().st_size if self.path.exists() else 0
+        if size != self._size:
+            raise LedgerMismatch(
+                f"{self.path} was changed by another writer; reopen the workspace.")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
             for entry in new:
@@ -52,6 +60,7 @@ class EvidenceLedger:
             fh.flush()
             os.fsync(fh.fileno())
         self._count += len(new)
+        self._size = self.path.stat().st_size
         return len(new)
 
     def check(self, adapter: Any) -> None:

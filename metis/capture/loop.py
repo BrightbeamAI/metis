@@ -25,7 +25,7 @@ from ..fragment.model import Attribution, FragmentEvidence, TacitFragment
 from ..fragment.store import FragmentStore
 from ..models.ollama_client import OllamaClient
 from ..models.structured_outputs import AssistPurpose, ModelAssistRecord
-from ..taxonomy.categories import SourcePathway
+from ..taxonomy.categories import Category, SourcePathway
 from ..validation.tier1 import OperatorResponse
 from .confirm import ConfirmationResult, operator_confirm
 from .infer import InferenceCandidate, infer_candidate
@@ -170,6 +170,8 @@ class CaptureLoop:
         worker: str | None = None,
     ) -> PendingCapture:
         """Observe, infer, and ask the worker one whisper. The worker answers later."""
+        if category is not None:
+            Category(category)  # reject an unknown category before anything is recorded
         worker = worker or self.operator_uri
         mc = self.model_client if use_model else None
         assists: list[ModelAssistRecord] = []

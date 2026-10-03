@@ -172,7 +172,8 @@ class CHAPAdapter:
         self._req = len(ws.audit)
         if self.ledger is not None:
             self.ledger.check(self)
-            self.ledger.sync(self)
+            if not self.ledger.read_only:
+                self.ledger.sync(self)
 
     # ---- time ------------------------------------------------------------------
     def now_iso(self) -> str:
@@ -180,6 +181,8 @@ class CHAPAdapter:
 
     # ---- low-level dispatch ----------------------------------------------------
     def _dispatch(self, method: str, **params: Any) -> dict[str, Any] | None:
+        if self.ledger is not None and self.ledger.read_only:
+            raise PermissionError(f"{self.workspace_id} was opened read-only; nothing can be recorded.")
         params.setdefault("workspace", self.workspace_id)
         params = to_chap_canonical(params)
         self._req += 1

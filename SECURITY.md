@@ -16,6 +16,9 @@ public issue for anything that could expose worker data or break the audit chain
   persists the coordinator in CHAP's SQLite store and keeps a per-workspace ledger that is
   appended and flushed as each entry is recorded; on open, ledger and store are checked
   against each other, and `metis audit verify` detects any edit to the ledger.
+- **One writer per workspace.** A process writing a workspace holds an exclusive lock, so two
+  processes cannot overwrite each other's evidence; domain state is saved to SQLite in one
+  transaction. Read-only opens record nothing.
 - **Integrity.** The chain links each entry by `sha256( JCS(envelope) || prev_hash )`, so any later
   edit to a recorded envelope is detectable by replaying the chain. Ed25519 per-message signing is
   available through CHAP's optional `security-signed/1.0` profile for stronger non-repudiation.

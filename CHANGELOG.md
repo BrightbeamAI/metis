@@ -15,6 +15,10 @@ All notable changes to Metis are recorded here. The format follows
   `metis workspace list | use`, `metis audit verify`.
 - Escalation to a person. High-risk situations and near misses (same equipment, different
   situation) open a `tacit.escalation` task and add a required human action.
+- SQLite is the authoritative store for each workspace's domain state (fragments, memory
+  objects, memory entries, pending captures), saved in one transaction and queryable with SQL.
+- One writer per workspace across processes, with read-only inspection and verification
+  alongside a running writer such as `metis mcp`.
 - Two-step capture: `begin_capture` asks the worker, `answer_whisper` records the worker's
   own answer and consent. Only the addressed human worker may answer.
 - Whisper budgets that ration prompts per worker and record deferrals.
@@ -29,12 +33,17 @@ All notable changes to Metis are recorded here. The format follows
   never reported as an escalation.
 - Provenance names a model only when one ran, review status follows the fragment's state,
   and every lineage entry links to its evidence-chain record.
+- Only the worker who contributed a fragment can withdraw consent; reviewers retire
+  fragments with `revoke`.
 - Requires `chap-coordinator` 0.2.13 or later (below 0.3).
+- The local project layout is new. Demo state written by earlier versions is not migrated;
+  run `metis demo` again.
 
 ### Fixed
 - Records created through the API or another live engine carried the deterministic demo
   clock. Timestamps now come from the engine making the call, and live engines use real time.
 - A held fragment could not be reviewed again.
+- An unknown category no longer leaves a partial capture on the evidence chain.
 - The API's `/promote` accepted any outcome, and `/audit/export` wrote to any path; both are
   now rejected with an error.
 

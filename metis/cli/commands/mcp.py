@@ -15,5 +15,10 @@ def mcp(
         typer.secho('The MCP server needs the optional extra: pip install "metis-memory[mcp]"', err=True)
         raise typer.Exit(code=1)
     from ...mcp.server import serve
+    from ...project import NoWorkspace, WorkspaceBusy
 
-    serve(workspace=workspace, seed_demo=seed_demo)
+    try:
+        serve(workspace=workspace, seed_demo=seed_demo)
+    except (NoWorkspace, WorkspaceBusy) as exc:
+        typer.secho(str(exc), err=True)
+        raise typer.Exit(code=1) from exc

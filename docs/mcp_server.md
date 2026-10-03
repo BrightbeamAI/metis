@@ -19,6 +19,11 @@ workspace yet, the server seeds the pump demo so there is governed memory to try
 `--no-seed-demo` turns that off. Every retrieval, capture, and contest is recorded on the
 workspace's hash-linked CHAP chain and its append-only ledger, exactly as the CLI records them.
 
+While the server runs it is the workspace's only writer. CLI commands that record something on the
+same workspace (`metis retrieve`, `metis memory query`) are refused with a clear message;
+inspection (`metis fragment list`, `metis audit verify`) keeps working. Use another workspace for
+CLI work, or stop the server first.
+
 ## Connect a client
 
 **Claude Code**

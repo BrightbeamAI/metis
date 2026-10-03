@@ -333,9 +333,19 @@ class Governance:
             mo.revocation_status = RevocationStatus.superseded
         return sup_art
 
+    @staticmethod
+    def _require_contributor(frag: TacitFragment, who: str) -> None:
+        contributors = {frag.provenance.originating_participant, frag.provenance.observed_by,
+                        frag.provenance.human_confirmed_by, frag.attribution.worker_or_group}
+        if who not in contributors - {None}:
+            raise PermissionError(
+                "Only the worker who contributed this fragment can withdraw consent; "
+                "reviewers retire fragments with revoke().")
+
     @clock.scoped
     def withdraw_consent(self, fragment_id: str, *, by: str, note: str | None = None) -> str:
         frag = self.fragments.require(fragment_id)
+        self._require_contributor(frag, by)
         frag.consent.consent_status = ConsentStatus.withdrawn
         self.fragments.put(frag)
         return self.revoke(fragment_id, reason=RevocationReason.consent_withdrawn, by=by, note=note)
@@ -355,6 +365,8 @@ class Governance:
         record = ContestabilityRecord(fragment_id=fragment_id, action=action, raised_by=raised_by,
                                       rationale=rationale, proposed_correction=proposed_correction)
         frag = self.fragments.require(fragment_id)
+        if action == ContestAction.withdraw:
+            self._require_contributor(frag, raised_by)
         ref = self._ensure_refs(frag)
         rec_art = self.adapter.append_artefact(
             "tacit.validation_event", produced_by=raised_by,

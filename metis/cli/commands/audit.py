@@ -39,7 +39,7 @@ def audit_verify(workspace: str = _WORKSPACE) -> None:
     """Verify the chain in the CHAP store and the ledger, and check that they agree."""
     path = _ledger(workspace)
     ledger = replay(path)
-    _, engine = open_engine(workspace)  # opening checks the ledger against the store
+    _, engine = open_engine(workspace, read_only=True)  # opening checks ledger against store
     stored = engine.verify()
     typer.echo(f"CHAP store: {stored.checked} entries, verified={stored.ok}")
     typer.echo(f"Ledger:     {ledger.checked} entries, verified={ledger.ok}")
