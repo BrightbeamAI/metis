@@ -1,7 +1,11 @@
 """Regenerate the JSON Schemas in schemas/ from the Pydantic models.
 
+Each file is named after the artefact kind it describes (``tacit.fragment`` is
+``tacit_fragment.schema.json``), matching the ``schema`` URI the artefact carries;
+``tacit_context`` describes the conditions and runtime context that several objects embed.
+
 Run: python scripts/generate_schemas.py (also part of `make regen`). A test fails when a
-committed schema no longer matches its model, so the published schemas cannot drift.
+committed schema differs from its model, so the published schemas always match the code.
 """
 from __future__ import annotations
 
@@ -20,21 +24,23 @@ from metis.memory.agent_context import AgentMemoryContext
 from metis.memory.tacit import TacitMemoryObject
 from metis.models.structured_outputs import ModelAssistRecord
 from metis.retrieval.decision import RetrievalDecision
+from metis.validation.events import ValidationEvent
 from metis.validation.promotion import PromotionRecord
 from metis.validation.tier2 import MissionGroupReview
 
 BASE = "https://metis.dev/schemas/0.1"
 SCHEMAS = {
-    "agent_memory_context": AgentMemoryContext,
-    "model_assist_record": ModelAssistRecord,
+    "tacit_agent_memory_context": AgentMemoryContext,
     "tacit_consent_record": ConsentRecord,
     "tacit_context": TacitContext,
     "tacit_fragment": TacitFragment,
     "tacit_memory_object": TacitMemoryObject,
+    "tacit_model_assist_record": ModelAssistRecord,
     "tacit_promotion_record": PromotionRecord,
     "tacit_retrieval_decision": RetrievalDecision,
+    "tacit_review_decision": MissionGroupReview,
     "tacit_revocation_record": RevocationRecord,
-    "tacit_validation_event": MissionGroupReview,
+    "tacit_validation_event": ValidationEvent,
 }
 
 

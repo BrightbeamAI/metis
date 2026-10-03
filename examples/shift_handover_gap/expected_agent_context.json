@@ -41,9 +41,9 @@
       "memory_id": "TM-00001",
       "fragment_id": "TF-00001",
       "authority_layer": "advisory",
-      "content": "Team leads sense an incomplete handover when open threads are ticked off on the form but not confirmed verbally between outgoing and incoming shifts.",
+      "content": "Team leads sense an incomplete handover when open threads are ticked off on the form without a spoken confirmation between outgoing and incoming shifts.",
       "use_constraints": [
-        "Present as a handover checklist prompt, not automation.",
+        "Present as a handover checklist prompt for the incoming lead.",
         "Ask the incoming lead to confirm open threads verbally.",
         "Do not auto-close the handover.",
         "Escalate if risk class is high."
@@ -63,9 +63,9 @@
   ],
   "blocked_tacit_memory": [],
   "governance_notes": [
-    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Tacit memory is governed, situated guidance that holds under its recorded conditions.",
     "Respect every use constraint and the conditions of applicability.",
-    "Blocked tacit results are recorded for audit and must not be treated as usable guidance."
+    "Blocked tacit results stay out of the guidance; each one is recorded for audit."
   ],
   "required_human_actions": [
     "Ask the incoming lead to confirm open threads verbally.",

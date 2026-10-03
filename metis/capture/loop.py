@@ -2,7 +2,7 @@
 
 Each stage is a Metis action emitted as a CHAP event/artefact through the adapter. A
 local model may assist at the Infer/Whisper/Confirm stages; every assisted step is recorded
-as a ModelAssistRecord (provenance, not authority).
+as a ModelAssistRecord, for provenance only.
 
 The loop runs in two halves. ``begin`` observes, infers, and asks the worker one whisper;
 ``complete`` records the worker's own answer and stores a confirmed fragment. ``run`` does
@@ -264,7 +264,7 @@ class CaptureLoop:
         # 4. Confirm (Tier-1, descriptive fidelity)
         confirmation, confirm_assist = operator_confirm(
             pending.whisper, response, corrected_content=corrected_content, free_text=free_text,
-            model_client=mc)
+            confirmed_text=pending.candidate.hypothesis, model_client=mc)
         self.adapter.whisper_answer(
             sender=worker, to=self.whisperer_uri, task_id=pending.task_id,
             prompt_artefact=prompt_art, response_type=confirmation.response.value,
@@ -298,8 +298,8 @@ class CaptureLoop:
                 consent=pending.consent, title=pending.title, conditions=pending.conditions,
                 attribution=pending.attribution, evidence=pending.evidence,
                 source_pathway=pending.source_pathway)
-            # Model-assist provenance (provenance, not authority). Name a model only when one
-            # actually ran; deterministic fixtures are recorded as such.
+            # Model-assist provenance. Name a model only when one actually ran; deterministic
+            # fixtures are recorded as such.
             if assists:
                 live = [a for a in assists if a.used_live_model]
                 fragment.provenance.model_assist_refs = [a.assist_id for a in assists]

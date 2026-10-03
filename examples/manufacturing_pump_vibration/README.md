@@ -1,4 +1,4 @@
-# Example 1, Manufacturing pump vibration
+# Example 1: Manufacturing pump vibration
 
 **Categories:** `K7_sensory`, `K10_diagnostic`, `K4_equipment_specific`
 
@@ -18,17 +18,19 @@ metis demo manufacturing-pump-vibration
 This runs the full loop locally with deterministic fixtures (or a live Gemma model via
 `--live-model` if Ollama is running) and demonstrates, in order:
 
-1. workspace creation and participants (operator, whisperer agent, Mission Group, assistant agent)
+1. workspace creation and participants (operator, whisperer agent, the Mission Group and its three
+   named reviewers, assistant agent)
 2. procedural / semantic / episodic memory loaded
 3. local model status check
-4. observation → inference candidate (hypothesis only) → optional model-assisted structuring
+4. observation → inference candidate (a hypothesis) → optional model-assisted structuring
 5. a CHAP whisper and the operator confirmation
 6. an Evidence-layer `tacit.fragment`
-7. Mission Group Tier-2 review → promotion to Advisory
+7. Mission Group Tier-2 review: two named reviewers approve (`quorum:2`), and the fragment is
+   promoted to Advisory with a review date
 8. a `tacit.memory_object`
 9. retrieval **allowed** under the matching context, **blocked** under the non-matching context
 10. an `AgentMemoryContext` combining procedural, semantic, episodic, and tacit memory
-11. an exported, replayable CHAP evidence chain
+11. a verified CHAP evidence chain and its append-only ledger (export it with `metis audit export`)
 
 ## Files
 
@@ -41,7 +43,7 @@ This runs the full loop locally with deterministic fixtures (or a live Gemma mod
 | `episodic_memory/prior_cases.jsonl` | prior cases (incl. CHAP-style outcomes) |
 | `whisper_response.json` | the operator's Tier-1 confirmation |
 | `fragment_evidence.json` | the evidence summary the Mission Group weighs |
-| `mission_group_review.json` | the Tier-2 decision |
+| `mission_group_review.json` | the Tier-2 decision, with the approving reviewers and the rule |
 | `context_matching.json` / `context_non_matching.json` | runtime contexts for the gate |
 | `tacit_memory/expected_tacit_memory_object.json` | the promoted, governed memory object |
 | `expected_agent_context.json` | the agent-facing context under the matching situation |
@@ -55,6 +57,7 @@ metis retrieve --context examples/manufacturing_pump_vibration/context_non_match
 metis memory query --context examples/manufacturing_pump_vibration/context_matching.json
 ```
 
-The advisory memory is presented with use constraints, "present as an advisory cue only", "do
-not automatically reduce throughput", "ask the human operator to confirm the acoustic cue",
-"escalate if risk class is high", never as an automatic action.
+The advisory memory is presented with its use constraints: "present as an advisory cue only", "do
+not automatically reduce throughput", "ask the human operator to confirm the acoustic cue", and
+"escalate if risk class is high". Set `"risk_class": "high"` in the matching context and the gate
+withholds the guidance and opens an escalation task for the operator.

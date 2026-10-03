@@ -5,7 +5,7 @@
     </marker>
   </defs>
   <rect width="920" height="360" fill="#F2F5FA"/>
-  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The retrieval gate is a governance check, not similarity search</text>
+  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The retrieval gate decides whether a fragment may be used here</text>
   <text x="28" y="60" font-size="13" fill="#5A5A5A">A fragment is eligible only when every check passes. The first failing check is the recorded reason.</text>
 
   <!-- input -->
@@ -32,7 +32,7 @@
     <text x="270" y="262">7. role authorised</text>
     <text x="270" y="282">8. conditions match, no exclusions</text>
     <text x="270" y="302">9. controlled needs exact match</text>
-    <text x="270" y="322">10. risk not high, else a person decides</text>
+    <text x="270" y="322">10. risk below high, else a person decides</text>
   </g>
 
   <line x1="198" y1="182" x2="250" y2="182" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>

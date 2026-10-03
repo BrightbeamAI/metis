@@ -1,4 +1,4 @@
-"""Rejection records (tacit.rejection_record). Rejected fragments are retained, never deleted."""
+"""Rejection records (tacit.rejection_record). A rejected fragment stays on the chain for audit."""
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field

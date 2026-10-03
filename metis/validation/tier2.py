@@ -2,7 +2,7 @@
 
 Tier-2 weighs description fidelity, operational relevance, normative alignment, and the
 risk/consent/evidence dimensions before deciding the authority layer. A local model may
-draft a review *summary*, but it never makes the decision.
+draft a review *summary*; the Mission Group makes the decision.
 """
 from __future__ import annotations
 

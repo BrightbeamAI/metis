@@ -1,12 +1,13 @@
 # Mission Group Tier-2 Review Checklist
 
-Tier-2 decides the organisational role a fragment may play, not whether the text sounds plausible.
+Tier-2 decides the organisational role a fragment may play, judged on its evidence, conditions,
+and risk.
 
 For each dimension, record an assessment:
 
-- [ ] **Description fidelity**, did we faithfully represent the worker's account / behaviour?
-- [ ] **Operational relevance**, does it connect to a meaningful outcome or decision?
-- [ ] **Normative alignment**, is the practice safe, compliant, fair, and legitimate?
+- [ ] **Description fidelity**: did we faithfully represent the worker's account / behaviour?
+- [ ] **Operational relevance**: does it connect to a meaningful outcome or decision?
+- [ ] **Normative alignment**: is the practice safe, compliant, fair, and legitimate?
 - [ ] **Safety risk** / **Quality risk** / **Compliance risk**
 - [ ] **Fairness / equity risk** / **Surveillance risk**
 - [ ] **Evidence strength** / **Recurrence** / **Counterexamples**
@@ -16,6 +17,7 @@ For each dimension, record an assessment:
 
 **Decision:** promoted_to_advisory / promoted_to_controlled / held / rejected / re_elicit
 
-A local model may draft this summary; the Mission Group makes the decision. Rejected fragments are
-**retained** in the audit chain, never deleted. Controlled promotion additionally requires
-change-control metadata.
+A local model may draft this summary; the Mission Group makes the decision. Promotion needs the
+approval of a quorum of named reviewers (two by default); one reviewer can hold, reject, or ask for
+re-elicitation. Rejected fragments stay in the audit chain. Controlled promotion additionally
+requires change-control metadata.

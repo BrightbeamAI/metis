@@ -144,7 +144,7 @@ readme = (Path(__file__).resolve().parents[1] / "README.md").read_text()
 head = readme[:600]
 check("23. README is Metis-first and engineer-first",
       "Metis" in head and "Quickstart" in readme and "pip install -e ." in readme)
-check("24. CHAP documented as the foundation and linked (not the main product)",
+check("24. CHAP documented as the foundation and linked, with Metis leading",
       "github.com/BrightbeamAI/chap" in readme and "chap-coordinator" in readme
       and not head.lstrip().lower().startswith("chap"))
 

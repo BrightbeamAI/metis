@@ -124,3 +124,15 @@ def test_end_to_end_over_stdio(tmp_path):
     names, decision = asyncio.run(scenario())
     assert names == EXPECTED_TOOLS
     assert decision["guidance"][0]["fragment_id"] == "TF-00001"
+
+
+def test_a_rejected_evidence_fragment_is_only_counted(tools):
+    asked = tools.submit_observation("OBS-M9", "Eased back at the dull note.", MATCH, WORKER,
+                                     category="K7_sensory")
+    stored = tools.answer_whisper(asked["whisper_id"], "confirm", WORKER, "granted")
+    eng = tools.engine
+    eng.tier2_review(stored["fragment_id"], "rejected", summary="not enough evidence",
+                     decided_by=[eng.mission_group_members[0]])
+    out = tools.retrieve_guidance(MATCH)
+    assert stored["fragment_id"] not in {w["fragment_id"] for w in out["withheld"]}
+    assert out["not_yet_authorised"] >= 1

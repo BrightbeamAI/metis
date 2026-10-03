@@ -17,7 +17,7 @@ def test_capture_with_model_creates_assist_records(captured_fragment):
     assert len(res.model_assist_records) >= 1
     kinds = [a["kind"] for a in engine.adapter.artefacts.values()]
     assert "tacit.model_assist_record" in kinds
-    # provenance, not authority: fragment records the assist refs
+    # provenance only: the fragment records the assist refs
     assert res.fragment.provenance.model_assist_refs
 
 

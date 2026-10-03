@@ -1,12 +1,12 @@
 """Local Ollama client for bounded, assistive model calls (default model: Gemma).
 
 Design rules:
-  * Local only. Talks to ``config.url`` (default http://localhost:11434). Never a cloud API.
-  * Fails gracefully. If Ollama is not running, returns a deterministic fallback rather
-    than raising, so the demo and tests run without a live server.
+  * Local only. Talks to ``config.url`` (default http://localhost:11434).
+  * Fails gracefully. When Ollama is unreachable, returns a deterministic fallback, so the
+    demo and tests run without a live server.
   * Deterministic for CI. With ``deterministic=True`` (the test/demo default) no network call
     is made and outputs are reproducible.
-  * Advisory only. Output is always a draft suggestion; it never decides governance.
+  * Advisory only. Output is a draft suggestion for a person to accept or change.
 """
 from __future__ import annotations
 
@@ -135,7 +135,8 @@ class OllamaClient:
             out = {"question": "You acted differently from the written procedure. What cue prompted that?",
                    "follow_ups": ["Does this apply only under specific conditions?"]}
         elif purpose == AssistPurpose.summarise_confirmation.value:
-            out = {"summary": "Operator confirmed the described practice. " + excerpt}
+            # Restate the confirmed text faithfully: the part of the prompt after "Text:".
+            out = {"summary": " ".join(prompt.split("Text:", 1)[-1].split())}
         elif purpose == AssistPurpose.suggest_conditions.value:
             out = {"conditions": {}, "exclusions": []}
         elif purpose == AssistPurpose.review_summary.value:

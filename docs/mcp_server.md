@@ -54,11 +54,11 @@ Any other MCP client works the same way: run `metis mcp` as a stdio server.
 |------|--------------|---------------|
 | `retrieve_guidance` | Returns tacit guidance whose recorded conditions match the context, with use constraints, and anything a person must decide. | Records the decision |
 | `agent_memory_context` | Assembles procedural, semantic, episodic, and gated tacit memory for a task. | Records the query |
-| `list_tacit_memory` | Lists agent-visible memory: identifiers, categories, conditions, review dates. No content. | No |
+| `list_tacit_memory` | Lists agent-visible memory: identifiers, titles, categories, conditions, review dates. The guidance text comes only through the gate. | No |
 | `describe_workspace` | Fragments by authority layer, pending whispers, reviewers, chain status. | No |
 | `submit_observation` | Reports a divergence from procedure; returns one short question for the worker. | Starts a capture |
 | `list_pending_whispers` | Whispers waiting for a worker's answer. | No |
-| `answer_whisper` | Relays the worker's own answer and consent; stores an Evidence-layer fragment on confirm. | Completes a capture |
+| `answer_whisper` | Relays the worker's own answer and consent; stores an Evidence-layer fragment when the worker confirms or corrects it and grants consent. | Completes a capture |
 | `contest_fragment` | Relays a challenge, correction, withdrawal, or re-elicitation request. | Opens a review or revokes |
 | `audit_verify` | Verifies the evidence chain and checks the ledger agrees. | No |
 | `audit_tail` | The latest chain entries. | No |
@@ -70,17 +70,20 @@ Two resources describe the rules: `metis://governance` (the contract below) and
 
 - **Guidance only through the gate.** Content reaches an agent only from `retrieve_guidance`
   and `agent_memory_context`, which apply the condition-aware gate. Listing tools return
-  metadata, so nothing reaches an agent around the gate.
-- **Unauthorised fragments stay out of sight.** Evidence-layer and unreviewed fragments are
-  counted (`not_yet_authorised`) but never identified or shown.
+  metadata (identifiers, titles, conditions), so the guidance text reaches an agent only
+  through the gate.
+- **Unauthorised fragments stay out of sight.** Evidence-layer and unreviewed fragments appear
+  only as a count (`not_yet_authorised`).
 - **A person decides when it matters.** High-risk situations and near misses come back as
-  `required_human_actions` with an escalation task for the operator, not as guidance.
+  `required_human_actions` with an escalation task for the operator, and the agent waits for
+  that person.
 - **Workers speak for themselves.** `submit_observation`, `answer_whisper`, and
   `contest_fragment` require a `human:` participant URI, and only the worker a whisper was
   addressed to may answer it. Consent is stated with the answer: `granted` stores the
   fragment; `declined` records the answer and stores nothing.
 - **No tool grants authority.** Promotion needs a quorum of named Mission Group reviewers,
-  outside this surface. Contests can open a review or revoke; they never promote.
+  outside this surface. Contests open a review or revoke a fragment; promotion stays with the
+  reviewers.
 - **Whispers are rationed.** A worker receives at most five whispers in eight hours by
   default; beyond that, `submit_observation` defers and records the deferral.
 
@@ -88,8 +91,8 @@ Two resources describe the rules: `metis://governance` (the contract below) and
 
 1. The agent calls `retrieve_guidance` with the live context of pump A under high load on the
    night shift. Metis returns the advisory cue with its use constraints.
-2. The same call with `risk_class: "high"` returns no guidance, an escalation task, and a
-   required human action: the agent stops and involves the operator.
+2. The same call with `risk_class: "high"` withholds the guidance and returns an escalation
+   task and a required human action: the agent stops and involves the operator.
 3. The agent notices a new divergence and calls `submit_observation` for
    `human:operator@plant_a`. Metis returns a whisper such as "You noticed something before the
    formal measure changed. What cue made you pause?"
@@ -99,7 +102,7 @@ Two resources describe the rules: `metis://governance` (the contract below) and
 
 ## Trust model
 
-The server runs locally over stdio and trusts the identities its client supplies; it checks
-their form (`human:` versus `agent:`), not who is typing. That suits a reference toolkit and
-a single user. A deployment that serves many people must put authenticated identity between
-the client and these tools.
+The server runs locally over stdio and trusts the identities its client supplies: it checks
+their form (`human:` versus `agent:`) and relies on the client for who is speaking. That suits a
+reference toolkit and a single user. A deployment that serves many people must put
+authenticated identity between the client and these tools.

@@ -63,9 +63,9 @@
   ],
   "blocked_tacit_memory": [],
   "governance_notes": [
-    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Tacit memory is governed, situated guidance that holds under its recorded conditions.",
     "Respect every use constraint and the conditions of applicability.",
-    "Blocked tacit results are recorded for audit and must not be treated as usable guidance."
+    "Blocked tacit results stay out of the guidance; each one is recorded for audit."
   ],
   "required_human_actions": [
     "Ask a human to confirm against annotated exemplars before action.",

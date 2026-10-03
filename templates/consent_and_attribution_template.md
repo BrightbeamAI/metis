@@ -10,4 +10,5 @@
 - **Policy exception?** yes / no    **Reason (required if yes):** ____________________
 
 Promotion beyond the Evidence layer requires valid consent **or** a recorded policy exception.
-Withdrawing consent blocks future retrieval unless retention is explicitly audit-only.
+Withdrawing consent blocks future retrieval at once, and the record stays on the chain for audit.
+Only the worker who contributed the fragment can withdraw consent.

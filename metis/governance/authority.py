@@ -1,6 +1,6 @@
 """Authority-layer rules.
 
-Evidence  : may support learning/review; never operational advice; never agent-visible.
+Evidence  : learning and review only; hidden from agents and from operational advice.
 Advisory  : conditional decision support under matching conditions; agent-visible as context.
 Controlled: formally incorporated; requires change-control metadata and exact matching.
 """

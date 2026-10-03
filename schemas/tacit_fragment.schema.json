@@ -176,7 +176,7 @@
     },
     "FragmentEvidence": {
       "additionalProperties": false,
-      "description": "Evidence is a governance signal, not universal truth.",
+      "description": "The recorded support for a fragment, weighed by reviewers and by ``evidence_confidence``.",
       "properties": {
         "recurrence_count": {
           "default": 0,

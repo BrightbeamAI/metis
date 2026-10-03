@@ -126,7 +126,8 @@
   <span class="pill">The fourth stratum, made practical</span>
   <h1>Metis</h1>
   <p class="lead">Capture how expert work actually gets done, govern it, and serve it to AI agents
-  as memory they are allowed to use. Local-first, fully auditable, built on CHAP.</p>
+  as memory they are allowed to use. It runs on your own machine, and every decision is recorded
+  on a CHAP evidence chain.</p>
   <div class="btns">
     <a class="btn primary" href="demo.html">Open the interactive demo</a>
     <a class="btn ghost" href="#start">Quickstart</a>
@@ -136,16 +137,16 @@
 
 <section id="what"><div class="wrap">
   <h2>What <span class="em">Metis</span> does</h2>
-  <p class="sub">A technician hears a machine sounds wrong before any warning light. An analyst senses
-  a sample looks off before a test confirms it. That know-how never reaches an SOP. Metis captures
+  <p class="sub">A technician hears a machine sounds wrong before any warning light. A quality specialist
+  sees a batch looks off before the lab confirms it. That know-how rarely reaches an SOP. Metis captures
   it as a governed, inspectable fragment, and only lets an agent use it under the conditions where it holds.</p>
   <div class="grid g3">
     <div class="card"><div class="ic">1</div><h3>Capture</h3>
       <p>Observe a work event, ask one bounded question, and confirm with the worker. The result is a
-      partial fragment tied to its provenance, conditions, and consent. Never treated as fact.</p></div>
+      partial fragment tied to its provenance, conditions, and consent, and open to challenge.</p></div>
     <div class="card"><div class="ic">2</div><h3>Govern</h3>
-      <p>A Mission Group reviews each fragment and decides what role it may play: evidence only,
-      advisory cue, or controlled instruction. Every decision is human and recorded.</p></div>
+      <p>Named Mission Group reviewers decide what role each fragment may play: evidence only,
+      advisory cue, or controlled instruction. Promotion needs a quorum, and every decision is recorded.</p></div>
     <div class="card"><div class="ic">3</div><h3>Serve to agents</h3>
       <p>Validated fragments become tacit memory an agent retrieves through a condition-aware gate,
       alongside procedural, semantic, and episodic memory, always with use constraints attached.</p></div>
@@ -155,8 +156,8 @@
 <section class="tintbg" id="gap"><div class="wrap">
   <h2>The gap we capture</h2>
   <p class="sub">The most useful tacit knowledge lives in the gap between work-as-imagined (the written
-  procedure) and work-as-done (what experienced people actually do). That gap is a signal worth a
-  question, not proof of a better rule.</p>
+  procedure) and work-as-done (what experienced people actually do). That gap marks a place worth
+  asking about.</p>
   <div class="grid g2">
     <div class="card"><h3 style="color:var(--muted)">Work-as-imagined</h3>
       <p style="font-size:15px">"Reduce load only when the alarm threshold is crossed." (SOP-17)</p></div>
@@ -168,9 +169,10 @@
 
 <section id="loop"><div class="wrap">
   <h2>The capture loop</h2>
-  <p class="sub">Observe, Infer, Whisper, Confirm, Store. Inference produces a hypothesis, never
-  trusted knowledge. The whisper is short and never asks a worker to justify their performance. Each
-  step is a recorded CHAP event.</p>
+  <p class="sub">Observe, Infer, Whisper, Confirm, Store. Inference produces a hypothesis for the
+  worker to confirm or correct. The whisper is one short, respectful question; the worker answers in
+  their own words and states consent with the answer. Whispers are rationed per worker, and each step
+  is a recorded CHAP event.</p>
   <figure><svg class="diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 250" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Metis capture loop">
   <defs>
     <linearGradient id="ember" x1="0" y1="0" x2="1" y2="0">
@@ -215,11 +217,11 @@
   <line x1="775" y1="146" x2="775" y2="176" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
   <rect x="28" y="176" width="270" height="50" rx="10" fill="#5A5A5A"/>
   <text x="163" y="200" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Evidence layer</text>
-  <text x="163" y="217" font-size="11" fill="#FFFFFF" text-anchor="middle">not operational, not agent-visible</text>
+  <text x="163" y="217" font-size="11" fill="#FFFFFF" text-anchor="middle">learning and review only</text>
 
   <rect x="325" y="176" width="250" height="50" rx="10" fill="#FFFFFF" stroke="#5A5A5A" stroke-width="1.5"/>
   <text x="450" y="200" font-size="13" font-weight="bold" fill="#282829" text-anchor="middle">Mission Group Tier-2 review</text>
-  <text x="450" y="217" font-size="11" fill="#5A5A5A" text-anchor="middle">human decision, deterministic</text>
+  <text x="450" y="217" font-size="11" fill="#5A5A5A" text-anchor="middle">two named reviewers approve</text>
 
   <rect x="602" y="176" width="248" height="50" rx="10" fill="url(#ember)"/>
   <text x="726" y="200" font-size="13" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Advisory / Controlled</text>
@@ -233,14 +235,15 @@
 
 <section class="tintbg" id="layers"><div class="wrap">
   <h2>Three authority layers</h2>
-  <p class="sub">Promotion is about what a fragment is allowed to do, decided by people, not by a model.</p>
+  <p class="sub">Promotion sets what a fragment is allowed to do. A quorum of named reviewers decides
+  it, and every promotion carries a review date.</p>
   <div class="layers">
     <div class="layer ev"><span class="tag">EVIDENCE</span>
       <div><b>Learning and review only.</b><p>Raw observations, confirmations, early hypotheses, and
-      rejected fragments. Never used for an operational decision and never visible to an agent.</p></div></div>
+      rejected fragments, kept for learning and review and hidden from agents.</p></div></div>
     <div class="layer ad"><span class="tag">ADVISORY</span>
-      <div><b>Conditional decision support.</b><p>Tier-2 validated. Retrievable only when conditions
-      match, presented as situated guidance with provenance and use constraints, never a universal rule.</p></div></div>
+      <div><b>Conditional decision support.</b><p>Promoted by a Mission Group quorum. Retrievable only
+      when conditions match, and presented as situated guidance with provenance and use constraints.</p></div></div>
     <div class="layer co"><span class="tag">CONTROLLED</span>
       <div><b>Formally incorporated.</b><p>Requires change-control metadata and exact condition matching.
       Becomes controlled instruction only when policy allows, with full audit lineage preserved.</p></div></div>
@@ -320,8 +323,9 @@
 
 <section class="tintbg" id="gate"><div class="wrap">
   <h2>The retrieval gate is a governance check</h2>
-  <p class="sub">This is not semantic similarity. The gate asks whether a fragment is allowed to be used
-  here, and it fails closed when a required condition is unknown. Every attempt is recorded.</p>
+  <p class="sub">The gate asks whether a fragment is allowed to be used here, and it fails closed when a
+  required condition is unknown. When the situation is high-risk, or the fragment fits the equipment and
+  the situation differs, Metis opens an escalation task and a person decides. Every attempt is recorded.</p>
   <figure><svg class="diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 360" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Condition-aware retrieval gate">
   <defs>
     <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -329,7 +333,7 @@
     </marker>
   </defs>
   <rect width="920" height="360" fill="#F2F5FA"/>
-  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The retrieval gate is a governance check, not similarity search</text>
+  <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The retrieval gate decides whether a fragment may be used here</text>
   <text x="28" y="60" font-size="13" fill="#5A5A5A">A fragment is eligible only when every check passes. The first failing check is the recorded reason.</text>
 
   <!-- input -->
@@ -356,7 +360,7 @@
     <text x="270" y="262">7. role authorised</text>
     <text x="270" y="282">8. conditions match, no exclusions</text>
     <text x="270" y="302">9. controlled needs exact match</text>
-    <text x="270" y="322">10. risk not high, else a person decides</text>
+    <text x="270" y="322">10. risk below high, else a person decides</text>
   </g>
 
   <line x1="198" y1="182" x2="250" y2="182" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>
@@ -382,40 +386,42 @@
 
 <section id="chap"><div class="wrap">
   <h2>Recorded with <span class="em">CHAP</span></h2>
-  <p class="sub">Metis does not invent a protocol. It uses CHAP, the Collaborative Human-Agent
-  Protocol, so capture, review, retrieval, and revocation are structured collaboration events on a
-  append-only, hash-linked evidence chain. Metis drives the official chap-coordinator Python
-  reference implementation; the adapter drives a real Coordinator rather than re-implementing the protocol. Repo:
-  <a href="https://github.com/BrightbeamAI/chap">github.com/BrightbeamAI/chap</a>.</p>
+  <p class="sub">Metis records its work with CHAP, the Collaborative Human-Agent Protocol: capture,
+  review, retrieval, escalation, and revocation are structured collaboration events on an append-only,
+  hash-linked evidence chain. Metis drives the official chap-coordinator Python reference
+  implementation, and each project keeps the chain in CHAP's SQLite store, so it continues from one
+  session to the next. Repo: <a href="https://github.com/BrightbeamAI/chap">github.com/BrightbeamAI/chap</a>.</p>
   <table>
     <tr><th>Metis concept</th><th>CHAP concept</th></tr>
-    <tr><td>Capture Cell</td><td>Workspace with human, agent, service, and group participants</td></tr>
-    <tr><td>Operator / Whisperer / Mission Group</td><td>Human / agent / group participant</td></tr>
+    <tr><td>Capture Cell</td><td>A workspace, created by the coordinator service, with human, agent, and group participants</td></tr>
+    <tr><td>Operator, Whisperer, Mission Group, reviewers</td><td>Human, agent, and group participants; each reviewer joins as a named human</td></tr>
     <tr><td>Tacit fragment, memory object, agent context</td><td>Artefacts of kind <code class="inline">tacit.*</code> with a schema reference</td></tr>
     <tr><td>Whisper, operator confirmation</td><td><code class="inline">whisper.ask</code> / <code class="inline">whisper.answer</code></td></tr>
-    <tr><td>Mission Group review</td><td><code class="inline">review.request</code> and <code class="inline">decide.*</code></td></tr>
-    <tr><td>Retrieval decision</td><td>Routing decision artefact</td></tr>
+    <tr><td>Mission Group review</td><td><code class="inline">review.request</code> under a <code class="inline">quorum:2</code> rule; approvals as <code class="inline">decide.approve</code>, a hold as <code class="inline">abstain.declare</code>, re-elicitation as <code class="inline">escalate.raise</code></td></tr>
+    <tr><td>Retrieval decision</td><td>A <code class="inline">tacit.retrieve</code> task, with the <code class="inline">tacit.retrieval_decision</code> artefact recorded against it</td></tr>
+    <tr><td>Escalation to a person</td><td>A <code class="inline">tacit.escalation</code> task assigned to the operator</td></tr>
+    <tr><td>Contest by a worker or reviewer</td><td>A <code class="inline">tacit.validation_event</code> artefact and a fresh Mission Group task</td></tr>
     <tr><td>Revocation, supersession</td><td><code class="inline">control.*</code> events plus records</td></tr>
-    <tr><td>Audit trail</td><td>Hash-linked (JCS) evidence chain; Ed25519 signing via the security-signed/1.0 profile</td></tr>
+    <tr><td>Audit trail</td><td>Hash-linked (JCS) evidence chain; Ed25519 signing available through CHAP's optional security-signed/1.0 profile</td></tr>
   </table>
 </div></section>
 
 
 <section id="taxonomy"><div class="wrap">
   <h2>A working <span class="em">taxonomy</span> of tacit knowledge</h2>
-  <p class="sub">Tacit knowledge is not one thing. Metis uses 17 categories across 6 domains, from
-  the paper. The category sets how a fragment is captured and what evidence it needs before it can
-  influence work. It is never a claim that a fragment is true.</p>
-  <div class="grid g3"><div class="card"><h3>Procedural and embodied</h3><div style="margin-top:8px"><span class="chip k">K1 Procedural</span><span class="chip k">K2 Embodied</span><span class="chip k">K3 Rhythmic</span></div></div><div class="card"><h3>Material and equipment</h3><div style="margin-top:8px"><span class="chip k">K4 Equipment-specific</span><span class="chip k">K5 Material</span><span class="chip k">K6 Tool-extended</span></div></div><div class="card"><h3>Perceptual and aesthetic</h3><div style="margin-top:8px"><span class="chip k">K7 Sensory</span><span class="chip k">K8 Aesthetic</span></div></div><div class="card"><h3>Inferential</h3><div style="margin-top:8px"><span class="chip k">K9 Heuristic</span><span class="chip k">K10 Diagnostic</span><span class="chip k">K11 Anticipatory</span></div></div><div class="card"><h3>Meta-cognitive and affective</h3><div style="margin-top:8px"><span class="chip k">K12 Meta-cognitive</span><span class="chip k">K13 Affective-regulatory</span></div></div><div class="card"><h3>Social and normative</h3><div style="margin-top:8px"><span class="chip k">K14 Collaborative</span><span class="chip k">K15 Cultural-narrative</span><span class="chip k">K16 Judgemental-ethical</span><span class="chip k">K17 Strategic</span></div></div></div>
+  <p class="sub">Tacit knowledge comes in many kinds. Metis uses the paper's 17 categories across 6
+  domains. The category sets how a fragment is captured and what evidence it needs before it can
+  influence work.</p>
+  <div class="grid g3"><div class="card"><h3>Procedural and embodied</h3><div style="margin-top:8px"><span class="chip k">K1 Procedural</span><span class="chip k">K2 Embodied</span><span class="chip k">K3 Rhythmic</span></div></div><div class="card"><h3>Material and equipment</h3><div style="margin-top:8px"><span class="chip k">K4 Equipment-specific</span><span class="chip k">K5 Material</span><span class="chip k">K6 Tool-extended</span></div></div><div class="card"><h3>Perceptual and aesthetic</h3><div style="margin-top:8px"><span class="chip k">K7 Sensory</span><span class="chip k">K8 Aesthetic</span></div></div><div class="card"><h3>Inferential</h3><div style="margin-top:8px"><span class="chip k">K9 Heuristic</span><span class="chip k">K10 Diagnostic</span><span class="chip k">K11 Anticipatory</span></div></div><div class="card"><h3>Meta-cognitive and affective</h3><div style="margin-top:8px"><span class="chip k">K12 Metacognitive</span><span class="chip k">K13 Affective-regulatory</span></div></div><div class="card"><h3>Social and normative</h3><div style="margin-top:8px"><span class="chip k">K14 Collaborative</span><span class="chip k">K15 Cultural-narrative</span><span class="chip k">K16 Judgemental-ethical</span><span class="chip k">K17 Strategic</span></div></div></div>
 </div></section>
 
-<section class="tintbg" id="notwhat"><div class="wrap">
-  <h2>What Metis is <span class="em">not</span></h2>
+<section class="tintbg" id="commitments"><div class="wrap">
+  <h2>What Metis <span class="em">commits to</span></h2>
   <div class="grid g2">
-    <div class="card"><h3>Not a new protocol</h3><p>It uses CHAP and adds no parallel protocol.</p></div>
-    <div class="card"><h3>Not worker surveillance</h3><p>It records no audio, video, biometrics, screenshots, or keystrokes. Capture is consented and worker-visible.</p></div>
-    <div class="card"><h3>Not a vector database</h3><p>Retrieval is a condition-aware governance check, not semantic similarity.</p></div>
-    <div class="card"><h3>Not autonomous</h3><p>Humans make every governance decision. A local model only ever drafts, and fragments are never treated as fact.</p></div>
+    <div class="card"><h3>CHAP for the protocol</h3><p>Workspaces, tasks, whispers, reviews, and the evidence chain all come from CHAP. Metis adds a profile of tacit task and artefact kinds.</p></div>
+    <div class="card"><h3>Visible, consented capture</h3><p>Capture takes an observation, one short question, and the worker's own answer, given with consent. Workers see, contest, and can withdraw what they contributed.</p></div>
+    <div class="card"><h3>Governed retrieval</h3><p>Guidance reaches an agent only through the condition-aware gate, which checks conditions, consent, authority, and risk, and records every attempt.</p></div>
+    <div class="card"><h3>People decide</h3><p>Named reviewers make every governance decision, and a quorum grants authority. A local model drafts wording for people to accept or change.</p></div>
   </div>
 </div></section>
 
@@ -428,10 +434,10 @@
     <div class="ex">
       <div class="head">
         <h3>1. Manufacturing pump vibration</h3>
-        <span class="chip k">K7 sensory</span><span class="chip k">K10 diagnostic</span><span class="chip k">K4 equipment</span>
+        <span class="chip k">K7 sensory</span><span class="chip k">K10 diagnostic</span><span class="chip k">K4 equipment-specific</span>
         <p style="color:var(--muted);font-size:14px;margin:8px 0 0">An operator reduces throughput early
         on a dull acoustic cue and low-frequency vibration, before the alarm. It becomes an advisory cue,
-        retrievable only for that pump family and operating mode.</p>
+        retrievable only under its recorded conditions: pump A at high load, on the night shift, before the alarm.</p>
       </div>
       <div class="body">
         <pre><span class="c"># full local walkthrough, then probe the gate</span>
@@ -447,10 +453,10 @@ metis retrieve --context examples/manufacturing_pump_vibration/context_non_match
           <li>Procedural, semantic, episodic memory loaded</li><li>Local model status checked</li>
           <li>Observation loaded (the gap)</li><li>Candidate inferred (hypothesis only)</li>
           <li>Whisper asked, operator confirmed (Tier-1)</li><li>Evidence-layer fragment stored</li>
-          <li>Mission Group Tier-2 review</li><li>Promoted to Advisory</li>
+          <li>Two Mission Group reviewers approve (quorum:2)</li><li>Promoted to Advisory</li>
           <li>Tacit memory object created</li><li>Retrieval allowed under matching context</li>
           <li>Retrieval blocked under non-matching context</li><li>Agent memory context built</li>
-          <li>Evidence chain exported and verified</li>
+          <li>Evidence chain verified; ledger written</li>
         </ol>
       </div>
     </div>
@@ -459,16 +465,16 @@ metis retrieve --context examples/manufacturing_pump_vibration/context_non_match
       <div class="head">
         <h3>2. Batch quality visual inspection</h3>
         <span class="chip k">K8 aesthetic</span><span class="chip k">K7 sensory</span>
-        <p style="color:var(--muted);font-size:14px;margin:8px 0 0">A specialist flags a batch as "looks
+        <p style="color:var(--muted);font-size:14px;margin:8px 0 0">A quality specialist flags a batch as "looks
         off" before the lab confirms drift. Weak evidence keeps it advisory, with a constraint to confirm
-        against annotated exemplars. It never becomes a universal rule.</p>
+        against annotated exemplars before any action.</p>
       </div>
       <div class="body">
         <pre>metis demo batch-quality-visual-inspection
 metis memory query --context examples/batch_quality_visual_inspection/context_matching.json</pre>
         <div class="out">
           <span class="chip ok">advisory cue, requires exemplar confirmation</span>
-          <span class="chip no">not converted to a rule</span>
+          <span class="chip ok">weak evidence, one counterexample on record</span>
         </div>
       </div>
     </div>
@@ -476,17 +482,17 @@ metis memory query --context examples/batch_quality_visual_inspection/context_ma
     <div class="ex">
       <div class="head">
         <h3>3. Shift handover gap</h3>
-        <span class="chip k">K14 collaborative</span><span class="chip k">K12 meta-cognitive</span>
+        <span class="chip k">K14 collaborative</span><span class="chip k">K12 metacognitive</span>
         <p style="color:var(--muted);font-size:14px;margin:8px 0 0">A team lead senses a handover is
-        incomplete even though the form is filled. It becomes a checklist prompt that asks a human to
-        confirm open threads verbally, and never auto-closes the handover.</p>
+        incomplete even though the form is filled. It becomes a checklist prompt that asks the incoming
+        lead to confirm open threads verbally; a person closes the handover.</p>
       </div>
       <div class="body">
         <pre>metis demo shift-handover-gap
 metis memory query --context examples/shift_handover_gap/context_matching.json</pre>
         <div class="out">
-          <span class="chip ok">checklist prompt for a human</span>
-          <span class="chip no">no automation</span>
+          <span class="chip ok">checklist prompt for the incoming lead</span>
+          <span class="chip ok">a person closes the handover</span>
         </div>
       </div>
     </div>
@@ -495,7 +501,7 @@ metis memory query --context examples/shift_handover_gap/context_matching.json</
 
 <section id="start"><div class="wrap">
   <h2>Quickstart</h2>
-  <p class="sub">No cloud, no GPU. The demo and tests run without any model using deterministic fixtures.</p>
+  <p class="sub">Runs on a laptop. The demo and tests use deterministic fixtures, so they need no model server.</p>
   <div class="grid g2">
     <div>
       <h3>Install and run</h3>
@@ -508,6 +514,10 @@ metis demo manufacturing-pump-vibration</pre>
 ollama pull gemma4
 metis config set model.name gemma4
 metis model check</pre>
+      <h3>Connect an agent over MCP</h3>
+      <pre>pip install -e ".[mcp]"
+metis mcp</pre>
+      <p style="font-size:14px;color:var(--muted)">See <a href="mcp_server.md">the MCP server guide</a> for client set-up.</p>
     </div>
     <div>
       <h3>Use it from Python</h3>
@@ -527,7 +537,9 @@ res = eng.capture_observation(
   category="K7_sensory")
 
 eng.tier2_review(res.fragment.fragment_id, "promoted_to_advisory",
-                 summary="advisory cue only")
+                 summary="advisory cue only",
+                 decided_by=["human:quality-lead@metis.local",
+                             "human:process-engineer@metis.local"])
 
 ctx = TacitContext(equipment_family="centrifugal_pump",
                    operating_mode="high_load", risk_class="moderate")
@@ -536,9 +548,9 @@ for e in eng.agent_context("tsk_42", ctx).tacit_memory:
     </div>
   </div>
   <div class="note" style="margin-top:18px"><b>Ethical use.</b> Metis captures fragments of human
-  work. It records no audio, video, biometrics, screenshots, or keystrokes. Fragments are never treated
-  as fact, evidence-layer fragments never reach an agent, and the audit chain is append-only. Production
-  use needs worker consultation, legal review, and domain validation.</div>
+  work. It records no audio, video, biometrics, screenshots, or keystrokes. Fragments stay open to
+  challenge, Evidence-layer fragments stay out of agents' reach, and the audit chain is append-only.
+  Production use needs worker consultation, legal review, and domain validation.</div>
 </div></section>
 
 <footer><div class="wrap">

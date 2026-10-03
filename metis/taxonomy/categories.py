@@ -1,8 +1,8 @@
 """The K1-K17 tacit taxonomy, six domains, pathways, authority layers, and lifecycle
 states, from "The Fourth Stratum".
 
-The taxonomy is descriptive and governs *how* a fragment is captured and *what evidence*
-it needs before it can influence work. It is never a claim that a fragment is true.
+The taxonomy describes kinds of tacit knowledge; a fragment's category then guides *how* it is
+captured and *what evidence* it needs before it can influence work.
 """
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ _D = Domain
 CATEGORY_META: dict[Category, CategoryMeta] = {
     Category.K1_procedural: CategoryMeta(
         Category.K1_procedural, "Procedural", _D.procedural_embodied, "Conscious / Social",
-        "Document ingestion; procedure analysis", "Reference baseline; not a primary tacit target",
+        "Document ingestion; procedure analysis", "Reference baseline that tacit practice is compared with",
         "Formal routines and prescribed task sequences. Usually already documented."),
     Category.K2_embodied: CategoryMeta(
         Category.K2_embodied, "Embodied", _D.procedural_embodied, "Automatic / Individual",
@@ -135,7 +135,7 @@ CATEGORY_META: dict[Category, CategoryMeta] = {
         "Pre-event prompting on detected divergence", "Prompt before a predicted event or divergence",
         "Sensing that something is about to happen before it shows up in the data."),
     Category.K12_metacognitive: CategoryMeta(
-        Category.K12_metacognitive, "Meta-cognitive", _D.metacognitive_affective, "Conscious / Individual",
+        Category.K12_metacognitive, "Metacognitive", _D.metacognitive_affective, "Conscious / Individual",
         "Reflective probing; help-seeking pattern analysis", "Examine hesitation, help-seeking, and escalation patterns",
         "Knowing the limits of one's competence and when to escalate or ask for help."),
     Category.K13_affective_regulatory: CategoryMeta(

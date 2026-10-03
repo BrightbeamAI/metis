@@ -22,11 +22,12 @@ from .tools import INSTRUCTIONS, MetisTools
 
 GOVERNANCE = """# The Metis governance contract
 
-- Tacit fragments are partial, situated accounts of practice, never ground truth.
+- Tacit fragments are partial, situated accounts of practice, open to challenge.
 - A fragment reaches an agent only after Tier-1 confirmation by the worker and Tier-2
   promotion by a quorum of named Mission Group reviewers.
-- Retrieval is a governance gate, not similarity search: revocation, consent, authority,
-  validation, review date, role, conditions, exclusions, and risk are checked in order.
+- Retrieval is a governance gate. It checks revocation, consent, source pathway, authority
+  layer, validation state, review date, role, conditions and exclusions, exact matching for
+  Controlled fragments, and risk, in that order.
 - High-risk situations and near misses (same equipment, different situation) go to a person.
 - Agents cannot review, promote, or authorise anything. Workers answer their own whispers and
   may contest or withdraw their fragments at any time.
@@ -94,7 +95,7 @@ def build_server(tools: MetisTools) -> Any:
     @server.tool(name="contest_fragment", annotations=_annotations(read_only=False),
                  description="Relay a worker's or reviewer's contest of a fragment: challenge, "
                              "correct, withdraw, or request_re_elicitation. Contests open a review "
-                             "or revoke; they never grant authority.")
+                             "or revoke a fragment; promotion stays with the Mission Group.")
     def contest_fragment(fragment_id: str, action: str, raised_by: str, rationale: str,
                          proposed_correction: str | None = None) -> dict[str, Any]:
         return tools.contest_fragment(fragment_id, action, raised_by, rationale, proposed_correction)

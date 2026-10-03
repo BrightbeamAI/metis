@@ -8,59 +8,59 @@
   <img src="https://img.shields.io/badge/python-3.10%2B-1f6feb">
   <img src="https://img.shields.io/badge/license-Apache--2.0-2ea043">
   <img src="https://img.shields.io/badge/tests-passing-2ea043">
-  <img src="https://img.shields.io/badge/local--first-no%20cloud%20APIs-5A5A5A">
-  <img src="https://img.shields.io/badge/built%20on-CHAP-EA4700">
+  <img src="https://img.shields.io/badge/runs-locally-5A5A5A">
+  <img src="https://img.shields.io/badge/recorded%20with-CHAP-EA4700">
 </p>
 
 ---
 
-AI agents now act inside real workflows, but the knowledge that makes work go right was often never
-written down. A technician hears a pump sounds wrong before any alarm. An inspector sees a batch
-"looks off" before the lab confirms it. Manuals do not capture this, and naively mining it from
-workers is unsafe and easy to get wrong.
+AI agents now act inside real workflows, yet much of the knowledge that makes work go right was
+never written down. A technician hears a pump sounds wrong before any alarm. A quality specialist
+sees a batch "looks off" before the lab confirms it. Manuals miss this, and mining it from workers
+without care is unsafe and easy to get wrong.
 
 Metis is a local-first Python toolkit that captures these moments as **governed tacit
-fragments**, has a human group validate them, and serves only the validated ones to an AI agent,
-under the exact conditions where they hold, with a full audit trail. It implements the governed
-tacit-memory layer from the paper *Tacit Fragments: Operationalising Tacit Knowledge as a Governed
-Memory Layer for Agentic AI*. Every capture, review, and retrieval decision is recorded through
-the [CHAP](https://github.com/BrightbeamAI/chap) reference coordinator (`chap-coordinator`), on a
-hash-linked, replayable evidence chain.
+fragments**, has named human reviewers validate them, and serves only the validated ones to an AI
+agent, under the exact conditions where they hold, with a full audit trail. It implements the
+governed tacit-memory layer from the paper *Tacit Fragments: Operationalising Tacit Knowledge as a
+Governed Memory Layer for Agentic AI*. Every capture, review, and retrieval decision is recorded
+through the [CHAP](https://github.com/BrightbeamAI/chap) reference coordinator
+(`chap-coordinator`), on a hash-linked, replayable evidence chain.
 
 *Architecture diagrams, an interactive demo, and an illustrated explainer live in the [GitHub repository](https://github.com/BrightbeamAI/metis).*
 
 ## What is a tacit fragment?
 
-Most of what makes someone good at their job never reaches a document. A tacit fragment is a small,
-structured, governed record of one such piece of practice. It is deliberately partial: it is not a
-worker's whole expertise, and it is never treated as fact.
+Much of what makes someone good at their job never reaches a document. A tacit fragment is a small,
+structured, governed record of one such piece of practice. It is deliberately partial: one cue, one
+adjustment, or one judgement, held as a claim that people can check and challenge.
 
 Every fragment carries the things that make it safe to reuse:
 
 - **what** was observed and worker-confirmed, and its category (the K1 to K17 taxonomy of tacit knowledge),
 - **the conditions** under which it applies (site, equipment, operating mode, shift, role, risk, and exclusions),
 - **where it came from**: provenance, the worker, and their consent,
-- **the evidence** behind it (recurrence, supporting cases, counterexamples),
+- **the evidence** behind it (recurrence, supporting cases, counterexamples), and a confidence derived from that evidence,
 - **an authority layer**: Evidence (learning only), Advisory (conditional guidance), or Controlled (formal instruction),
-- **use constraints** that travel with it.
+- **use constraints** that travel with it, and a review date.
 
-That structure is the point. A document chunk has no conditions, consent, or authority, and a
-training example is treated as ground truth. A tacit fragment is neither. It is situated guidance an
-agent may use only where it applies, and must stop using the moment it does not.
+That structure is the point. The conditions say where a fragment applies, consent says whether it
+may be used at all, and the authority layer says what it may do. Together they make a fragment
+situated guidance: an agent may use it where it applies, and the gate withholds it everywhere else.
 
 ## A concrete example
 
 A pump SOP says: reduce load only when the alarm threshold is crossed. Experienced operators reduce
 throughput earlier, when high load coincides with low-frequency vibration and a dull acoustic cue.
-Metis captures that gap, a human group promotes it to an advisory cue, and an agent can then use
-it, but only on the right pump in the right state.
+Metis captures that gap, two reviewers promote it to an advisory cue, and an agent can then use it
+on the right pump in the right state.
 
 ```python
 from metis import MetisEngine
 from metis.conditions.context import TacitContext
 from metis.consent.model import ConsentRecord, ConsentStatus
 
-eng = MetisEngine()              # local and deterministic, no cloud APIs
+eng = MetisEngine()              # local and deterministic
 eng.join_default_participants()
 
 # Capture what the operator does that the SOP does not say.
@@ -73,10 +73,11 @@ frag = eng.capture_observation(
     },
     consent=ConsentRecord(consent_status=ConsentStatus.granted),
     category="K7_sensory",
-).fragment                            # lands in the Evidence layer, not yet usable
+).fragment                            # lands in the Evidence layer, invisible to agents
 
-# A human Mission Group promotes it. A model never makes this call.
-eng.tier2_review(frag.fragment_id, "promoted_to_advisory", summary="advisory cue only")
+# Two named Mission Group reviewers promote it (the default quorum).
+eng.tier2_review(frag.fragment_id, "promoted_to_advisory", summary="advisory cue only",
+                 decided_by=["human:quality-lead@metis.local", "human:process-engineer@metis.local"])
 
 # An agent asks for guidance. The gate returns it only when the context matches.
 match = TacitContext(equipment_family="centrifugal_pump", operating_mode="high_load", risk_class="moderate")
@@ -86,13 +87,14 @@ print(len(eng.retrieve(match).eligible))      # 1  (returned, with its use const
 print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 ```
 
-Change the pump, raise the risk class, or withdraw consent, and the same fragment is withheld with a
-recorded reason. Retrieval is a governance decision, not a similarity search.
+Change the pump or withdraw consent, and the same fragment is withheld with a recorded reason. Raise
+the risk class to high, and Metis opens an escalation task so a person decides. Retrieval is a
+governance decision, made from recorded conditions, consent, and authority.
 
 
 ## Quickstart
 
-No cloud and no GPU. The demo and tests run without any model using deterministic fixtures.
+Metis runs on a laptop. The demo and tests use deterministic fixtures, so they need no model server.
 
 ```bash
 git clone https://github.com/BrightbeamAI/metis && cd metis
@@ -104,10 +106,13 @@ The installable package name is `metis-memory` (import `metis`, CLI `metis`). Th
 [`chap-coordinator`](https://pypi.org/project/chap-coordinator/) dependency installs from PyPI
 automatically.
 
-The demo runs the whole flow locally into a workspace of a local project (`./.metis`, or
-`$METIS_HOME`), and every later command continues that workspace's evidence chain. Inspect it with
-`metis fragment list`, `metis memory list`, `metis retrieve --context <file>`, `metis audit read`,
-and `metis audit verify`. Each run of a scenario gets its own workspace (`metis workspace list`).
+The demo runs the whole flow and records it in a workspace of a local project (`./.metis`, or
+`$METIS_HOME`).
+The project keeps the CHAP chain in SQLite, each workspace's fragments and memory in its own SQLite
+store, and an append-only evidence ledger, so every later command continues the same chain. Inspect
+it with `metis fragment list`, `metis memory list`, `metis retrieve --context <file>`,
+`metis audit read`, and `metis audit verify`. Each run of a scenario gets its own workspace
+(`metis workspace list`).
 
 Prefer to click through it? Open the **[interactive demo](https://github.com/BrightbeamAI/metis/blob/main/docs/demo.html)**: pick a scenario, step
 through the loop, and drive the gate yourself by editing the context and watching it allow or block.
@@ -115,22 +120,25 @@ For a guided tour, open the illustrated **[explainer](https://github.com/Brightb
 
 ## How it works
 
-**Capture loop.** Observe a work event, infer a candidate (a hypothesis, never trusted), whisper one
-short bounded question to the worker, confirm with them (descriptive fidelity only), and store the
-result as an Evidence-layer fragment. The worker answers in their own words, under their own identity,
-and states their consent; whispers are rationed so no one is over-prompted.
+**Capture loop.** Observe a work event, infer a candidate hypothesis, whisper one short question to
+the worker, confirm the wording with them (Tier-1), and store the result as an Evidence-layer
+fragment. The worker answers in their own words, under their own identity, and states consent with
+the answer. Whispers are rationed per worker.
 
-**Governance.** A human Mission Group reviews each fragment across fidelity, operational relevance,
-normative alignment, and risk. Promotion to Advisory or Controlled needs a quorum of named reviewers
-(two by default, enforced by CHAP), sets a review date, and recomputes confidence from the evidence;
-one reviewer can hold, reject, or ask for re-elicitation. Evidence-layer fragments can never drive a
-decision or reach an agent. A local model may draft a review summary, but it never decides.
+**Governance.** Named Mission Group reviewers weigh each fragment's fidelity, operational relevance,
+normative alignment, and risk. Promotion to Advisory or Controlled needs a quorum of reviewers (two
+by default, enforced by CHAP), sets a review date, and recomputes confidence from the evidence; one
+reviewer can hold, reject, or ask for re-elicitation. Evidence-layer fragments stay with reviewers,
+out of agents' reach. A local model may draft a review summary; the reviewers decide.
 
 **Memory and retrieval.** A promoted fragment becomes a governed memory object. A broker assembles an
-agent context from procedural, semantic, episodic, and tacit memory, and tacit memory is reached only
-through the condition-aware gate, which carries the use constraints with it. When a situation is high
-risk, or a fragment covers this equipment but not this situation, a person decides: Metis opens an
-escalation task instead of returning guidance.
+agent context from procedural, semantic, episodic, and tacit memory, and tacit memory arrives only
+through the condition-aware gate, with its use constraints. When a situation is high risk, or a
+fragment matches the equipment and the situation differs, Metis opens an escalation task and a
+person decides.
+
+**Audit.** Every capture, review, retrieval, escalation, and contest is an entry on the CHAP
+evidence chain. `metis audit verify` replays the chain and checks it against the ledger.
 
 **For agents.** `metis mcp` serves the same governed memory to any MCP client, such as Claude
 Desktop or Claude Code. See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/mcp_server.md).
@@ -145,10 +153,10 @@ Desktop or Claude Code. See the [MCP server guide](https://github.com/Brightbeam
 
 ## Ethical use
 
-Metis captures fragments of human work. Do not use it for covert worker monitoring. It records no
-audio, video, biometrics, screenshots, or keystrokes, fragments are never treated as fact, and the
-audit chain is append-only. Production use needs worker consultation, legal review, and domain
-validation. Read [ETHICAL_USE.md](https://github.com/BrightbeamAI/metis/blob/main/ETHICAL_USE.md) first.
+Metis captures fragments of human work, with the worker's knowledge and consent. Do not use it for
+covert worker monitoring. It records no audio, video, biometrics, screenshots, or keystrokes;
+fragments stay open to challenge; and the audit chain is append-only. Production use needs worker
+consultation, legal review, and domain validation. Read [ETHICAL_USE.md](https://github.com/BrightbeamAI/metis/blob/main/ETHICAL_USE.md) first.
 
 ## License
 

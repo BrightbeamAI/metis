@@ -3,8 +3,8 @@
 Optional component (install with the ``api`` extra). This is a single-user reference server
 for local exploration: it has no authentication and records whatever identities callers
 supply, so it binds to localhost by default (``uvicorn metis.api.server:app``). Production
-deployments must put authenticated reviewer and worker identities in front of it. Local model
-output never drives a governance decision here; review outcomes come only from callers.
+deployments must put authenticated reviewer and worker identities in front of it. Review
+outcomes come only from callers; local model output stays advisory.
 """
 from __future__ import annotations
 
@@ -179,7 +179,11 @@ def retrieve(req: ContextRequest) -> dict[str, Any]:
 @router.post("/revoke")
 def revoke(req: RevokeRequest) -> dict[str, Any]:
     with engine_session() as eng:
-        art = eng.governance.revoke(req.fragment_id, reason=RevocationReason(req.reason), by=req.by)
+        try:
+            art = eng.governance.revoke(req.fragment_id, reason=RevocationReason(req.reason),
+                                        by=req.by)
+        except (PermissionError, ValueError) as exc:
+            raise HTTPException(422, str(exc)) from exc
         return {"revocation_record_artefact": art}
 
 
@@ -215,4 +219,4 @@ def model_run(prompt: str, purpose: str = "draft_whisper") -> dict[str, Any]:
     with engine_session() as eng:
         res = eng.model_client.run(purpose, prompt)
         return {"used_live_model": res.used_live_model, "output": res.json(),
-                "note": "advisory draft only; not a governance decision"}
+                "note": "advisory draft only; people make governance decisions"}

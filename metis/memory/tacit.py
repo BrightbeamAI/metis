@@ -101,7 +101,7 @@ class TacitMemoryObject(BaseModel):
         constraints = list(fragment.use_constraints)
         if not constraints:
             constraints = [
-                "Present as situated guidance, not a universal rule.",
+                "Present as situated guidance for the recorded conditions only.",
                 "Respect the conditions of applicability.",
             ]
 

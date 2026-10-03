@@ -1,36 +1,55 @@
 # Profile: `metis`
 
-**Profile id:** `metis/1.0` · **Depends on:** CHAP Core, `review/1.0`, `whisper/1.0`, `routing/1.0`, `control/1.0`, `handoff/1.0`
+**Profile id:** `metis/1.0` · **Depends on:** CHAP Core, `review/1.0`, `whisper/1.0`, `control/1.0` · Metis workspaces also declare `routing/1.0`, `handoff/1.0`, and `modes/1.0`
 
 The `metis/1.0` profile defines Metis-specific **task kinds**, **artefact kinds**,
 metadata conventions, validation states, authority layers, consent rules, revocation rules,
 memory-object rules, model-assist rules, and retrieval rules for governed tacit fragment
 capture.
 
-This profile **does not modify CHAP Core**. It extends CHAP only through declared artefact
-kinds, task kinds, metadata conventions, and validation rules. Metis introduces no new
-envelope, no new wire methods, and no parallel evidence mechanism. Every Metis action is
-carried by an existing CHAP method (`capture.append`, `whisper.ask`/`whisper.answer`,
-`review.request`/`decide.*`, `task.route`, `control.*`, `handoff.*`, `task.create`/`task.update`,
-`audit.*`) and recorded in the standard CHAP evidence chain.
+The profile leaves **CHAP Core unchanged**. It extends CHAP only through declared artefact kinds,
+task kinds, metadata conventions, and validation rules, and it uses CHAP's own envelope, wire
+methods, and evidence chain. Every Metis action is carried by an existing CHAP method
+(`task.create` / `task.complete`, `whisper.ask` / `whisper.answer`, `review.request` with
+`decide.approve`, `decide.reject`, `abstain.declare`, and `escalate.raise`, and `control.cancel` /
+`control.supersede`) and recorded in the standard CHAP evidence chain.
 
 ---
 
 ## 1. Task kinds
 
+Tasks the reference implementation opens:
+
+| Kind | Opened for | Assigned to |
+|------|------------|-------------|
+| `tacit.capture` | one capture: observation, inference, whisper, and confirmation; the fragment's first Tier-2 review runs on it | the whisperer agent |
+| `tacit.validate.tier2` | a fresh Mission Group review, opened when a held fragment returns or a challenge, correction, or proposed supersession arrives | the Mission Group |
+| `tacit.re_elicit` | a re-elicitation request | the Mission Group for a contest; the deciding reviewer for a Tier-2 re-elicit decision |
+| `tacit.retrieve` | one retrieval through the gate | the requesting agent |
+| `tacit.escalation` | a decision handed to a person: a high-risk situation or a near miss | the operator by default |
+
+Record tasks: every artefact except the whisper prompt, which travels in `whisper.ask`, is
+recorded as a task whose kind is the artefact kind, completed with the artefact as its output.
+`tacit.control` records the parameters of a `control.*` event.
+
+Declared for implementations that model further steps as separate tasks, and used as participant
+capability names (the whisperer advertises `tacit.infer` and `tacit.whisper`; the assistant agent
+advertises `tacit.memory.query`):
+
 ```
-tacit.capture          tacit.infer            tacit.confirm
-tacit.validate.tier1   tacit.validate.tier2   tacit.promote
-tacit.reject           tacit.hold             tacit.re_elicit
-tacit.retrieve         tacit.memory.prepare   tacit.memory.query
+tacit.infer            tacit.whisper          tacit.confirm
+tacit.validate.tier1   tacit.promote          tacit.reject
+tacit.hold             tacit.memory.prepare   tacit.memory.query
 tacit.model.assist     tacit.revoke           tacit.supersede
 tacit.export_audit
 ```
 
 ## 2. Artefact kinds
 
-Each non-standard kind carries a `schema` reference (`https://metis.dev/schemas/0.1/<kind>.schema.json`),
-exactly as CHAP requires for implementation-defined artefact kinds.
+Each non-standard kind carries a `schema` reference
+(`https://metis.dev/schemas/0.1/<kind>.schema.json`, with the kind's dots written as underscores,
+for example `tacit_fragment.schema.json`), exactly as CHAP requires for implementation-defined
+artefact kinds.
 
 ```
 tacit.fragment              tacit.memory_object         tacit.agent_memory_context
@@ -41,6 +60,16 @@ tacit.re_elicitation_request tacit.retrieval_decision   tacit.revocation_record
 tacit.supersession_record   tacit.consent_record        tacit.model_assist_record
 ```
 
+JSON Schemas for the core kinds are published in [../schemas/](../schemas/): `tacit.fragment`,
+`tacit.memory_object`, `tacit.agent_memory_context`, `tacit.retrieval_decision`,
+`tacit.review_decision`, `tacit.promotion_record`, `tacit.revocation_record`,
+`tacit.consent_record`, `tacit.validation_event`, and `tacit.model_assist_record`, plus
+`tacit_context` for the conditions and runtime context they embed.
+
+A `tacit.validation_event` names its `event`: `whisper_deferred` (the worker's prompt budget was
+reached), `consent_declined` (the worker answered and withheld consent, so nothing was stored), or
+`contestability` (a worker or reviewer contested a fragment).
+
 ## 3. Validation states
 
 `captured → worker_confirmed → tier1_confirmed → tier2_pending →`
@@ -49,33 +78,46 @@ with terminal/lifecycle states `withdrawn`, `superseded`, `expired`.
 
 ## 4. Authority layers
 
-`evidence` (learning/review only; never operational; never agent-visible) ·
+`evidence` (learning and review only; hidden from agents and from operational advice) ·
 `advisory` (conditional decision support under matching conditions; agent-visible as context) ·
 `controlled` (formally incorporated; change-control metadata + exact matching required).
 
-## 5. Retrieval rules
+## 5. Review rules
 
-Tacit memory is retrieved only through the condition-aware gate. Eligibility requires that
-authority layer, validation state, consent, revocation status, review/expiry, conditions,
-exclusions, risk class, role, source pathway, and (for controlled) exact-match constraints all
-pass. A `tacit.retrieval_decision` artefact and an evidence entry are produced for every attempt.
-Retrieval is never semantic similarity alone, and a local model never decides eligibility.
+A Tier-2 review is a CHAP `review.request` addressed to every named Mission Group reviewer under
+the policy's rule (`quorum:2` by default). Promotion needs that many distinct approvals, and Metis
+promotes only a review CHAP has completed. One reviewer can hold (`abstain.declare`), reject
+(`decide.reject`), or ask for re-elicitation (`escalate.raise`). Promotion sets a review date and
+expiry triggers; the promotion record names the approvers and the rule.
 
-## 6. Memory-object rules
+## 6. Retrieval rules
+
+Tacit memory is retrieved only through the condition-aware gate. It checks, in order: revocation
+status, consent, source pathway (endogenous fragments need review), authority layer, validation
+state, review date, role, conditions with their validity window and exclusions, exact matching
+for Controlled fragments, and risk class. Eligibility is decided deterministically from these recorded
+properties. A high-risk situation, or a near miss (the identity conditions match and a situational
+condition fails), opens a `tacit.escalation` task and adds a required human action. A
+`tacit.retrieval_decision` artefact and an evidence entry are produced for every recorded attempt.
+
+## 7. Memory-object rules
 
 A `tacit.memory_object` is created only from a promoted, active, consenting fragment. Evidence-layer
 fragments must never become agent-visible memory. Advisory fragments become advisory context;
 controlled fragments become controlled instruction only with change-control metadata. Memory
 objects always carry use constraints.
 
-## 7. Model-assist rules
+## 8. Model-assist rules
 
-Every local-model contribution is recorded as a `tacit.model_assist_record` (provenance, not
-authority). Model output cannot promote, reject, revoke, authorise, or retrieve a fragment, and
-is never treated as ground truth. `human_review_required` defaults to true.
+Every local-model contribution is recorded as a `tacit.model_assist_record`, for provenance. Model
+output cannot promote, reject, revoke, authorise, or retrieve a fragment; it remains a draft for
+human review, and `human_review_required` defaults to true.
 
-## 8. Consent rules
+## 9. Consent rules
 
-Promotion beyond Evidence requires valid consent or an explicitly recorded policy exception.
-Withdrawn consent blocks future retrieval. Workers can see records tied to their contribution and
-can contest, correct, withdraw, supersede, or request re-elicitation through auditable events.
+Promotion beyond Evidence requires valid consent or an explicitly recorded policy exception. The
+worker states consent with their answer to a whisper; a declined answer records a
+`consent_declined` validation event and stores nothing. Withdrawn consent blocks future retrieval,
+and only the worker who contributed a fragment can withdraw it. Workers can see records tied to
+their contribution and can challenge, correct, propose a supersession, or request re-elicitation
+through auditable events.

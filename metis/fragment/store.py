@@ -1,8 +1,9 @@
 """In-memory FragmentStore with an optional persistence backend.
 
-The store is the system of record for fragment *state*. Each promotion, rejection, or
-revocation updates the fragment here and is independently appended to the CHAP evidence
-chain, so the audit trail and the live state never drift apart silently.
+The store holds the live state of every fragment in an engine. Each promotion, rejection,
+or revocation updates the fragment here and is appended to the CHAP evidence chain as its
+own entry, so every state change has an audit record. A local project saves this state to
+the workspace's SQLite store (``metis.storage.sqlite_store``).
 """
 from __future__ import annotations
 

@@ -1,8 +1,8 @@
 """Structured outputs from local model assistance, and the ModelAssistRecord.
 
-Every local model call is recorded as a ModelAssistRecord, provenance, never authority.
-Model output cannot promote, reject, revoke, authorise, or retrieve a fragment, and cannot
-be treated as ground truth. It is always a draft suggestion pending human review.
+Every local model call is recorded as a ModelAssistRecord, for provenance only. Model
+output cannot promote, reject, revoke, authorise, or retrieve a fragment. It is a draft
+suggestion pending human review.
 """
 from __future__ import annotations
 

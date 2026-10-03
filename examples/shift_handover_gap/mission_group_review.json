@@ -2,8 +2,10 @@
   "fragment_id": "TF-00001",
   "outcome": "promoted_to_advisory",
   "reviewers": [
-    "group:mission-group@metis.local"
+    "human:quality-lead@metis.local",
+    "human:process-engineer@metis.local"
   ],
+  "decision_rule": "quorum:2",
   "dimension_assessments": {
     "description_fidelity": "faithful",
     "operational_relevance": "high",
@@ -12,5 +14,5 @@
     "evidence_strength": "moderate",
     "consent_status": "granted"
   },
-  "summary": "Promote as advisory checklist guidance for handovers, not automation."
+  "summary": "Promote as advisory checklist guidance for the people running handovers."
 }

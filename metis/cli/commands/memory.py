@@ -13,6 +13,7 @@ _WORKSPACE = typer.Option(None, "--workspace", help="Workspace (default: the act
 
 @memory_app.command("list")
 def memory_list(workspace: str = _WORKSPACE) -> None:
+    """List governed tacit memory objects."""
     objs = load_state(workspace).get("memory_objects", [])
     if not objs:
         typer.echo("No tacit memory objects.")
@@ -24,6 +25,7 @@ def memory_list(workspace: str = _WORKSPACE) -> None:
 
 @memory_app.command("show")
 def memory_show(memory_id: str = typer.Argument(...), workspace: str = _WORKSPACE) -> None:
+    """Print one tacit memory object as JSON."""
     for m in load_state(workspace).get("memory_objects", []):
         if m["memory_id"] == memory_id:
             typer.echo(json.dumps(m, indent=2))

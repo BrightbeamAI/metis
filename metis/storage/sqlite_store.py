@@ -3,7 +3,7 @@
 This is the authoritative store for tacit fragments, memory objects, the procedural,
 semantic, and episodic memory entries, pending captures, and the workspace's counters and
 CHAP references. Every save is one transaction, so a crash leaves either the previous state
-or the new one, never a partial write. Fragment and memory rows carry their category, layer,
+or the new one, complete. Fragment and memory rows carry their category, layer,
 and state as columns, so the store can be queried directly with SQL. The CHAP evidence chain
 itself lives in the CHAP store (``chap.db``) and the append-only ledger.
 """

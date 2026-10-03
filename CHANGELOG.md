@@ -7,12 +7,12 @@ All notable changes to Metis are recorded here. The format follows
 
 ### Added
 - An MCP server (`metis mcp`, optional `mcp` extra) that serves governed tacit memory to any
-  MCP client. Agents receive guidance only through the retrieval gate, never see
-  unauthorised fragments, and have no tool that can review, promote, or authorise.
-- Persistent local projects. The CLI keeps the CHAP coordinator in CHAP's SQLite store, so
-  a workspace's evidence chain continues across commands, and writes a per-workspace
-  append-only ledger. Each scenario run gets its own workspace. New commands:
-  `metis workspace list | use`, `metis audit verify`.
+  MCP client. Agents receive guidance only through the retrieval gate, learn of unauthorised
+  fragments only as a count, and have no tool that reviews, promotes, or authorises.
+- Persistent local projects. The CLI keeps the CHAP coordinator in CHAP's SQLite store, so a
+  workspace's evidence chain continues across commands, and writes a per-workspace append-only
+  ledger. Each scenario run gets its own workspace. New commands: `metis workspace list | use |
+  describe`, `metis audit verify`, and `metis mcp`.
 - Escalation to a person. High-risk situations and near misses (same equipment, different
   situation) open a `tacit.escalation` task and add a required human action.
 - SQLite is the authoritative store for each workspace's domain state (fragments, memory
@@ -22,30 +22,40 @@ All notable changes to Metis are recorded here. The format follows
 - Two-step capture: `begin_capture` asks the worker, `answer_whisper` records the worker's
   own answer and consent. Only the addressed human worker may answer.
 - Whisper budgets that ration prompts per worker and record deferrals.
+- A `ValidationEvent` model and schema for whisper deferrals, declined consent, and contests.
 - Knowledge Audit and Critical Decision Method interview guides.
 
 ### Changed
 - Promotion is a collective decision: a quorum of named Mission Group reviewers
   (`quorum:2` by default), enforced by CHAP. One reviewer can hold, reject, or re-elicit.
 - Promotion sets a review date and expiry triggers; the gate blocks fragments past review.
-- Fragment confidence is derived from the recorded evidence, not from the inference model.
-- The retrieval gate decides applicability before risk, so a fragment that does not apply is
-  never reported as an escalation.
+- Fragment confidence is derived from the recorded evidence: its strength, recurrence, outcome
+  link, and counterexamples.
+- The retrieval gate decides applicability before risk, so escalations cover the fragments that
+  apply and the near misses.
 - Provenance names a model only when one ran, review status follows the fragment's state,
   and every lineage entry links to its evidence-chain record.
 - Only the worker who contributed a fragment can withdraw consent; reviewers retire
   fragments with `revoke`.
+- Clearer wording in whisper templates, inference hypotheses, gate rationales, escalation
+  actions, and agent instructions.
+- Each JSON Schema file is named after the artefact kind whose `schema` URI points to it:
+  `tacit_agent_memory_context` and `tacit_model_assist_record` replace `agent_memory_context` and
+  `model_assist_record`, and review decisions have their own `tacit_review_decision` schema.
 - Requires `chap-coordinator` 0.2.13 or later (below 0.3).
-- The local project layout is new. Demo state written by earlier versions is not migrated;
-  run `metis demo` again.
+- The local project layout is new: run `metis demo` again to create a project in this layout.
 
 ### Fixed
 - Records created through the API or another live engine carried the deterministic demo
   clock. Timestamps now come from the engine making the call, and live engines use real time.
-- A held fragment could not be reviewed again.
-- An unknown category no longer leaves a partial capture on the evidence chain.
-- The API's `/promote` accepted any outcome, and `/audit/export` wrote to any path; both are
-  now rejected with an error.
+- A held fragment can be reviewed again.
+- Capture validates the category before recording anything, so an unknown category leaves the
+  evidence chain unchanged.
+- The API's `/promote` accepts only promotion outcomes, and `/audit/export` writes only inside
+  the project's `exports/` directory.
+- The `tacit_validation_event` schema describes validation events.
+- When a worker confirms without adding words, the fragment holds the candidate they confirmed,
+  and the deterministic summary fixture restates that text.
 
 ## [0.1.2]
 
@@ -53,17 +63,15 @@ All notable changes to Metis are recorded here. The format follows
 - Contestability works end to end: challenge, correct, withdraw, and re-elicitation
   requests are recorded as auditable events and escalate to the Mission Group, with
   test coverage for all four actions.
-- `metis.__version__` now reports the installed package version.
+- `metis.__version__` reports the installed package version.
 
 ### Changed
-- Failures are never silent. The SQLite mirror and project initialisation warn on
-  stderr when they cannot write; malformed whisper templates raise instead of being
-  replaced by the generic wording.
+- Failures are reported. The SQLite mirror and project initialisation warn on stderr when
+  they cannot write, and a malformed whisper template raises an error.
 - Deterministic engines produce byte-identical output across runs: every domain
   timestamp derives from the engine clock, so exported evidence chains and example
   files are reproducible.
-- Importing `metis.api` no longer does any work; the demo engine is created on the
-  first request.
+- Importing `metis.api` has no side effects; the demo engine is created on the first request.
 
 ### Removed
 - Unused adapter parameters and an unused task-update method.
@@ -71,7 +79,7 @@ All notable changes to Metis are recorded here. The format follows
 ## [0.1.1]
 
 ### Fixed
-- The PyPI project page now renders correctly (dedicated package description without repository-relative images).
+- The PyPI project page renders correctly (dedicated package description without repository-relative images).
 
 ## [0.1.0]
 
@@ -86,9 +94,10 @@ First public release.
 - The condition-aware retrieval gate and the four-store memory model with a `MemoryBroker`.
 - A local Ollama and Gemma model layer for bounded, advisory assistance, with deterministic
   fixtures so the demo and tests run without a live model.
-- Runs on the official `chap-coordinator` Python reference implementation through a thin adapter;
-  the Coordinator owns the append-only, hash-linked evidence chain and Metis adds no new protocol.
-  The compliance check reads its method allow-list straight from the Coordinator.
+- Uses the official `chap-coordinator` Python reference implementation through a thin adapter;
+  the Coordinator owns the append-only, hash-linked evidence chain, and Metis extends CHAP through
+  the `metis/1.0` profile. The compliance check reads its method allow-list straight from the
+  Coordinator.
 - A Typer CLI, an optional FastAPI server, JSON Schemas, the `metis/1.0` profile, whisper
   and model prompt libraries, and templates.
 - Three runnable synthetic examples with expected outputs.

@@ -15,8 +15,8 @@ miss. Record the practitioner's own words.
 | Big picture | "What do you keep in your head about the whole line that a newcomer would not?" | K14 collaborative, K17 strategic |
 | Noticing | "What do you see, hear, or feel that tells you something is off?" | K7 sensory, K8 aesthetic |
 | Job smarts | "What shortcuts or habits make you faster or safer than the procedure alone?" | K9 heuristic, K3 rhythmic |
-| Improvising | "When did the standard way not work, and what did you do instead?" | K9 heuristic, K10 diagnostic |
-| Self-monitoring | "How do you know when you are out of your depth, and what do you do then?" | K12 meta-cognitive |
+| Improvising | "When did the standard way fail you, and what did you do then?" | K9 heuristic, K10 diagnostic |
+| Self-monitoring | "How do you know when you are out of your depth, and what do you do then?" | K12 metacognitive |
 | Anomalies | "What tells you a reading or result cannot be trusted?" | K10 diagnostic |
 | Equipment | "Which machine or tool behaves differently from its manual, and how do you handle it?" | K4 equipment-specific, K6 tool-extended |
 

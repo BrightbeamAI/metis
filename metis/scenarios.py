@@ -115,7 +115,9 @@ def run_spec(spec: ScenarioSpec, engine: MetisEngine | None = None, *,
         linked_procedural_refs=spec.linked_procedural, linked_semantic_refs=spec.linked_semantic,
         linked_episodic_refs=spec.linked_episodic)
     run.memory = out["memory"]
-    s("13. Mission Group review recorded.", "Tier-2 decision: promoted_to_advisory")
+    s("13. Mission Group review recorded.",
+      f"promoted_to_advisory, approved by {', '.join(out['decided_by'])} "
+      f"({engine.governance.policy.review_rule})")
     s("14. Fragment promoted to Advisory layer.", result.fragment.authority_layer.value)
     s("15. Tacit memory object created.", run.memory.memory_id)
 
@@ -170,7 +172,7 @@ MANUFACTURING = ScenarioSpec(
     review_dimensions={"description_fidelity": "faithful", "operational_relevance": "high",
                        "normative_alignment": "acceptable", "safety_risk": "low",
                        "evidence_strength": "moderate", "consent_status": "granted"},
-    review_summary="Recurs across 4 cases; promote to Advisory as a conditional cue, not a rule.",
+    review_summary="Recurs across 4 cases; promote to Advisory as a cue for the recorded conditions.",
     procedural=[("SOP-17", "Reduce load only when the alarm threshold X is crossed.")],
     semantic=[("equipment_metadata", "Pump A is a centrifugal pump on Line 3.",
                dict(equipment_family="centrifugal_pump", equipment_id="PUMP-A")),
@@ -241,9 +243,9 @@ SHIFT_HANDOVER = ScenarioSpec(
     category="K14_collaborative",
     title="Felt-incomplete handover despite a complete form",
     corrected_content=("Team leads sense an incomplete handover when open threads are ticked off on "
-                       "the form but not confirmed verbally between outgoing and incoming shifts."),
+                       "the form without a spoken confirmation between outgoing and incoming shifts."),
     use_constraints=[
-        "Present as a handover checklist prompt, not automation.",
+        "Present as a handover checklist prompt for the incoming lead.",
         "Ask the incoming lead to confirm open threads verbally.",
         "Do not auto-close the handover.",
         "Escalate if risk class is high."],
@@ -253,7 +255,7 @@ SHIFT_HANDOVER = ScenarioSpec(
     review_dimensions={"description_fidelity": "faithful", "operational_relevance": "high",
                        "normative_alignment": "acceptable", "safety_risk": "medium",
                        "evidence_strength": "moderate", "consent_status": "granted"},
-    review_summary="Promote as advisory checklist guidance for handovers, not automation.",
+    review_summary="Promote as advisory checklist guidance for the people running handovers.",
     procedural=[("HANDOVER-SOP", "Complete the handover form and tick all open items before sign-off.")],
     semantic=[("shift_metadata", "Night-to-day handovers cover three control-room desks.",
                dict(area="control_room"))],

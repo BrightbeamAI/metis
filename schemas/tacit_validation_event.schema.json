@@ -1,34 +1,16 @@
 {
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
-    "fragment_id": {
-      "title": "Fragment Id",
+    "event": {
+      "enum": [
+        "whisper_deferred",
+        "consent_declined",
+        "contestability"
+      ],
+      "title": "Event",
       "type": "string"
     },
-    "outcome": {
-      "title": "Outcome",
-      "type": "string"
-    },
-    "reviewers": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Reviewers",
-      "type": "array"
-    },
-    "dimension_assessments": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "title": "Dimension Assessments",
-      "type": "object"
-    },
-    "summary": {
-      "default": "",
-      "title": "Summary",
-      "type": "string"
-    },
-    "model_assist_ref": {
+    "worker": {
       "anyOf": [
         {
           "type": "string"
@@ -38,18 +20,37 @@
         }
       ],
       "default": null,
-      "title": "Model Assist Ref"
+      "title": "Worker"
     },
-    "reviewed_at": {
-      "title": "Reviewed At",
-      "type": "string"
+    "candidate_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidate Id"
+    },
+    "fragment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fragment Id"
     }
   },
   "required": [
-    "fragment_id",
-    "outcome"
+    "event"
   ],
-  "title": "MissionGroupReview",
+  "title": "ValidationEvent",
   "type": "object",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://metis.dev/schemas/0.1/tacit_validation_event.schema.json"

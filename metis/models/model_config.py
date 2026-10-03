@@ -1,7 +1,7 @@
 """Local model configuration.
 
-By default Metis uses a local Ollama runtime and the Gemma model family. It must NOT
-call cloud LLM APIs. Configuration is set with ``metis config set model.* ...``.
+Metis uses a local Ollama runtime and the Gemma model family, and calls no cloud LLM API.
+Configuration is set with ``metis config set model.* ...``.
 """
 from __future__ import annotations
 

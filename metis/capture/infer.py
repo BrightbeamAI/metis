@@ -1,8 +1,8 @@
 """Infer, compare work-as-imagined with work-as-done and form a *candidate hypothesis*.
 
-Deterministic rules come first. A local model may help classify or structure the candidate,
-but the result is only ever a hypothesis (``tacit.inference_candidate``); never trusted
-knowledge. The gap between work-as-imagined and work-as-done is diagnostic, not proof.
+Deterministic rules come first. A local model may help classify or structure the candidate;
+the result is a hypothesis (``tacit.inference_candidate``) for the worker to confirm or
+correct. The gap between work-as-imagined and work-as-done marks a place worth a question.
 """
 from __future__ import annotations
 
@@ -28,6 +28,11 @@ class InferenceCandidate(BaseModel):
     is_hypothesis: bool = True
 
 
+def _sentence(text: str) -> str:
+    text = text.strip()
+    return text if text.endswith((".", "!", "?")) else text + "."
+
+
 def infer_candidate(
     observation: Observation,
     *,
@@ -38,7 +43,8 @@ def infer_candidate(
     wai, wad = observation.work_as_imagined, observation.work_as_done
     if wai and wad and wai.strip() != wad.strip():
         gap = f"Work-as-imagined ('{wai}') diverges from work-as-done ('{wad}')."
-        hypothesis = f"Under the stated conditions, practitioners do: {wad} (rather than: {wai})."
+        hypothesis = (f"Under the stated conditions, practitioners do: {_sentence(wad)} "
+                      f"The written procedure says: {_sentence(wai)}")
     else:
         gap = "No explicit work-as-imagined/work-as-done divergence supplied."
         hypothesis = observation.text

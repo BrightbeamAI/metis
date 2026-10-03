@@ -11,9 +11,9 @@ Layout (``$METIS_HOME``, default ``./.metis``)::
     workspaces/<id>/.lock            held by the one process writing the workspace
 
 Every open restores the coordinator from ``chap.db``, so a workspace's hash-linked chain
-continues across commands instead of starting again. Running another scenario never
-overwrites a workspace: each run gets its own. A workspace has one writer at a time;
-read-only opens (inspection and verification) work while a writer is running.
+continues across commands. Each scenario run gets a workspace of its own, so earlier runs
+stay intact. A workspace has one writer at a time; read-only opens (inspection and
+verification) work while a writer is running.
 """
 from __future__ import annotations
 

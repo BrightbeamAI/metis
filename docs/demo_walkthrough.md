@@ -5,23 +5,24 @@ metis init
 metis demo manufacturing-pump-vibration
 ```
 
-The manufacturing pump-vibration demo runs the whole pipeline locally, no cloud APIs, and prints
-nineteen labelled steps:
+The manufacturing pump-vibration demo runs the whole pipeline on your machine and prints each step
+with a label:
 
 1. Metis workspace created.
-2. Participants added (operator, whisperer agent, Mission Group, assistant agent).
+2. Participants added (operator, whisperer agent, the Mission Group and its three named reviewers,
+   assistant agent).
 3. Procedural memory loaded (SOP-17).
 4. Semantic memory loaded (equipment + vibration concepts).
 5. Episodic memory loaded (prior cases).
-6. Local model status checked (live Gemma if available, else deterministic fixtures).
+6. Local model status checked (deterministic fixtures, or a live Gemma model with `--live-model`).
 7. Observation loaded (work-as-imagined vs work-as-done gap).
-8. Candidate fragment inferred (a hypothesis only).
-9. Local AI assistance recorded (model-assist records; live Gemma or fixtures).
+8. Candidate fragment inferred (a hypothesis for the worker to confirm).
+9. Local AI assistance recorded (model-assist records, from fixtures or the live model).
 10. Whisper generated (CHAP whisper capability).
 11. Operator confirmation recorded (Tier-1).
 12. Evidence-layer fragment stored.
-13. Mission Group review recorded (Tier-2).
-14. Fragment promoted to the Advisory layer.
+13. Mission Group review recorded (Tier-2): two named reviewers approve under `quorum:2`.
+14. Fragment promoted to the Advisory layer, with a review date.
 15. Tacit memory object created.
 16. Retrieval allowed under the matching context.
 17. Retrieval blocked under the non-matching context.
@@ -46,9 +47,9 @@ metis audit export --out evidence.jsonl
 Under the matching context the advisory fragment is eligible and presented with its use constraints;
 under the non-matching context it is blocked with `conditions_do_not_match`. The agent memory context
 combines all four memory stores and lists the required human actions. Each `retrieve` and
-`memory query` is itself recorded: the workspace's chain grows, and `metis audit verify` confirms that
-the CHAP store and the append-only ledger agree. The exported `evidence.jsonl` is the full CHAP
-evidence chain, independently replayable and verifiable.
+`memory query` is itself recorded: the workspace's chain grows, and `metis audit verify` confirms
+that the CHAP store and the append-only ledger agree entry for entry. The exported `evidence.jsonl`
+is the full CHAP evidence chain, independently replayable and verifiable.
 
 Try a high-risk context (set `"risk_class": "high"`): the fragment is withheld, an escalation task
 is opened for the operator, and the output names the required human action.
@@ -56,6 +57,8 @@ is opened for the operator, and the output names the required human action.
 The other two examples run the same way:
 
 ```bash
-metis capture --example batch-quality-visual-inspection
-metis capture --example shift-handover-gap
+metis demo batch-quality-visual-inspection
+metis demo shift-handover-gap
 ```
+
+`metis capture --example <scenario>` runs the same capture into a new workspace with less output.

@@ -1,15 +1,16 @@
 """CHAPAdapter: the single object Metis uses to speak CHAP.
 
-This adapter drives the official ``chap-coordinator`` reference implementation. It does not
-reimplement the protocol: it dispatches JSON-RPC envelopes to a real Coordinator, which owns
-the workspace, participants, tasks, and the append-only, hash-linked evidence chain. Metis
-maps its domain onto CHAP Core plus the whisper, review, control, and routing profiles, and
-keeps a small registry of the artefacts it produces for convenient querying.
+This adapter drives the official ``chap-coordinator`` reference implementation: it
+dispatches JSON-RPC envelopes to a real Coordinator, which owns the workspace, participants,
+tasks, and the append-only, hash-linked evidence chain. Metis maps its domain onto CHAP Core
+plus the whisper, review, control, and routing profiles, and keeps a small registry of the
+artefacts it produces for convenient querying.
 
-The public surface (now_iso, join, create_task, append_artefact, whisper_ask/answer,
-review_request, decide, control_event, evidence_records, descriptor, verify, and the
-``chain`` / ``artefacts`` / ``artefact_evidence`` attributes) is unchanged, so the rest of
-Metis is untouched by the migration.
+The public surface is now_iso, join, create_task, append_artefact, whisper_ask/answer,
+review_request, decide, escalate, control_event, evidence_records, descriptor, verify, and
+the ``chain`` / ``artefacts`` / ``artefact_evidence`` attributes. Given a store, the
+Coordinator persists the workspace and the adapter reattaches to it on the next start; given
+a ledger, every dispatch is appended to the workspace's evidence ledger.
 """
 from __future__ import annotations
 

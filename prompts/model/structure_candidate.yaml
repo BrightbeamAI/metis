@@ -9,4 +9,4 @@ template: |
   Context: {context}
 output_format: json
 notes:
-  - "The candidate is a hypothesis only, never trusted knowledge."
+  - "The candidate is a hypothesis for the worker to confirm or correct."

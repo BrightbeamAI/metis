@@ -1,8 +1,8 @@
 """MemoryBroker, assembles an AgentMemoryContext from the four memory stores.
 
 The broker is how an AI agent uses tacit memory alongside procedural, semantic, and
-episodic memory. Tacit memory is queried ONLY through the retrieval gate; blocked tacit
-results are recorded (with reasons) for audit but are never exposed as usable guidance.
+episodic memory. Tacit memory is queried only through the retrieval gate; blocked tacit
+results go to the audit trail, with reasons, and stay out of the guidance.
 """
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ from .tacit import TacitMemoryStore
 
 _ACTION_HINTS = ("confirm", "ask", "escalate", "human", "verify", "do not automatically")
 _DEFAULT_NOTES = [
-    "Tacit memory is governed, situated guidance, not ground truth, an SOP, or a training example.",
+    "Tacit memory is governed, situated guidance that holds under its recorded conditions.",
     "Respect every use constraint and the conditions of applicability.",
-    "Blocked tacit results are recorded for audit and must not be treated as usable guidance.",
+    "Blocked tacit results stay out of the guidance; each one is recorded for audit.",
 ]
 
 

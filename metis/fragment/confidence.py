@@ -2,9 +2,9 @@
 
 Confidence grades how strongly the recorded evidence supports a fragment: low after a single
 observation, higher as the same pattern recurs with a linked outcome and without
-counterexamples. It is computed deterministically from ``FragmentEvidence``, never from a
-model's own score; a model's prior stays on the inference candidate. Confidence informs
-review. It never grants permission to use a fragment; authority and the retrieval gate do.
+counterexamples. It is computed deterministically from ``FragmentEvidence``; a model's own
+score stays on the inference candidate. Confidence informs review. Permission to use a
+fragment comes from its authority layer and the retrieval gate.
 
 Rule (clamped to [0.05, 0.95], two decimals):
 

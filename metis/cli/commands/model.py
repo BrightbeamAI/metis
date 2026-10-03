@@ -52,4 +52,4 @@ def model_run(
     res = client.run(purpose, prompt)
     mode = "live Gemma" if res.used_live_model else "deterministic fixture"
     typer.echo(f"[{mode}] {res.text}")
-    typer.echo("Note: model output is an advisory draft, never a governance decision.")
+    typer.echo("Note: model output is an advisory draft; people make every governance decision.")

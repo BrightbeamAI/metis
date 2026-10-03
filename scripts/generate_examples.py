@@ -20,7 +20,8 @@ DIRS = {
     "shift-handover-gap": "shift_handover_gap",
 }
 ROOT = Path(__file__).resolve().parents[1] / "examples"
-# Manufacturing keeps its hand-authored, richer inputs; we only refresh its expected outputs.
+# Manufacturing keeps its hand-authored observation, contexts, whisper response, and memory seed
+# files; the review records and expected outputs are regenerated for every scenario.
 INPUTS_MANAGED = {"batch-quality-visual-inspection", "shift-handover-gap"}
 
 
@@ -44,14 +45,6 @@ for key, spec in SPECS.items():
         })
         write_json(base / "context_matching.json", spec.match_context)
         write_json(base / "context_non_matching.json", spec.nonmatch_context)
-        write_json(base / "fragment_evidence.json", run.fragment.evidence.model_dump(mode="json"))
-        write_json(base / "mission_group_review.json", {
-            "fragment_id": run.fragment.fragment_id,
-            "outcome": "promoted_to_advisory",
-            "reviewers": ["group:mission-group@metis.local"],
-            "dimension_assessments": spec.review_dimensions,
-            "summary": spec.review_summary,
-        })
         write_json(base / "whisper_response.json", {
             "prompt_category": spec.category,
             "response_type": "confirm",
@@ -68,6 +61,18 @@ for key, spec in SPECS.items():
         with (base / "episodic_memory" / "prior_cases.jsonl").open("w") as fh:
             for src, content, meta in spec.episodic:
                 fh.write(json.dumps({"id": src, "summary": content, **meta}) + "\n")
+
+    # Review records (all scenarios)
+    promotion = run.engine.adapter.artefacts_of_kind("tacit.promotion_record")[0]["content"]
+    write_json(base / "fragment_evidence.json", run.fragment.evidence.model_dump(mode="json"))
+    write_json(base / "mission_group_review.json", {
+        "fragment_id": run.fragment.fragment_id,
+        "outcome": "promoted_to_advisory",
+        "reviewers": promotion["approvers"],
+        "decision_rule": promotion["decision_rule"],
+        "dimension_assessments": spec.review_dimensions,
+        "summary": spec.review_summary,
+    })
 
     # Expected outputs (all scenarios)
     write_json(base / "tacit_memory" / "expected_tacit_memory_object.json",

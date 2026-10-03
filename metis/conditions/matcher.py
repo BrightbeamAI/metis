@@ -1,8 +1,7 @@
 """Deterministic condition matching for the retrieval gate.
 
-This is the opposite of semantic similarity: a fragment is eligible only when its
-structured conditions are satisfied by the runtime context. Matching fails *closed*, an
-unknown runtime value never counts as a match.
+A fragment is eligible only when the runtime context satisfies its structured conditions.
+Matching fails *closed*: an unknown runtime value counts as a mismatch.
 """
 from __future__ import annotations
 

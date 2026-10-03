@@ -2,9 +2,9 @@
 
 These assert that what Metis emits are valid JSON-RPC envelopes using only methods the
 ``chap-coordinator`` reference implements, and that artefacts follow CHAP conventions. The
-method allow-list is read directly from the Coordinator, so it cannot drift: if Metis
-ever dispatched a method the reference does not implement, the dispatch would error and never
-be audited in the first place.
+method allow-list is read directly from the Coordinator, so it always matches the installed
+version. A method the reference does not implement fails at dispatch, before anything reaches
+the evidence chain.
 """
 from __future__ import annotations
 

@@ -21,7 +21,8 @@ def demo(
     typer.echo(f"\nEvidence chain verified: {vr.ok} ({vr.checked} entries)")
     typer.echo(f"Workspace: {workspace_id} (active)")
     typer.echo(f"Evidence ledger (append-only): {proj.ledger_path(workspace_id)}")
-    typer.echo("Tacit memory is governed, situated guidance, not ground truth. See ETHICAL_USE.md.")
+    typer.echo("Tacit memory is governed, situated guidance: it holds under its recorded conditions "
+               "and stays open to challenge. See ETHICAL_USE.md.")
 
     demo_html = repo_root() / "docs" / "demo.html"
     if open_ui:

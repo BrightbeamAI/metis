@@ -3,7 +3,7 @@
   "fragment_id": "TF-00001",
   "memory_type": "tacit",
   "title": "Felt-incomplete handover despite a complete form",
-  "content": "Team leads sense an incomplete handover when open threads are ticked off on the form but not confirmed verbally between outgoing and incoming shifts.",
+  "content": "Team leads sense an incomplete handover when open threads are ticked off on the form without a spoken confirmation between outgoing and incoming shifts.",
   "category": "K14_collaborative",
   "domain": "social_normative",
   "source_pathway": "exogenous",
@@ -59,7 +59,7 @@
   "validation_state": "promoted_to_advisory",
   "confidence": 0.58,
   "use_constraints": [
-    "Present as a handover checklist prompt, not automation.",
+    "Present as a handover checklist prompt for the incoming lead.",
     "Ask the incoming lead to confirm open threads verbally.",
     "Do not auto-close the handover.",
     "Escalate if risk class is high."
@@ -69,7 +69,7 @@
     "presentation": "advisory_only"
   },
   "agent_visibility": "advisory_context",
-  "agent_instruction": "Present as a handover checklist prompt, not automation.",
+  "agent_instruction": "Present as a handover checklist prompt for the incoming lead.",
   "linked_procedural_refs": [
     "HANDOVER-SOP"
   ],

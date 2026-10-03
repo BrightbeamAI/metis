@@ -30,13 +30,16 @@ def operator_confirm(
     *,
     corrected_content: str | None = None,
     free_text: str | None = None,
+    confirmed_text: str | None = None,
     model_client: OllamaClient | None = None,
 ) -> tuple[ConfirmationResult, dict[str, Any] | None]:
+    """Record the worker's response. ``confirmed_text`` is the candidate the worker was shown;
+    when the worker adds no words of their own, a model summary restates that candidate."""
     response = OperatorResponse(response)
     assist: dict[str, Any] | None = None
     summary = None
     if model_client is not None and response in (OperatorResponse.confirm, OperatorResponse.correct):
-        basis = corrected_content or free_text or prompt.question
+        basis = corrected_content or free_text or confirmed_text or prompt.question
         p = f"Summarise this operator confirmation in one sentence. Return JSON {{summary}}. Text: {basis}"
         res = model_client.run(AssistPurpose.summarise_confirmation, p)
         summary = res.json().get("summary")

@@ -3,7 +3,7 @@ domain: inferential
 trigger: operator applies a rule-of-thumb at an exception, threshold, or deviation
 primary_whisper: "You acted before the threshold was formally reached. What rule of thumb were you using?"
 follow_ups:
-  - "When does this rule NOT apply?"
+  - "Where does this rule stop applying?"
   - "What conditions make it reliable?"
 allowed_response_types: [confirm, correct, dismiss, defer]
 operator_burden_level: low

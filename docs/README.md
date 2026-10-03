@@ -11,16 +11,16 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 
 | Doc | What it covers |
 |-----|----------------|
-| [architecture.md](architecture.md) | The four layers, the capture loop, validation, the retrieval gate, the memory broker, and the audit flow. |
-| [demo_walkthrough.md](demo_walkthrough.md) | The 19 steps the manufacturing demo prints, plus the commands to inspect the result. |
+| [architecture.md](architecture.md) | The four layers, the capture loop, validation, the retrieval gate and escalation, the memory broker, local projects, and the audit flow. |
+| [demo_walkthrough.md](demo_walkthrough.md) | Each step the manufacturing demo prints, plus the commands to inspect the result. |
 
 ## Concepts
 
 | Doc | What it covers |
 |-----|----------------|
 | [memory_architecture.md](memory_architecture.md) | Procedural, semantic, episodic, and tacit memory; the TacitMemoryObject, AgentMemoryContext, and MemoryBroker. |
-| [governance_model.md](governance_model.md) | Capture Cell, Mission Group, Runtime Orchestrator, the three authority layers, Tier-1 and Tier-2 review, and lifecycle transitions. |
-| [condition_aware_retrieval.md](condition_aware_retrieval.md) | Why retrieval is a governance gate, the ordered checks, and the closed set of blocked reasons. |
+| [governance_model.md](governance_model.md) | Capture Cell, Mission Group, Runtime Orchestrator, the three authority layers, Tier-1 and Tier-2 review, quorum decisions, review dates, confidence, and lifecycle transitions. |
+| [condition_aware_retrieval.md](condition_aware_retrieval.md) | Why retrieval is a governance gate, the ordered checks, escalation to a person, and the closed set of blocked reasons. |
 | [taxonomy_k1_k17.md](taxonomy_k1_k17.md) | The K1 to K17 tacit categories, the six domains, and the source pathways. |
 | [agent_memory_use.md](agent_memory_use.md) | How an AI agent should consume Metis output and respect use constraints. |
 | [mcp_server.md](mcp_server.md) | Connect an agent (Claude Desktop, Claude Code, any MCP client) to governed tacit memory. |
@@ -29,11 +29,13 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 
 | Doc | What it covers |
 |-----|----------------|
-| [chap_integration.md](chap_integration.md) | How Metis maps onto CHAP and which CHAP capabilities it uses. |
+| [chap_integration.md](chap_integration.md) | How Metis maps onto CHAP, which CHAP methods it dispatches, and how a project persists the chain. |
 | [metis_profile.md](metis_profile.md) | The `metis/1.0` profile: task kinds, artefact kinds, and rules. |
 | [local_model_runtime.md](local_model_runtime.md) | Installing Ollama, pulling Gemma, configuration, and why model output stays advisory. |
 | [tacit_fragments_preprint.pdf](tacit_fragments_preprint.pdf) | The paper Metis implements: *Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI* ([preprint](https://doi.org/10.20944/preprints202608.0927.v1)). |
 | [ethical_use.md](ethical_use.md) | The constraints that make capture safe; see also the top-level ETHICAL_USE.md. |
 
-JSON Schemas for every `tacit.*` object are in [../schemas/](../schemas/). The runnable examples
-are in [../examples/](../examples/).
+JSON Schemas for the core `tacit.*` objects are in [../schemas/](../schemas/). The runnable
+examples are in [../examples/](../examples/), and the capture and review templates (capture
+canvas, Knowledge Audit and CDM interview guides, review checklist, consent and contestability
+records) are in [../templates/](../templates/).

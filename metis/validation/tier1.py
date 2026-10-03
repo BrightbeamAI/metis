@@ -1,7 +1,7 @@
 """Tier-1 confirmation, descriptive fidelity only.
 
 Tier-1 answers a single question: did the system faithfully represent what the worker
-meant or did? It does NOT decide whether the fragment should influence future work.
+meant or did? Whether the fragment should influence future work is a Tier-2 question.
 """
 from __future__ import annotations
 

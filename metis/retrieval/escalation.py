@@ -1,10 +1,9 @@
 """Escalation of retrieval decisions to a person.
 
 When tacit guidance would be applied outside the envelope a fragment records, or the
-situation's risk class calls for human judgement, the decision goes to a person instead of
-returning a confident-looking precedent. The gate flags those cases (``escalate``); this
-module turns them into one CHAP task per retrieval and into required human actions that an
-agent must honour.
+situation's risk class calls for human judgement, the decision goes to a person. The gate
+flags those cases (``escalate``); this module turns them into one CHAP task per retrieval and
+into required human actions that an agent must honour.
 """
 from __future__ import annotations
 
@@ -26,8 +25,8 @@ def escalation_actions(items: Sequence[Any], task_id: str | None = None) -> list
             actions.append(f"A person decides before {ref} is used: the current risk class "
                            f"requires human judgement ({item.detail}).{suffix}")
         else:
-            actions.append(f"A person decides whether {ref} applies: it covers this equipment "
-                           f"or product, but not this situation ({item.detail}).{suffix}")
+            actions.append(f"A person decides whether {ref} applies: it matches this equipment "
+                           f"or product, and the situation differs ({item.detail}).{suffix}")
     return actions
 
 

@@ -2,7 +2,7 @@
 
 A :class:`TacitContext` plays two roles: it records a fragment's *conditions of
 applicability*, and it describes the *runtime situation* presented to the retrieval gate.
-Conditions are structured, never free text, so eligibility is deterministic and auditable.
+Conditions are structured fields, so eligibility is deterministic and auditable.
 """
 from __future__ import annotations
 

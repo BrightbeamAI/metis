@@ -22,6 +22,9 @@ def build() -> dict:
     order = []
     for key, spec in SPECS.items():
         run = run_spec(spec)
+        check = run.engine.verify()
+        if not check.ok:
+            raise SystemExit(f"{key}: the evidence chain failed verification: {check.errors}")
         order.append(key)
         scenarios[key] = {
             "name": spec.name,

@@ -44,3 +44,19 @@ def test_supersession(captured_fragment):
     engine.governance.supersede(res.fragment.fragment_id, "TF-NEW", by="group:mission-group@metis.local")
     assert res.fragment.revocation_status == RevocationStatus.superseded
     assert any(a["kind"] == "tacit.supersession_record" for a in engine.adapter.artefacts.values())
+
+
+def test_a_reviewer_cannot_record_consent_withdrawal_through_revoke(captured_fragment):
+    import pytest
+
+    from metis.consent.model import ConsentStatus
+    from metis.consent.revocation import RevocationReason
+
+    engine, res = captured_fragment
+    reviewer = engine.mission_group_members[0]
+    with pytest.raises(PermissionError):
+        engine.governance.revoke(res.fragment.fragment_id,
+                                 reason=RevocationReason.consent_withdrawn, by=reviewer)
+    engine.governance.revoke(res.fragment.fragment_id, reason=RevocationReason.consent_withdrawn,
+                             by=engine.operator_uri)
+    assert engine.fragments.get(res.fragment.fragment_id).consent.consent_status == ConsentStatus.withdrawn

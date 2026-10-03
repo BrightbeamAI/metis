@@ -1,7 +1,7 @@
 """The TacitFragment domain model and its sub-models.
 
-A TacitFragment is NOT tacit knowledge in full. It is a partial, situated, governed,
-inspectable representation of practice, always bound to provenance, conditions, consent,
+A TacitFragment is a partial, situated, governed, inspectable representation of practice:
+one piece of what a worker knows, always bound to provenance, conditions, consent,
 authority, validation state, and use constraints. It is serialisable as a CHAP artefact of
 kind ``tacit.fragment``.
 """
@@ -53,7 +53,7 @@ class Provenance(BaseModel):
     capture_method: str | None = None
     human_confirmed_by: str | None = None
     mission_group_reviewed_by: str | None = None
-    # Recorded only when local model assistance was used (provenance, not authority):
+    # Recorded only when local model assistance was used (provenance only):
     model_provider: str | None = None
     model_name: str | None = None
     model_prompt_template: str | None = None
@@ -67,7 +67,7 @@ class Provenance(BaseModel):
 
 
 class FragmentEvidence(BaseModel):
-    """Evidence is a governance signal, not universal truth."""
+    """The recorded support for a fragment, weighed by reviewers and by ``evidence_confidence``."""
 
     model_config = ConfigDict(extra="forbid")
 

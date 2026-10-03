@@ -2,8 +2,8 @@
 
 Each CHAP evidence entry is written as one JSON line as soon as it is recorded, flushed to
 disk, and never rewritten. The ledger is the human-inspectable record of a workspace and a
-second copy of the chain that the CHAP SQLite store holds. On open the two are checked
-against each other, so a lost write is detected instead of tolerated. Lines use the same
+second copy of the chain that the CHAP SQLite store holds. Opening a workspace checks the
+two against each other and stops with an error if a write was lost. Lines use the same
 format as ``metis.audit.export``, so ``metis.audit.replay`` verifies a ledger directly.
 """
 from __future__ import annotations
@@ -62,6 +62,12 @@ class EvidenceLedger:
         self._count += len(new)
         self._size = self.path.stat().st_size
         return len(new)
+
+    def matches(self, adapter: Any) -> bool:
+        """True when the ledger holds exactly the chain's entries, record for record."""
+        stored = [json.loads(json.dumps(adapter.evidence_record(e), separators=(",", ":")))
+                  for e in adapter.chain.entries]
+        return self.records() == stored
 
     def check(self, adapter: Any) -> None:
         """Raise ``LedgerMismatch`` if the ledger and the restored chain disagree."""

@@ -25,7 +25,7 @@ HUMAN_READABLE: dict[BlockedReason, str] = {
     BlockedReason.expired_review_date: "The fragment's review date or validity window has elapsed.",
     BlockedReason.consent_withdrawn: "Consent for this fragment has been withdrawn.",
     BlockedReason.controlled_layer_requires_exact_match: "Controlled-layer fragments require exact condition matching.",
-    BlockedReason.risk_class_requires_human_escalation: "The current risk class requires human escalation; the agent must not act on tacit guidance alone.",
+    BlockedReason.risk_class_requires_human_escalation: "The current risk class requires a person to decide before tacit guidance is used.",
     BlockedReason.endogenous_fragment_requires_review: "Endogenous (agent-surfaced) fragment requires Mission Group review before operational use.",
     BlockedReason.revoked_or_superseded: "The fragment has been revoked, withdrawn, superseded, or retired.",
     BlockedReason.role_not_authorised: "The requesting role is not authorised to retrieve this fragment.",

@@ -5,8 +5,8 @@
 ## Scenario
 
 A quality specialist flags a resin batch as "looks off" before the lab measure confirms drift.
-This is perceptual and aesthetic tacit knowledge. It is real and valuable, and it is dangerous to
-turn into a universal rule, so the evidence stays weak and the fragment stays advisory.
+This is perceptual and aesthetic tacit knowledge: real, valuable, and risky to generalise. With two
+cases and a counterexample on record, the evidence is weak, so the fragment stays advisory.
 
 ## Run it
 
@@ -14,17 +14,17 @@ turn into a universal rule, so the evidence stays weak and the fragment stays ad
 metis demo batch-quality-visual-inspection
 ```
 
-This runs the full Observe, Infer, Whisper, Confirm, Remember loop, promotes the fragment to the
-Advisory layer through a Mission Group review, builds a governed tacit memory object, and shows
-retrieval allowed under the matching context and blocked under the non-matching one.
+This runs the full Observe, Infer, Whisper, Confirm, Store loop, promotes the fragment to the
+Advisory layer through a quorum of Mission Group reviewers, builds a governed tacit memory object,
+and shows retrieval allowed under the matching context and blocked under the non-matching one.
 
 ## What it demonstrates
 
-The fragment is promoted only as advisory context, never as automation. Its use constraints require
+The fragment is promoted as advisory context for a person to act on. Its use constraints require
 exemplar comparison and a human confirmation before any action: "do not convert into a universal
 rule" and "ask a human to confirm against annotated exemplars before action". Because the evidence
-is weak (two cases, with a counterexample on record), both the Mission Group and the retrieval gate
-keep it firmly advisory.
+is weak (two cases, with a counterexample on record), its evidence-derived confidence is low and the
+Mission Group promotes it to Advisory only.
 
 ## Files
 

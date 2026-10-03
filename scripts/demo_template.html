@@ -98,7 +98,9 @@
 <header class="hero"><div class="wrap">
   <h1>Interactive demo</h1>
   <p>Walk a situated observation through capture, governance, and retrieval, then drive the gate
-  yourself. Everything here is real output from a local, deterministic run. No server, no cloud.</p>
+  yourself. The capture steps, fragment, memory context, and audit chain are real output from a
+  local, deterministic run. The gate in section 3 is a JavaScript copy of the Python gate, checked
+  against it by the test suite, and the whole page runs in your browser.</p>
 </div></header>
 
 <div class="wrap">
@@ -122,7 +124,7 @@
 
 <section><div class="wrap">
   <h2>2. The captured <span class="em">fragment</span></h2>
-  <p class="sub">An Evidence-layer fragment after Tier-1 confirmation, then promoted to Advisory by the Mission Group.</p>
+  <p class="sub">The worker confirmed it (Tier-1); two named Mission Group reviewers then promoted it to Advisory.</p>
   <div class="cols">
     <div class="card" id="fragcard"></div>
     <div class="card tint" id="memcard"></div>
@@ -131,9 +133,9 @@
 
 <section><div class="wrap">
   <h2>3. Drive the <span class="em">retrieval gate</span></h2>
-  <p class="sub">This is a governance check, not similarity search. Edit the runtime context or use a
-  preset, and watch the gate allow or block the fragment. It fails closed when a required condition is
-  missing. A field accepts comma-separated values when the situation carries several at once.</p>
+  <p class="sub">The gate checks whether this fragment may be used in this situation. Edit the runtime
+  context or use a preset, and watch it allow or block the fragment. It fails closed when a required
+  condition is missing. A field accepts comma-separated values when the situation carries several at once.</p>
   <div class="presets" id="presets"></div>
   <div class="gate">
     <div class="card">
@@ -146,7 +148,7 @@
       <div class="field"><label>authority layer (override)</label>
         <select id="t_authority">
           <option value="">as promoted</option>
-          <option value="evidence">evidence (not promoted)</option>
+          <option value="evidence">evidence (before promotion)</option>
           <option value="advisory">advisory</option>
           <option value="controlled">controlled</option>
         </select>
@@ -173,7 +175,7 @@
 <footer><div class="wrap">
   <img src="__LOGO__" alt="Brightbeam" style="height:24px">
   <span>Metis interactive demo. Governed tacit memory for AI agents.</span>
-  <a href="https://github.com/BrightbeamAI/chap">Built on CHAP</a>
+  <a href="https://github.com/BrightbeamAI/chap">Recorded with CHAP</a>
   <span style="margin-left:auto">Apache-2.0</span>
 </div></footer>
 
@@ -182,13 +184,13 @@ const DATA = __DATA__;
 const CONTEXT_KEYS = ["site","area","line","equipment_family","equipment_id","product_family","material_lot","operating_mode","shift_pattern","role","risk_class","trigger_context"];
 const IDENTITY_KEYS = ["site","area","line","equipment_family","equipment_id","product_family","material_lot"];
 const WHY = {
-  evidence_layer_not_authorised:"Evidence-layer fragment: it cannot be used for operational advice and is never agent-visible.",
+  evidence_layer_not_authorised:"Evidence-layer fragment: reserved for learning and review, and hidden from agents.",
   tier2_validation_missing:"It has not passed Tier-2 Mission Group validation.",
   conditions_do_not_match:"The fragment's conditions of applicability do not match this context.",
   expired_review_date:"The review date or validity window has elapsed.",
   consent_withdrawn:"Consent for this fragment has been withdrawn.",
   controlled_layer_requires_exact_match:"Controlled-layer fragments require exact, fully-specified condition matching.",
-  risk_class_requires_human_escalation:"This risk class requires human escalation; the agent must not act on tacit guidance alone.",
+  risk_class_requires_human_escalation:"This risk class requires a person to decide before tacit guidance is used.",
   endogenous_fragment_requires_review:"Endogenous (agent-surfaced) fragments require Mission Group review before use.",
   revoked_or_superseded:"The fragment has been revoked, withdrawn, superseded, or retired.",
   role_not_authorised:"The requesting role is not authorised to retrieve this fragment.",
@@ -196,19 +198,19 @@ const WHY = {
 };
 const STEP_HELP = {
   1:"A Capture Cell is created as a CHAP workspace.",
-  2:"An operator (human), a whisperer (agent), a Mission Group (group), and an assistant agent join.",
+  2:"An operator (human), a whisperer (agent), the Mission Group (group) with its three named reviewers, and an assistant agent join.",
   3:"Procedural memory holds the formal procedure (the work-as-imagined baseline).",
   4:"Semantic memory holds equipment and domain facts.",
   5:"Episodic memory holds prior cases and incidents.",
   6:"The local model is checked. The demo uses deterministic fixtures, so no server is needed.",
   7:"A situated observation is loaded, capturing the gap between work-as-imagined and work-as-done.",
-  8:"Inference forms a candidate. It is only a hypothesis, never trusted knowledge.",
-  9:"Any model help is recorded as a ModelAssistRecord. The model never decides anything.",
+  8:"Inference forms a candidate: a hypothesis for the worker to confirm or correct.",
+  9:"Any model help is recorded as a ModelAssistRecord, for provenance. People make every decision.",
   10:"A short, bounded whisper is asked using CHAP's whisper capability.",
-  11:"The operator confirms (Tier-1). This is descriptive fidelity only.",
-  12:"The fragment is stored in the Evidence layer. It cannot drive a decision yet.",
-  13:"The Mission Group reviews it across fidelity, relevance, alignment, and risk.",
-  14:"It is promoted to the Advisory layer by a human decision.",
+  11:"The operator confirms the wording (Tier-1): the fragment says what they meant.",
+  12:"The fragment is stored in the Evidence layer, where it waits for review.",
+  13:"Mission Group reviewers weigh fidelity, relevance, alignment, and risk. Promotion needs two of them to approve (quorum:2).",
+  14:"With the quorum met, CHAP completes the review and the fragment moves to the Advisory layer, with a review date.",
   15:"A governed TacitMemoryObject is created, carrying its use constraints.",
   16:"Under a matching runtime context the gate allows retrieval.",
   17:"Under a non-matching context the same fragment is blocked, with a recorded reason.",
@@ -284,7 +286,7 @@ function evaluateGate(){
   const box = el("result");
   if(res.ok){
     box.className="result ok";
-    box.innerHTML = '<p class="status">ELIGIBLE</p><div class="muted">Returned with use constraints, plus a retrieval-decision artefact on the audit chain.</div>'+
+    box.innerHTML = '<p class="status">ELIGIBLE</p><div class="muted">In Metis, the fragment is returned with its use constraints, and the decision is recorded on the audit chain.</div>'+
       '<div style="margin-top:10px;font-weight:700">'+esc(mem.content)+'</div>'+
       '<ul>'+(mem.use_constraints||[]).map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>';
   } else {
@@ -292,8 +294,8 @@ function evaluateGate(){
     box.innerHTML = '<p class="status">BLOCKED</p><div class="reason">'+esc(res.reason)+'</div>'+
       '<div class="muted">'+esc(WHY[res.reason]||"")+'</div>'+
       (res.detail?'<div class="muted" style="margin-top:6px">detail: '+esc(res.detail)+'</div>':'')+
-      (res.escalate?'<div style="margin-top:8px;font-weight:700">A person decides: Metis opens an escalation task for the operator instead of returning guidance.</div>':'')+
-      '<div class="muted" style="margin-top:8px">The attempt is recorded on the audit chain with this reason.</div>';
+      (res.escalate?'<div style="margin-top:8px;font-weight:700">A person decides: Metis opens an escalation task for the operator, and the agent waits for that decision.</div>':'')+
+      '<div class="muted" style="margin-top:8px">In Metis, the attempt is recorded on the audit chain with this reason.</div>';
   }
 }
 
@@ -338,7 +340,7 @@ function buildPresets(){
   const ex=(C.exclusion_conditions||[])[0];
   if(ex){
     // Keep the positive condition satisfied AND trigger the exclusion, so the
-    // recorded reason is exclusion_condition_applies (not a plain mismatch).
+    // recorded reason is exclusion_condition_applies.
     const c={...m};
     for(const [k,v] of Object.entries(ex)) c[k]=(m[k]&&m[k]!==v)?[m[k],v]:v;
     presets.push(["Excluded mode", ()=>applyContext(c,{})]);
@@ -396,7 +398,7 @@ function renderStores(){
 }
 
 function renderAudit(){
-  el("auditsub").textContent="An append-only, hash-linked CHAP evidence chain. "+SC.audit.length+" entries, verified by independent replay.";
+  el("auditsub").textContent="An append-only, hash-linked CHAP evidence chain: "+SC.audit.length+" entries, verified when this page was built.";
   el("audit").innerHTML='<tr><th>seq</th><th>method</th><th>from</th></tr>'+
     SC.audit.map(e=>'<tr><td>'+e.seq+'</td><td>'+esc(e.method_or_type)+'</td><td>'+esc(e.from)+'</td></tr>').join('');
 }

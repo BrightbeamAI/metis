@@ -11,7 +11,7 @@ def retrieve(
     role: str = typer.Option(None, "--role", help="Requesting role."),
     workspace: str = typer.Option(None, "--workspace", help="Workspace (default: the active one)."),
 ) -> None:
-    """Run the condition-aware retrieval gate (not semantic search); the decision is recorded."""
+    """Run the condition-aware retrieval gate and record the decision on the evidence chain."""
     proj, engine = open_engine(workspace)
     decision = engine.retrieve(load_context(context), role=role)
     proj.save(engine)

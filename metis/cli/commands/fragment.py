@@ -13,6 +13,7 @@ _WORKSPACE = typer.Option(None, "--workspace", help="Workspace (default: the act
 
 @fragment_app.command("list")
 def fragment_list(workspace: str = _WORKSPACE) -> None:
+    """List fragments with their category, authority layer, and state."""
     frags = load_state(workspace).get("fragments", [])
     if not frags:
         typer.echo("No fragments.")
@@ -25,6 +26,7 @@ def fragment_list(workspace: str = _WORKSPACE) -> None:
 
 @fragment_app.command("show")
 def fragment_show(fragment_id: str = typer.Argument(...), workspace: str = _WORKSPACE) -> None:
+    """Print one fragment as JSON."""
     for f in load_state(workspace).get("fragments", []):
         if f["fragment_id"] == fragment_id:
             typer.echo(json.dumps(f, indent=2))

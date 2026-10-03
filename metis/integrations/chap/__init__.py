@@ -1,8 +1,8 @@
 """CHAP integration layer.
 
-Metis runs on the official ``chap-coordinator`` reference implementation. This package
-adapts Metis's domain onto a real Coordinator and exposes the canonical CHAP primitives.
-It does not reimplement the protocol.
+Metis drives the official ``chap-coordinator`` reference implementation. This package
+adapts Metis's domain onto a real Coordinator and re-exports the canonical CHAP primitives
+(canonical JSON, hashing, identifiers) from it.
 """
 from chap_coordinator import ZERO_HASH, IdFactory, canonicalize, content_hash, sha256_hex
 

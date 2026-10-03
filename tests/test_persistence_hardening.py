@@ -105,3 +105,25 @@ def test_an_unknown_category_records_nothing(tmp_path):
                              consent=ConsentRecord(consent_status=ConsentStatus.pending),
                              category="K99_made_up")
     assert engine.adapter.chain.count == before
+
+
+def test_audit_verify_compares_the_ledger_with_the_store_entry_by_entry(tmp_path):
+    from metis.scenarios import SPECS, run_spec
+
+    spec = SPECS["manufacturing-pump-vibration"]
+    project = Project(tmp_path)
+    engine = project.create_engine(spec.workspace_id, name=spec.name, site=spec.site)
+    run_spec(spec, engine=engine)
+    project.save(engine)
+    assert engine.adapter.ledger.matches(engine.adapter)
+
+    path = project.ledger_path(spec.workspace_id)
+    lines = path.read_text().splitlines()
+    record = json.loads(lines[3])
+    record["method_or_type"] = "decide.approve"  # a field outside the hash link
+    lines[3] = json.dumps(record, separators=(",", ":"))
+    path.write_text("\n".join(lines) + "\n")
+
+    project.close(spec.workspace_id)
+    reopened = project.open(spec.workspace_id, read_only=True)
+    assert not reopened.adapter.ledger.matches(reopened.adapter)

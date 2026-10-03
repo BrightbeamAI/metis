@@ -9,7 +9,7 @@ config_app = typer.Typer(help="Configure Metis (local model runtime, etc.).")
 
 @config_app.command("set")
 def config_set(key: str = typer.Argument(...), value: str = typer.Argument(...)) -> None:
-    """e.g. `metis config set model.provider ollama`."""
+    """Set a configuration value, for example `metis config set model.provider ollama`."""
     try:
         set_model_key(key, value)
     except KeyError as exc:
@@ -19,4 +19,5 @@ def config_set(key: str = typer.Argument(...), value: str = typer.Argument(...))
 
 @config_app.command("show")
 def config_show() -> None:
+    """Print the local model configuration."""
     typer.echo(load_model_config().model_dump_json(indent=2))

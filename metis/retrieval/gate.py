@@ -1,10 +1,11 @@
 """The condition-aware retrieval gate.
 
-This is NOT semantic search. A fragment is eligible only when every governance check
-passes, evaluated in a fixed priority order so the first failing check is the recorded
-reason. Applicability (conditions and exclusions) is decided before risk escalation, so a
-fragment that does not apply is reported as not applying, never as an escalation. Local
-models never decide eligibility; the gate is fully deterministic.
+A fragment is eligible only when every governance check passes. The checks run in a fixed
+priority order, and the first one that fails is the recorded reason. Applicability
+(conditions and exclusions) is decided before risk: a fragment that does not apply is
+reported with the condition that failed, and escalation is kept for the cases a person must
+judge. The gate is deterministic; eligibility depends only on what the fragment records and
+on the context supplied.
 """
 from __future__ import annotations
 
@@ -189,7 +190,6 @@ class RetrievalGate:
         escalated = sum(1 for b in decision.blocked if b.escalate)
         decision.rationale = (
             f"{len(decision.eligible)} eligible, {len(decision.blocked)} blocked "
-            f"({escalated} for a person to decide) under condition-aware governance "
-            f"(not semantic similarity)."
+            f"({escalated} for a person to decide) by the condition-aware gate."
         )
         return decision

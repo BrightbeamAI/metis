@@ -1,11 +1,11 @@
 # The K1-K17 tacit taxonomy
 
-From *The Fourth Stratum*. The taxonomy is descriptive: it governs *how* a fragment is captured and
-*what evidence* it needs before it can influence work. It is never a claim that a fragment is true.
+From *The Fourth Stratum*. The taxonomy describes kinds of tacit knowledge; a fragment's category
+then guides *how* it is captured and *what evidence* it needs before it can influence work.
 
 | Category | Domain | Spender quadrant | Primary capture modality | Loop role |
 |----------|--------|------------------|--------------------------|-----------|
-| **K1_procedural** | procedural_embodied | Conscious / Social | Document ingestion; procedure analysis | Reference baseline; not a primary tacit target |
+| **K1_procedural** | procedural_embodied | Conscious / Social | Document ingestion; procedure analysis | Reference baseline that tacit practice is compared with |
 | **K2_embodied** | procedural_embodied | Automatic / Individual | Multimodal observation; expert confirmation | Observe action; prompt for confirmation at a natural pause |
 | **K3_rhythmic** | procedural_embodied | Automatic / Individual | Action-timing analysis; pause/tempo comparison | Detect cadence, waiting, tempo and timing differences |
 | **K4_equipment_specific** | material_equipment | Automatic / Individual-Social | Maintenance logs; cross-equipment comparison | Compare equipment-specific deviations and adaptations |
@@ -28,12 +28,12 @@ From *The Fourth Stratum*. The taxonomy is descriptive: it governs *how* a fragm
 The six domains group the categories by how the tacit content appears in practice and what it implies
 computationally:
 
-- **procedural_embodied**, Procedural routines, embodied skill, and timing of action, compare formal procedure with observed action; capture timing and sequence under stated conditions.
-- **material_equipment**, Equipment-specific adaptations, material feel, and tool-extended skill, link fragments to equipment, material lots, tool substitutions, and local conditions.
-- **perceptual_aesthetic**, Sensory cues and quality distinctions learned through exemplars, use cue narration and exemplar annotation; avoid converting perception into unsupported rules.
-- **inferential**, Heuristics, diagnostic reasoning, and anticipatory judgement, capture exception reasoning, incident reconstruction, and pre-event signals with human explanation.
-- **metacognitive_affective**, Escalation judgement, confidence boundaries, and regulation under pressure, treat pause, help-seeking, and composure as signals requiring careful validation.
-- **social_normative**, Handoffs, cultural narratives, ethical judgement, and strategic sense-making, use interviews, handoff analysis, and governance review; avoid direct automation of normative judgement.
+- **procedural_embodied**: procedural routines, embodied skill, and timing of action. Compare formal procedure with observed action; capture timing and sequence under stated conditions.
+- **material_equipment**: equipment-specific adaptations, material feel, and tool-extended skill. Link fragments to equipment, material lots, tool substitutions, and local conditions.
+- **perceptual_aesthetic**: sensory cues and quality distinctions learned through exemplars. Use cue narration and exemplar annotation, and keep each cue tied to its exemplars and conditions.
+- **inferential**: heuristics, diagnostic reasoning, and anticipatory judgement. Capture exception reasoning, incident reconstruction, and pre-event signals with human explanation.
+- **metacognitive_affective**: escalation judgement, confidence boundaries, and regulation under pressure. Treat pause, help-seeking, and composure as signals that need careful validation.
+- **social_normative**: handoffs, cultural narratives, ethical judgement, and strategic sense-making. Use interviews, handoff analysis, and governance review, and keep normative judgement with people.
 
 ## Source pathways
 

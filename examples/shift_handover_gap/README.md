@@ -5,7 +5,7 @@
 ## Scenario
 
 A team lead senses a handover is incomplete even though the form is filled in. The felt sense of
-"something unfinished" is collaborative and meta-cognitive tacit knowledge.
+"something unfinished" is collaborative and metacognitive tacit knowledge.
 
 ## Run it
 
@@ -19,10 +19,11 @@ and blocking it elsewhere.
 
 ## What it demonstrates
 
-The promoted memory is presented as a handover checklist prompt, not automation. Its use constraints
-require a verbal confirmation from the incoming lead and forbid auto-closing the handover: "ask the
-incoming lead to confirm open threads verbally" and "do not auto-close the handover". This is how a
-collaboration cue becomes governed guidance that supports a human rather than replacing one.
+The promoted memory is presented as a handover checklist prompt for the incoming lead. Its use
+constraints require a spoken confirmation of open threads and leave closing the handover to a
+person: "ask the incoming lead to confirm open threads verbally" and "do not auto-close the
+handover". A collaboration cue becomes governed guidance that supports the people running the
+handover.
 
 ## Files
 

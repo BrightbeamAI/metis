@@ -28,7 +28,7 @@ class RevocationRecord(BaseModel):
     reason: RevocationReason
     actioned_by: str  # CHAP participant URI
     note: str | None = None
-    retention_audit_only: bool = True  # the record is retained for audit, never deleted
+    retention_audit_only: bool = True  # the record stays on the chain for audit
     superseded_by: str | None = None  # fragment_id of the replacement
     actioned_at: str = Field(default_factory=clock.now_iso)
 

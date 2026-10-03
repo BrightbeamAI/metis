@@ -44,3 +44,9 @@ def test_dismiss_does_not_create_fragment(engine, granted_consent, match_context
         dict(observation_id="OBS-D", work_as_done="something", context=match_context),
         consent=granted_consent, response="dismiss", category="K7_sensory")
     assert res.fragment is None
+
+
+def test_a_plain_confirmation_stores_the_candidate_the_worker_confirmed(captured_fragment):
+    _, res = captured_fragment
+    assert res.confirmation.corrected_content is None
+    assert res.fragment.content == res.candidate.hypothesis

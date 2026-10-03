@@ -1,7 +1,8 @@
 """Store: create an Evidence-layer TacitFragment from a confirmed candidate.
 
-The fragment enters the Evidence layer. It is NOT retrievable for operational advice until
-Tier-2 review promotes it. It is stored as a CHAP artefact of kind ``tacit.fragment``.
+The fragment enters the Evidence layer, where it supports learning and review. It becomes
+retrievable for operational advice once Tier-2 review promotes it. It is stored as a CHAP
+artefact of kind ``tacit.fragment``.
 """
 from __future__ import annotations
 

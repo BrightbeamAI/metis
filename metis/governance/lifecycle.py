@@ -282,6 +282,10 @@ class Governance:
     def revoke(self, fragment_id: str, *, reason: RevocationReason, by: str,
                note: str | None = None, superseded_by: str | None = None) -> str:
         frag = self.fragments.require(fragment_id)
+        if RevocationReason(reason) == RevocationReason.consent_withdrawn:
+            # Consent is the contributing worker's to withdraw, through any entry point.
+            self._require_contributor(frag, by)
+            frag.consent.consent_status = ConsentStatus.withdrawn
         ref = self._ensure_refs(frag)
         status_map = {
             RevocationReason.consent_withdrawn: RevocationStatus.withdrawn,
@@ -357,9 +361,10 @@ class Governance:
         """Record a worker or reviewer contest action as an auditable event.
 
         Every action first appends a ``tacit.validation_event`` carrying the
-        contestability record, then routes: withdraw revokes via consent
-        withdrawal; re-elicitation and challenge/correct escalate the fragment's
-        task to the Mission Group for the appropriate follow-up.
+        contestability record, then routes it. Withdraw revokes the fragment through
+        consent withdrawal and is open only to the contributing worker. A
+        re-elicitation request opens a ``tacit.re_elicit`` task for the Mission Group;
+        challenge, correct, and supersede open a fresh ``tacit.validate.tier2`` task.
         """
         action = ContestAction(action)
         record = ContestabilityRecord(fragment_id=fragment_id, action=action, raised_by=raised_by,

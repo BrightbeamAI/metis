@@ -68,7 +68,7 @@ def test_cli_records_retrievals_and_verifies(tmp_path, monkeypatch):
     assert out.exit_code == 0 and "ESCALATED to a person" in out.output
     assert _lines(ledger) > before
     verify = runner.invoke(app, ["audit", "verify"])
-    assert verify.exit_code == 0 and "Store and ledger agree: True" in verify.output
+    assert verify.exit_code == 0 and "Store and ledger agree, entry for entry: True" in verify.output
 
 
 def test_cli_detects_a_tampered_ledger(tmp_path, monkeypatch):

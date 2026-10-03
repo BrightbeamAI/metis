@@ -24,6 +24,7 @@ def _ledger(workspace: str | None):
 
 @audit_app.command("read")
 def audit_read(limit: int = typer.Option(40, "--limit"), workspace: str = _WORKSPACE) -> None:
+    """Replay the workspace's evidence ledger and list its first entries."""
     path = _ledger(workspace)
     result = replay(path)
     typer.echo(f"Evidence entries: {result.checked} | chain verified: {result.ok}")
@@ -43,13 +44,14 @@ def audit_verify(workspace: str = _WORKSPACE) -> None:
     stored = engine.verify()
     typer.echo(f"CHAP store: {stored.checked} entries, verified={stored.ok}")
     typer.echo(f"Ledger:     {ledger.checked} entries, verified={ledger.ok}")
-    agree = stored.checked == ledger.checked
-    typer.echo(f"Store and ledger agree: {agree}")
+    agree = engine.adapter.ledger.matches(engine.adapter)
+    typer.echo(f"Store and ledger agree, entry for entry: {agree}")
     if not (stored.ok and ledger.ok and agree):
         raise typer.Exit(code=1)
 
 
 @audit_app.command("export")
 def audit_export(out: str = typer.Option("evidence.jsonl", "--out"), workspace: str = _WORKSPACE) -> None:
+    """Copy the workspace's evidence ledger to a file."""
     shutil.copyfile(_ledger(workspace), out)
     typer.echo(f"Exported audit chain to {out}")

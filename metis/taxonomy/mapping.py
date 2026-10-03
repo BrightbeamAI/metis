@@ -21,7 +21,7 @@ HIGH_SCRUTINY_CATEGORIES: set[Category] = {
     Category.K8_aesthetic,            # do not convert perception into a universal rule
     Category.K13_affective_regulatory,  # consent-bound; avoid covert inference
     Category.K15_cultural_narrative,
-    Category.K16_judgemental_ethical,   # never automated
+    Category.K16_judgemental_ethical,   # always a human judgement
     Category.K17_strategic,
 }
 

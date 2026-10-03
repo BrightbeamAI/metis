@@ -4,7 +4,8 @@ The Critical Decision Method (CDM) reconstructs one demanding incident in depth:
 practitioner noticed, what those cues meant to them, the options they weighed, and why they
 chose as they did. It is narrow and deep. Use it at Discovery for the decisions the Knowledge
 Audit flagged, and in full when a mini-CDM (`mini_cdm_interview_guide.md`) shows that a short
-walkthrough is not enough. Interview after the event, never under live pressure, with consent.
+walkthrough leaves questions open. Interview after the event, away from live pressure, with
+consent.
 
 ## Four sweeps
 
@@ -44,4 +45,4 @@ eng.capture_observation(
 ```
 
 Record the what-if answers as `exclusion_conditions` and counterexamples in the fragment's
-evidence. They are the limits that keep the fragment from being applied where it no longer holds.
+evidence. They mark the limits beyond which the fragment stops holding.

@@ -1,11 +1,11 @@
 """The Metis tool surface for agents, with the governance contract built in.
 
 Agents may read governed guidance, assemble a memory context, submit observations, and relay
-a worker's own answers and contests. They may not review, promote, or authorise anything:
-Tier-2 decisions stay with named human reviewers outside this surface. Usable guidance comes
+a worker's own answers and contests. Review, promotion, and authorisation stay with named
+human reviewers outside this surface. Usable guidance comes
 only from ``retrieve_guidance`` and ``agent_memory_context``, which pass the condition-aware
-gate and record the decision on the workspace's CHAP chain; listing tools return metadata,
-never content, so nothing reaches an agent around the gate.
+gate and record the decision on the workspace's CHAP chain. Listing tools return metadata
+only, so every piece of content an agent sees has passed the gate.
 
 Every method returns plain JSON-safe data. This module does not depend on the MCP SDK.
 """
@@ -26,14 +26,14 @@ from ..taxonomy.categories import CATEGORY_META, AuthorityLayer, RevocationStatu
 INSTRUCTIONS = (
     "Metis serves governed tacit memory: reviewed fragments of expert practice that apply only "
     "under recorded conditions. Before acting in a work situation, call retrieve_guidance with "
-    "the current context. Treat guidance as situated and advisory, never as ground truth, and "
-    "honour every use constraint. When required_human_actions is not empty, stop and involve the "
-    "named person instead of acting. Never answer a whisper or contest a fragment on a worker's "
-    "behalf: relay only what the worker said, under the worker's own identity."
+    "the current context. Treat guidance as situated advice for those conditions, and honour "
+    "every use constraint. When required_human_actions lists anything, stop and hand the "
+    "decision to the named person. Relay a worker's answers and contests in the worker's own "
+    "words, under the worker's own identity."
 )
 
-# Blocked reasons that concern authorisation, not the situation. An agent learns only how many
-# fragments were withheld for these reasons, not which.
+# Blocked reasons that concern authorisation. For these an agent learns only how many
+# fragments were withheld; their identities stay hidden.
 _NOT_AUTHORISED = {
     BlockedReason.evidence_layer_not_authorised.value,
     BlockedReason.tier2_validation_missing.value,
@@ -75,9 +75,16 @@ class MetisTools:
         self.project.save(self.engine)
 
     def _withheld(self, blocked: list[Any]) -> tuple[list[dict[str, Any]], int]:
+        """Blocked items an agent may see, and a count of those it may not.
+
+        A fragment that never reached an operational layer (Evidence, or not yet promoted) is
+        only counted, whichever check blocked it first.
+        """
         shown, hidden = [], 0
         for item in blocked:
-            if item.reason in _NOT_AUTHORISED:
+            frag = self.engine.fragments.get(item.fragment_id) if item.fragment_id else None
+            unreviewed = frag is not None and frag.authority_layer == AuthorityLayer.evidence
+            if item.reason in _NOT_AUTHORISED or unreviewed:
                 hidden += 1
                 continue
             shown.append({"fragment_id": item.fragment_id, "reason": item.reason,
@@ -164,7 +171,7 @@ class MetisTools:
                 "escalation_task_id": decision.escalation_task_id,
                 "recorded_at_seq": eng.adapter.chain.count - 1,
                 "note": "Situated, advisory guidance. Honour every use constraint; when "
-                        "required_human_actions is not empty, a person decides.",
+                        "required_human_actions lists anything, a person decides.",
             }
 
     def agent_memory_context(self, task: str, context: dict[str, Any],
@@ -253,7 +260,7 @@ class MetisTools:
             ledger = eng.adapter.ledger
             return {"entries": result.checked, "verified": result.ok, "errors": result.errors,
                     "ledger_entries": ledger.count if ledger else None,
-                    "ledger_agrees": (ledger.count == result.checked) if ledger else None}
+                    "ledger_agrees": ledger.matches(eng.adapter) if ledger else None}
 
     def audit_tail(self, limit: int = 10) -> list[dict[str, Any]]:
         with self._lock:

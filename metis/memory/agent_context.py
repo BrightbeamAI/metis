@@ -5,7 +5,7 @@ It deliberately keeps the four memory types distinct:
   * semantic , general facts and concepts,
   * episodic , past cases and events,
   * tacit    , validated situated guidance under explicit constraints (gate-only).
-Blocked tacit results appear with reasons in the audit trail but never as usable guidance.
+Blocked tacit results appear, with reasons, in the audit trail only.
 """
 from __future__ import annotations
 

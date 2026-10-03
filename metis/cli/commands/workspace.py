@@ -12,6 +12,7 @@ workspace_app = typer.Typer(help="List, select, and describe workspaces in the l
 
 @workspace_app.command("list")
 def workspace_list() -> None:
+    """List the project's workspaces; the active one is marked with *."""
     proj = project()
     active = proj.active_workspace()
     ids = proj.workspace_ids()
@@ -24,6 +25,7 @@ def workspace_list() -> None:
 
 @workspace_app.command("use")
 def workspace_use(workspace_id: str = typer.Argument(...)) -> None:
+    """Make a workspace the active one."""
     try:
         project().set_active(workspace_id)
     except NoWorkspace as exc:
@@ -33,4 +35,5 @@ def workspace_use(workspace_id: str = typer.Argument(...)) -> None:
 
 @workspace_app.command("describe")
 def workspace_describe(workspace: str = typer.Option(None, "--workspace")) -> None:
+    """Show a workspace's CHAP descriptor: members, profiles, mode, and evidence head."""
     typer.echo(json.dumps(load_state(workspace).get("workspace", {}), indent=2))

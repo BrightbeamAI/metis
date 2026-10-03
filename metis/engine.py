@@ -183,7 +183,7 @@ class MetisEngine:
         """Evaluate one fragment (or fragment id) against a context on this engine's timeline.
 
         A deterministic engine runs on its coordinator clock, so its fragments' review dates
-        must be judged on that clock, not on wall time.
+        are judged on that same clock.
         """
         frag = self.fragments.require(fragment) if isinstance(fragment, str) else fragment
         return self.gate.evaluate(frag, context, role=role)
