@@ -14,7 +14,7 @@ From *The Fourth Stratum*. The taxonomy is descriptive: it governs *how* a fragm
 | **K7_sensory** | perceptual_aesthetic | Automatic / Individual | Multimodal cue capture; on-cue narration | Capture cue-triggered noticing; request on-cue narration |
 | **K8_aesthetic** | perceptual_aesthetic | Automatic / Individual | Expert annotation of exemplars | Use exemplar annotation and expert comparison |
 | **K9_heuristic** | inferential | Conscious-Automatic / Individual | In-flow prompt; exception logging | Prompt at an exception, threshold, or deviation moment |
-| **K10_diagnostic** | inferential | Conscious / Individual | Critical decision method; incident reconstruction | Trigger mini-CTA or incident reconstruction |
+| **K10_diagnostic** | inferential | Conscious / Individual | Critical decision method; incident reconstruction | Trigger mini-CDM or incident reconstruction |
 | **K11_anticipatory** | inferential | Automatic / Individual | Pre-event prompting on detected divergence | Prompt before a predicted event or divergence |
 | **K12_metacognitive** | metacognitive_affective | Conscious / Individual | Reflective probing; help-seeking pattern analysis | Examine hesitation, help-seeking, and escalation patterns |
 | **K13_affective_regulatory** | metacognitive_affective | Automatic / Individual | Consented affective cues; post-event reflection | Use consented cues and post-event reflection; avoid covert inference |

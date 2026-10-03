@@ -41,6 +41,7 @@ class BlockedTacitMemory(BaseModel):
     memory_id: str | None = None
     reason: str
     detail: str | None = None
+    escalate: bool = False
 
 
 class AgentMemoryContext(BaseModel):
@@ -55,5 +56,6 @@ class AgentMemoryContext(BaseModel):
     blocked_tacit_memory: list[BlockedTacitMemory] = Field(default_factory=list)
     governance_notes: list[str] = Field(default_factory=list)
     required_human_actions: list[str] = Field(default_factory=list)
+    escalation_task_id: str | None = None
     citations: list[str] = Field(default_factory=list)
     audit_refs: list[int] = Field(default_factory=list)

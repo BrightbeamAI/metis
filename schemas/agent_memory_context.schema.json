@@ -42,6 +42,11 @@
           ],
           "default": null,
           "title": "Detail"
+        },
+        "escalate": {
+          "default": false,
+          "title": "Escalate",
+          "type": "boolean"
         }
       },
       "required": [
@@ -183,6 +188,18 @@
       },
       "title": "Required Human Actions",
       "type": "array"
+    },
+    "escalation_task_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Task Id"
     },
     "citations": {
       "items": {

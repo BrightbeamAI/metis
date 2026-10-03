@@ -9,7 +9,7 @@
   </defs>
   <rect width="920" height="250" fill="#F2F5FA"/>
   <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The capture loop</text>
-  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Remember. Every step is a recorded CHAP event.</text>
+  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Store. Every step is a recorded CHAP event.</text>
 
   <!-- 5 loop steps -->
   <g>
@@ -30,7 +30,7 @@
     <text x="607" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">Tier-1 fidelity</text>
 
     <rect x="700" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
-    <text x="775" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Remember</text>
+    <text x="775" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Store</text>
     <text x="775" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">store fragment</text>
   </g>
   <line x1="178" y1="119" x2="196" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>

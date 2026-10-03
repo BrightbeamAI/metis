@@ -38,13 +38,13 @@ def test_correct_carries_the_proposed_correction(captured_fragment):
 def test_withdraw_revokes_and_blocks_retrieval(captured_fragment, match_context):
     engine, res = captured_fragment
     frag = _promote(engine, res)
-    assert GATE.evaluate(frag, match_context).ok
+    assert engine.evaluate(frag, match_context).ok
     out = engine.governance.contest(
         frag.fragment_id, ContestAction.withdraw,
         raised_by=engine.operator_uri, rationale="withdrawing my contribution")
     assert "revocation" in out and "contestability_record" in out
     assert frag.revocation_status == RevocationStatus.withdrawn
-    assert not GATE.evaluate(frag, match_context).ok
+    assert not engine.evaluate(frag, match_context).ok
 
 
 def test_re_elicitation_creates_request_and_mission_group_task(captured_fragment):

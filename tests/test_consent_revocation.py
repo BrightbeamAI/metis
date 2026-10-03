@@ -13,9 +13,9 @@ def _promote(engine, res):
 def test_withdrawn_consent_blocks_retrieval(captured_fragment, match_context):
     engine, res = captured_fragment
     frag = _promote(engine, res)
-    assert GATE.evaluate(frag, match_context).ok
+    assert engine.evaluate(frag, match_context).ok
     engine.governance.withdraw_consent(frag.fragment_id, by="human:operator@plant_a")
-    assert not GATE.evaluate(frag, match_context).ok
+    assert not engine.evaluate(frag, match_context).ok
 
 
 def test_revocation_blocks_future_retrieval(captured_fragment, match_context):
@@ -23,7 +23,7 @@ def test_revocation_blocks_future_retrieval(captured_fragment, match_context):
     frag = _promote(engine, res)
     engine.governance.revoke(frag.fragment_id, reason=RevocationReason.retired, by="human:reviewer@plant_a")
     assert frag.revocation_status == RevocationStatus.retired
-    assert not GATE.evaluate(frag, match_context).ok
+    assert not engine.evaluate(frag, match_context).ok
 
 
 def test_revocation_record_retained_and_auditable(captured_fragment):

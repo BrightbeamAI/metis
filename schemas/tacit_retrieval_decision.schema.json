@@ -34,6 +34,11 @@
           ],
           "default": null,
           "title": "Detail"
+        },
+        "escalate": {
+          "default": false,
+          "title": "Escalate",
+          "type": "boolean"
         }
       },
       "required": [
@@ -133,6 +138,25 @@
         "$ref": "#/$defs/BlockedItem"
       },
       "title": "Blocked",
+      "type": "array"
+    },
+    "escalation_task_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Task Id"
+    },
+    "required_human_actions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Human Actions",
       "type": "array"
     },
     "rationale": {

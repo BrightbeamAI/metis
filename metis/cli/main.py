@@ -2,12 +2,13 @@
 
     metis init
     metis demo manufacturing-pump-vibration
-    metis workspace describe
+    metis workspace list | use <id> | describe
     metis fragment list | show <id>
     metis memory list | show <id> | query --context <file>
     metis capture --example manufacturing-pump-vibration
     metis retrieve --context <file>
-    metis audit read | export --out evidence.jsonl
+    metis audit read | verify | export --out evidence.jsonl
+    metis mcp
     metis model check | pull gemma4 | run --prompt "..."
     metis config set model.provider ollama
 """
@@ -21,6 +22,7 @@ from .commands.config import config_app
 from .commands.demo import demo
 from .commands.fragment import fragment_app
 from .commands.init import init
+from .commands.mcp import mcp
 from .commands.memory import memory_app
 from .commands.model import model_app
 from .commands.retrieve import retrieve
@@ -36,6 +38,7 @@ app.command()(init)
 app.command()(demo)
 app.command()(capture)
 app.command()(retrieve)
+app.command()(mcp)
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(fragment_app, name="fragment")
 app.add_typer(memory_app, name="memory")

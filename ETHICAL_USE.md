@@ -31,6 +31,13 @@ human practice. That makes its misuse a real risk. Read this before you deploy i
   audit-only.
 - Whisper prompts are bounded and non-accusatory. They never ask a worker to justify
   their personal performance.
+- Whispers are rationed. A worker receives at most five in eight hours by default
+  (`WhisperBudget`); beyond that, capture is deferred and the deferral recorded.
+- Workers speak for themselves. Only the worker a whisper was addressed to may answer it,
+  and an agent can never answer, confirm, or contest on a worker's behalf. Consent is stated
+  with the answer: a worker who declines has their answer recorded and nothing stored.
+- Granting authority is collective. Promotion needs a quorum of named Mission Group
+  reviewers; no single person, and no agent or model, can promote a fragment.
 
 ## Before any production use
 

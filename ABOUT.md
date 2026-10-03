@@ -11,9 +11,9 @@ human practice, governing them, and serving the validated ones to AI agents as m
 allowed to use. It implements the governed tacit-memory layer from the paper *Tacit Fragments: Operationalising
 Tacit Knowledge as a Governed Memory Layer for Agentic AI*.
 
-It runs on [CHAP](https://github.com/BrightbeamAI/chap), the Collaborative Human-Agent Protocol, so
-every capture, review, retrieval, and revocation is a structured, append-only, hash-linked
-collaboration event rather than an ad hoc log.
+It records every step through [CHAP](https://github.com/BrightbeamAI/chap), the Collaborative
+Human-Agent Protocol, so every capture, review, retrieval, and revocation is a structured,
+append-only, hash-linked collaboration event rather than an ad hoc log.
 
 ## The four memory stores
 
@@ -39,19 +39,19 @@ See [docs/memory_architecture.md](docs/memory_architecture.md) for the full mode
 
 | Path | What is there |
 |------|----------------|
-| `metis/` | the toolkit: `fragment/`, `taxonomy/`, `conditions/`, `consent/`, `capture/`, `validation/`, `governance/`, `retrieval/`, `memory/`, `models/`, `audit/`, `storage/`, `cli/`, `api/`, `integrations/chap/`, plus `engine.py` and `scenarios.py` |
+| `metis/` | the toolkit: `fragment/`, `taxonomy/`, `conditions/`, `consent/`, `capture/`, `validation/`, `governance/`, `retrieval/`, `memory/`, `models/`, `audit/`, `storage/`, `cli/`, `api/`, `mcp/` (the MCP server), `integrations/chap/`, plus `engine.py`, `project.py` (local persistence), `clock.py`, and `scenarios.py` |
 | `examples/` | three runnable synthetic examples with inputs, contexts, and expected outputs ([index](examples/README.md)) |
 | `docs/` | concept and reference docs, plus the visual `explainer.html` and interactive `demo.html` ([index](docs/README.md)) |
 | `schemas/` | JSON Schemas for every `tacit.*` object |
 | `profiles/` | the `metis/1.0` CHAP profile |
 | `prompts/` | whisper templates (K2 to K14) and model-assist prompt templates |
-| `templates/` | capture canvas, review checklist, consent and revocation records |
+| `templates/` | capture canvas, Knowledge Audit, CDM and mini-CDM interview guides, review checklist, consent and revocation records |
 | `tests/` | pytest suite, runs without a live model |
 | `scripts/` | `acceptance_check.py`, `generate_examples.py`, `build_demo.py` |
 
 ## How Metis relates to CHAP
 
-Metis does not define a protocol. It runs on CHAP, which provides workspaces, participants,
+Metis does not define a protocol. It uses CHAP, which provides workspaces, participants,
 tasks, artefacts, whisper and review and control events, and an append-only, hash-linked evidence chain.
 Metis depends on the official `chap-coordinator` Python reference implementation. The adapter
 (`metis/integrations/chap/`) drives a real Coordinator via JSON-RPC dispatch and reuses its

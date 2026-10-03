@@ -2,7 +2,9 @@
 
 This is NOT semantic search. A fragment is eligible only when every governance check
 passes, evaluated in a fixed priority order so the first failing check is the recorded
-reason. Local models never decide eligibility, this is fully deterministic.
+reason. Applicability (conditions and exclusions) is decided before risk escalation, so a
+fragment that does not apply is reported as not applying, never as an escalation. Local
+models never decide eligibility; the gate is fully deterministic.
 """
 from __future__ import annotations
 
@@ -10,6 +12,7 @@ import datetime as _dt
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from .. import clock
 from ..conditions.context import TacitContext
 from ..conditions.matcher import match
 from ..fragment.model import TacitFragment
@@ -19,6 +22,10 @@ from .decision import BlockedItem, EligibleItem, RetrievalDecision
 
 _USABLE_STATES = {ValidationState.promoted_to_advisory, ValidationState.promoted_to_controlled}
 _ESCALATE_RISK = {"high", "critical"}
+# Conditions that identify *what* a fragment is about. A near miss matches all of these but
+# fails a situational condition (mode, shift, trigger, environment) or an exclusion.
+_IDENTITY_KEYS = frozenset({"site", "area", "line", "equipment_family", "equipment_id",
+                            "product_family", "material_lot"})
 
 
 @dataclass
@@ -26,6 +33,21 @@ class Eligibility:
     ok: bool
     reason: BlockedReason | None = None
     detail: str = ""
+    near_miss: bool = False
+
+    @property
+    def escalate(self) -> bool:
+        """True when a person must decide: a near miss, or an applicable high-risk case."""
+        return self.near_miss or self.reason == BlockedReason.risk_class_requires_human_escalation
+
+
+def _near_miss(conditions: TacitContext, unmatched: list[str], excluded: bool) -> bool:
+    identity_constrained = any(getattr(conditions, k) is not None for k in _IDENTITY_KEYS)
+    if not identity_constrained or "role" in unmatched:
+        return False
+    if any(k in _IDENTITY_KEYS for k in unmatched):
+        return False
+    return excluded or bool(unmatched)
 
 
 def _parse_dt(value: str | None) -> _dt.datetime | None:
@@ -50,7 +72,7 @@ class RetrievalGate:
         role: str | None = None,
         now: _dt.datetime | None = None,
     ) -> Eligibility:
-        now = now or _dt.datetime.now(_dt.timezone.utc)
+        now = now or clock.now_dt()
 
         # 1. Revocation status (most decisive).
         if fragment.revocation_status != RevocationStatus.active:
@@ -90,26 +112,28 @@ class RetrievalGate:
             if role not in allowed_set:
                 return Eligibility(False, BlockedReason.role_not_authorised, f"role={role}")
 
-        # 8. Risk class escalation.
-        if context.risk_class in self.escalate_risk_classes:
-            return Eligibility(False, BlockedReason.risk_class_requires_human_escalation,
-                               f"risk_class={context.risk_class}")
-
-        # 9. Condition matching (and exclusions).
+        # 8. Applicability: conditions and exclusions.
         m = match(fragment.conditions, context, now=now)
         if not m.ok:
-            if m.excluded_by is not None:
-                return Eligibility(False, BlockedReason.exclusion_condition_applies, str(m.excluded_by))
             if m.out_of_window and "elapsed" in m.detail:
                 return Eligibility(False, BlockedReason.expired_review_date, m.detail)
+            near = _near_miss(fragment.conditions, m.unmatched, m.excluded_by is not None)
+            if m.excluded_by is not None:
+                return Eligibility(False, BlockedReason.exclusion_condition_applies,
+                                   str(m.excluded_by), near_miss=near)
             return Eligibility(False, BlockedReason.conditions_do_not_match,
-                               ",".join(m.unmatched) or m.detail)
+                               ",".join(m.unmatched) or m.detail, near_miss=near)
 
-        # 10. Controlled layer requires exact (scalar, fully-specified) matching.
+        # 9. Controlled layer requires exact (scalar, fully-specified) matching.
         if fragment.authority_layer == AuthorityLayer.controlled:
             if not self._is_exact_match(fragment.conditions, context):
                 return Eligibility(False, BlockedReason.controlled_layer_requires_exact_match,
                                    "controlled layer needs exact, fully-specified conditions")
+
+        # 10. Risk class: the fragment applies, but the situation needs a person.
+        if context.risk_class in self.escalate_risk_classes:
+            return Eligibility(False, BlockedReason.risk_class_requires_human_escalation,
+                               f"risk_class={context.risk_class}")
 
         return Eligibility(True, None, "all governance checks passed")
 
@@ -138,6 +162,7 @@ class RetrievalGate:
         memory_ids: dict[str, str] | None = None,
     ) -> RetrievalDecision:
         memory_ids = memory_ids or {}
+        now = now or clock.now_dt()
         decision = RetrievalDecision(
             requested_role=role,
             runtime_context=context.model_dump(mode="json", exclude_none=True),
@@ -159,9 +184,12 @@ class RetrievalGate:
                     memory_id=memory_ids.get(frag.fragment_id),
                     reason=el.reason.value if el.reason else "unknown",
                     detail=el.detail,
+                    escalate=el.escalate,
                 ))
+        escalated = sum(1 for b in decision.blocked if b.escalate)
         decision.rationale = (
-            f"{len(decision.eligible)} eligible, {len(decision.blocked)} blocked under "
-            f"condition-aware governance (not semantic similarity)."
+            f"{len(decision.eligible)} eligible, {len(decision.blocked)} blocked "
+            f"({escalated} for a person to decide) under condition-aware governance "
+            f"(not semantic similarity)."
         )
         return decision

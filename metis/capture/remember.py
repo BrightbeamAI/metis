@@ -1,4 +1,4 @@
-"""Remember, create an Evidence-layer TacitFragment from a confirmed candidate.
+"""Store: create an Evidence-layer TacitFragment from a confirmed candidate.
 
 The fragment enters the Evidence layer. It is NOT retrievable for operational advice until
 Tier-2 review promotes it. It is stored as a CHAP artefact of kind ``tacit.fragment``.
@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from ..conditions.context import TacitContext
 from ..consent.model import ConsentRecord
+from ..fragment.confidence import evidence_confidence
 from ..fragment.model import Attribution, FragmentEvidence, Provenance, TacitFragment
 from ..taxonomy.categories import (
     AuthorityLayer,
@@ -56,7 +57,7 @@ def build_fragment(
         provenance=provenance,
         conditions=conditions or observation.context,
         evidence=evidence or FragmentEvidence(),
-        confidence=candidate.confidence,
+        confidence=evidence_confidence(evidence or FragmentEvidence()),
         authority_layer=AuthorityLayer.evidence,
         validation_state=ValidationState.tier1_confirmed,
         consent=consent,

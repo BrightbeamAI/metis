@@ -1,6 +1,10 @@
 {
   "recurrence_count": 3,
-  "supporting_cases": [],
+  "supporting_cases": [
+    "handover-1",
+    "handover-2",
+    "handover-3"
+  ],
   "comparison_baseline": null,
   "outcome_link": "reduced repeat incidents across shift boundaries",
   "uncertainty": null,

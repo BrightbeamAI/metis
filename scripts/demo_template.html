@@ -180,6 +180,7 @@
 <script>
 const DATA = __DATA__;
 const CONTEXT_KEYS = ["site","area","line","equipment_family","equipment_id","product_family","material_lot","operating_mode","shift_pattern","role","risk_class","trigger_context"];
+const IDENTITY_KEYS = ["site","area","line","equipment_family","equipment_id","product_family","material_lot"];
 const WHY = {
   evidence_layer_not_authorised:"Evidence-layer fragment: it cannot be used for operational advice and is never agent-visible.",
   tier2_validation_missing:"It has not passed Tier-2 Mission Group validation.",
@@ -241,16 +242,19 @@ function gate(frag, ctx, ov){
   if(!usable.includes(validation)) return {ok:false,reason:(validation==="expired"?"expired_review_date":"tier2_validation_missing"),detail:"validation_state="+validation};
   if(ov.expired) return {ok:false,reason:"expired_review_date",detail:"review_due_at elapsed"};
   if(C.role!==null&&C.role!==undefined&&ctx.role&&!valueMatches(C.role,ctx.role)) return {ok:false,reason:"role_not_authorised",detail:"role="+ctx.role};
-  if(["high","critical"].includes(ctx.risk_class)) return {ok:false,reason:"risk_class_requires_human_escalation",detail:"risk_class="+ctx.risk_class};
   const unmatched=[];
   for(const k of CONTEXT_KEYS){ const c=C[k]; if(c!==null&&c!==undefined){ if(!valueMatches(c,ctx[k])) unmatched.push(k);} }
-  if(unmatched.length) return {ok:false,reason:"conditions_do_not_match",detail:unmatched.join(", ")};
+  const identityConstrained = IDENTITY_KEYS.some(k=>C[k]!==null&&C[k]!==undefined);
+  const nearMiss = excluded => identityConstrained && !unmatched.includes("role") &&
+    !unmatched.some(k=>IDENTITY_KEYS.includes(k)) && (excluded || unmatched.length>0);
+  if(unmatched.length) return {ok:false,reason:"conditions_do_not_match",detail:unmatched.join(","),escalate:nearMiss(false)};
   for(const ex of (C.exclusion_conditions||[])){
-    if(Object.entries(ex).every(([k,v])=>valueMatches(v,ctx[k]))) return {ok:false,reason:"exclusion_condition_applies",detail:JSON.stringify(ex)};
+    if(Object.entries(ex).every(([k,v])=>valueMatches(v,ctx[k]))) return {ok:false,reason:"exclusion_condition_applies",detail:JSON.stringify(ex),escalate:nearMiss(true)};
   }
   if(authority==="controlled"){
     for(const k of CONTEXT_KEYS){ const c=C[k]; if(c!==null&&c!==undefined){ if(Array.isArray(c)||ctx[k]!==c) return {ok:false,reason:"controlled_layer_requires_exact_match",detail:"needs exact "+k};} }
   }
+  if(["high","critical"].includes(ctx.risk_class)) return {ok:false,reason:"risk_class_requires_human_escalation",detail:"risk_class="+ctx.risk_class,escalate:true};
   return {ok:true,reason:null,detail:"all governance checks passed"};
 }
 
@@ -288,6 +292,7 @@ function evaluateGate(){
     box.innerHTML = '<p class="status">BLOCKED</p><div class="reason">'+esc(res.reason)+'</div>'+
       '<div class="muted">'+esc(WHY[res.reason]||"")+'</div>'+
       (res.detail?'<div class="muted" style="margin-top:6px">detail: '+esc(res.detail)+'</div>':'')+
+      (res.escalate?'<div style="margin-top:8px;font-weight:700">A person decides: Metis opens an escalation task for the operator instead of returning guidance.</div>':'')+
       '<div class="muted" style="margin-top:8px">The attempt is recorded on the audit chain with this reason.</div>';
   }
 }

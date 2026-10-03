@@ -20,7 +20,12 @@ def explain(decision: RetrievalDecision) -> str:
                 why = HUMAN_READABLE[BlockedReason(item.reason)]
             except ValueError:
                 why = item.reason
-            lines.append(f"  - {item.fragment_id}: {item.reason}, {why} ({item.detail})")
+            flag = " [a person decides]" if item.escalate else ""
+            lines.append(f"  - {item.fragment_id}: {item.reason}, {why} ({item.detail}){flag}")
+    if decision.escalation_task_id:
+        lines.append(f"ESCALATED to a person: task {decision.escalation_task_id}")
+    for action in decision.required_human_actions:
+        lines.append(f"REQUIRED HUMAN ACTION: {action}")
     return "\n".join(lines)
 
 

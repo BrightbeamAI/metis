@@ -3,8 +3,7 @@ from __future__ import annotations
 import typer
 
 from ...resources import repo_root
-from ...scenarios import SCENARIOS
-from ..state import evidence_path, save_state
+from ..state import run_scenario
 
 
 def demo(
@@ -12,18 +11,16 @@ def demo(
     live_model: bool = typer.Option(False, "--live-model", help="Use a live local Gemma model if available."),
     open_ui: bool = typer.Option(False, "--open", "-o", help="Open the interactive demo (docs/demo.html) in a browser."),
 ) -> None:
-    """Run an end-to-end Metis demo locally (no cloud APIs)."""
-    if scenario not in SCENARIOS:
-        raise typer.BadParameter(f"Unknown scenario. Choose from: {', '.join(SCENARIOS)}")
-    runner = SCENARIOS[scenario]
-    run = runner(use_live_model=live_model)
+    """Run an end-to-end Metis demo locally into a new workspace (no cloud APIs)."""
+    proj, run = run_scenario(scenario, live_model=live_model)
+    workspace_id = run.engine.adapter.workspace_id
     typer.echo(f"\n=== Metis demo: {scenario} ===\n")
     for label, detail in (run.steps or [("Completed.", run.fragment.fragment_id if run.fragment else "")]):
         typer.echo(f"{label}\n    {detail}")
-    save_state(run.engine, scenario=scenario)
     vr = run.engine.verify()
     typer.echo(f"\nEvidence chain verified: {vr.ok} ({vr.checked} entries)")
-    typer.echo(f"Audit exported: {evidence_path()}")
+    typer.echo(f"Workspace: {workspace_id} (active)")
+    typer.echo(f"Evidence ledger (append-only): {proj.ledger_path(workspace_id)}")
     typer.echo("Tacit memory is governed, situated guidance, not ground truth. See ETHICAL_USE.md.")
 
     demo_html = repo_root() / "docs" / "demo.html"

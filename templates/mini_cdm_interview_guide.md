@@ -1,4 +1,4 @@
-# Mini-CTA Interview Guide (for K10 diagnostic / K12 meta-cognitive)
+# Mini-CDM Interview Guide (for K10 diagnostic / K12 meta-cognitive)
 
 A lightweight Critical Decision Method walkthrough, used **after** an event (never in-flow under
 pressure). Capture descriptive fidelity first; judgement about use comes later, at Tier-2.

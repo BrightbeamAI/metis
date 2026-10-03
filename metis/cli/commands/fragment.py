@@ -8,11 +8,12 @@ from ..state import load_state
 
 fragment_app = typer.Typer(help="Inspect captured tacit fragments.")
 
+_WORKSPACE = typer.Option(None, "--workspace", help="Workspace (default: the active one).")
+
 
 @fragment_app.command("list")
-def fragment_list() -> None:
-    state = load_state()
-    frags = state.get("fragments", [])
+def fragment_list(workspace: str = _WORKSPACE) -> None:
+    frags = load_state(workspace).get("fragments", [])
     if not frags:
         typer.echo("No fragments.")
         return
@@ -23,9 +24,8 @@ def fragment_list() -> None:
 
 
 @fragment_app.command("show")
-def fragment_show(fragment_id: str = typer.Argument(...)) -> None:
-    state = load_state()
-    for f in state.get("fragments", []):
+def fragment_show(fragment_id: str = typer.Argument(...), workspace: str = _WORKSPACE) -> None:
+    for f in load_state(workspace).get("fragments", []):
         if f["fragment_id"] == fragment_id:
             typer.echo(json.dumps(f, indent=2))
             return

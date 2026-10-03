@@ -13,12 +13,17 @@ An agent consuming Metis output must:
   automatically.
 - **Treat advisory memory as a cue for a human**, not as a decision. Where a constraint says "ask the
   human operator to confirm", surface the cue and wait.
-- **Escalate where required.** If the situation's risk class requires human escalation, the gate will
-  not return the fragment; the agent must escalate rather than improvise.
+- **Stop when a person must decide.** In a high-risk situation, or when a fragment covers this
+  equipment but not this situation (a near miss), the gate returns no guidance. Metis opens an
+  escalation task for the operator and puts a required human action in the agent's context. The
+  agent must hand the decision to that person rather than improvise.
 - **Cite provenance and audit references.** Each tacit entry carries citations and audit refs so the
   agent's action can be reconstructed later.
 - **Never promote or author its own operational knowledge.** Anything an agent surfaces from its own
   traces is an endogenous fragment in the Evidence layer and must pass Mission Group review.
+
+Agents connected through the [MCP server](mcp_server.md) get the same contract: guidance only
+through the gate, required human actions alongside it, and no tool that grants authority.
 
 Local model assistance must never override these constraints. A model may rephrase advisory wording
 from an already-validated, gate-eligible memory object, but it cannot change the retrieval result,

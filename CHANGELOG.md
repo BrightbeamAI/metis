@@ -3,6 +3,41 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [0.1.3]
+
+### Added
+- An MCP server (`metis mcp`, optional `mcp` extra) that serves governed tacit memory to any
+  MCP client. Agents receive guidance only through the retrieval gate, never see
+  unauthorised fragments, and have no tool that can review, promote, or authorise.
+- Persistent local projects. The CLI keeps the CHAP coordinator in CHAP's SQLite store, so
+  a workspace's evidence chain continues across commands, and writes a per-workspace
+  append-only ledger. Each scenario run gets its own workspace. New commands:
+  `metis workspace list | use`, `metis audit verify`.
+- Escalation to a person. High-risk situations and near misses (same equipment, different
+  situation) open a `tacit.escalation` task and add a required human action.
+- Two-step capture: `begin_capture` asks the worker, `answer_whisper` records the worker's
+  own answer and consent. Only the addressed human worker may answer.
+- Whisper budgets that ration prompts per worker and record deferrals.
+- Knowledge Audit and Critical Decision Method interview guides.
+
+### Changed
+- Promotion is a collective decision: a quorum of named Mission Group reviewers
+  (`quorum:2` by default), enforced by CHAP. One reviewer can hold, reject, or re-elicit.
+- Promotion sets a review date and expiry triggers; the gate blocks fragments past review.
+- Fragment confidence is derived from the recorded evidence, not from the inference model.
+- The retrieval gate decides applicability before risk, so a fragment that does not apply is
+  never reported as an escalation.
+- Provenance names a model only when one ran, review status follows the fragment's state,
+  and every lineage entry links to its evidence-chain record.
+- Requires `chap-coordinator` 0.2.13 or later (below 0.3).
+
+### Fixed
+- Records created through the API or another live engine carried the deterministic demo
+  clock. Timestamps now come from the engine making the call, and live engines use real time.
+- A held fragment could not be reviewed again.
+- The API's `/promote` accepted any outcome, and `/audit/export` wrote to any path; both are
+  now rejected with an error.
+
 ## [0.1.2]
 
 ### Fixed

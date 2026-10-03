@@ -12,7 +12,10 @@ public issue for anything that could expose worker data or break the audit chain
 
 - **Append-only evidence.** Metis records every governance action as a
   CHAP evidence entry in the official chap-coordinator's append-only, hash-linked chain.
-  History is never rewritten; corrections and revocations are appended.
+  History is never rewritten; corrections and revocations are appended. A local project
+  persists the coordinator in CHAP's SQLite store and keeps a per-workspace ledger that is
+  appended and flushed as each entry is recorded; on open, ledger and store are checked
+  against each other, and `metis audit verify` detects any edit to the ledger.
 - **Integrity.** The chain links each entry by `sha256( JCS(envelope) || prev_hash )`, so any later
   edit to a recorded envelope is detectable by replaying the chain. Ed25519 per-message signing is
   available through CHAP's optional `security-signed/1.0` profile for stronger non-repudiation.
@@ -29,3 +32,14 @@ Metis governs how tacit fragments are captured, validated, and retrieved. It doe
 not provide authentication, authorisation, or transport security for a multi-tenant
 deployment; those are the responsibility of the surrounding CHAP Coordinator and host
 environment.
+
+- **The FastAPI server** (`metis.api`) is a single-user reference server. It has no
+  authentication and records the identities callers supply, so run it on localhost only.
+  Audit exports are confined to the project's `exports/` directory and accept a plain
+  filename, so a request cannot choose where the server writes.
+- **The MCP server** (`metis mcp`) runs over stdio for one local client. It checks the form
+  of identities (`human:` or `agent:`), not who supplies them. No MCP tool can review,
+  promote, or authorise a fragment, and unauthorised fragments are never identified to agents.
+- **Identity in deployments.** Mission Group approvals, worker answers, and contests are
+  only as trustworthy as the identities behind them. Put authenticated identity between
+  people and these interfaces before relying on them for real decisions.

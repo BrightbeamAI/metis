@@ -128,7 +128,7 @@ CATEGORY_META: dict[Category, CategoryMeta] = {
         "Rules-of-thumb used at exceptions and thresholds."),
     Category.K10_diagnostic: CategoryMeta(
         Category.K10_diagnostic, "Diagnostic", _D.inferential, "Conscious / Individual",
-        "Critical decision method; incident reconstruction", "Trigger mini-CTA or incident reconstruction",
+        "Critical decision method; incident reconstruction", "Trigger mini-CDM or incident reconstruction",
         "Reasoning that localises a fault or explains an anomaly."),
     Category.K11_anticipatory: CategoryMeta(
         Category.K11_anticipatory, "Anticipatory", _D.inferential, "Automatic / Individual",

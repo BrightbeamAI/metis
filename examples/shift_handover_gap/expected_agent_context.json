@@ -49,15 +49,15 @@
         "Escalate if risk class is high."
       ],
       "citations": [
-        "evidence:21",
-        "evidence:25",
+        "evidence:24",
+        "evidence:29",
         "art_01HF7YAT02000KRVQKEBZ99Y1A",
         "art_01HF7YAT040017HQF6WQYJKW2M",
         "art_01HF7YAT06001VAK6TB3XVXT3Y"
       ],
       "audit_refs": [
-        21,
-        25
+        24,
+        29
       ]
     }
   ],
@@ -71,16 +71,17 @@
     "Ask the incoming lead to confirm open threads verbally.",
     "Escalate if risk class is high."
   ],
+  "escalation_task_id": null,
   "citations": [
-    "evidence:21",
-    "evidence:25",
+    "evidence:24",
+    "evidence:29",
     "art_01HF7YAT02000KRVQKEBZ99Y1A",
     "art_01HF7YAT040017HQF6WQYJKW2M",
     "art_01HF7YAT06001VAK6TB3XVXT3Y"
   ],
   "audit_refs": [
-    21,
-    25,
-    39
+    24,
+    29,
+    43
   ]
 }

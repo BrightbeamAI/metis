@@ -509,6 +509,11 @@
           },
           "title": "Model Assist Refs",
           "type": "array"
+        },
+        "model_assist_mode": {
+          "default": "none",
+          "title": "Model Assist Mode",
+          "type": "string"
         }
       },
       "title": "Provenance",

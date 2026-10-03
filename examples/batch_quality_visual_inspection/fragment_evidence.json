@@ -1,6 +1,9 @@
 {
   "recurrence_count": 2,
-  "supporting_cases": [],
+  "supporting_cases": [
+    "batch-1",
+    "batch-2"
+  ],
   "comparison_baseline": null,
   "outcome_link": null,
   "uncertainty": "Subjective visual judgement; weak evidence so far.",

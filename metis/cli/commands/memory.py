@@ -4,15 +4,16 @@ import json
 
 import typer
 
-from ..state import load_context, load_state, rebuild_broker
+from ..state import load_context, load_state, open_engine
 
 memory_app = typer.Typer(help="Inspect and query governed tacit memory.")
 
+_WORKSPACE = typer.Option(None, "--workspace", help="Workspace (default: the active one).")
+
 
 @memory_app.command("list")
-def memory_list() -> None:
-    state = load_state()
-    objs = state.get("memory_objects", [])
+def memory_list(workspace: str = _WORKSPACE) -> None:
+    objs = load_state(workspace).get("memory_objects", [])
     if not objs:
         typer.echo("No tacit memory objects.")
         return
@@ -22,9 +23,8 @@ def memory_list() -> None:
 
 
 @memory_app.command("show")
-def memory_show(memory_id: str = typer.Argument(...)) -> None:
-    state = load_state()
-    for m in state.get("memory_objects", []):
+def memory_show(memory_id: str = typer.Argument(...), workspace: str = _WORKSPACE) -> None:
+    for m in load_state(workspace).get("memory_objects", []):
         if m["memory_id"] == memory_id:
             typer.echo(json.dumps(m, indent=2))
             return
@@ -36,12 +36,12 @@ def memory_query(
     context: str = typer.Option(..., "--context", help="Path to a JSON runtime context."),
     role: str = typer.Option(None, "--role"),
     task_id: str = typer.Option("tsk_cli_query", "--task-id"),
+    workspace: str = _WORKSPACE,
 ) -> None:
-    """Produce an AgentMemoryContext via the MemoryBroker (tacit memory passes the gate)."""
-    state = load_state()
-    broker = rebuild_broker(state)
-    ctx = load_context(context)
-    amc = broker.query(task_id, ctx, role=role)
+    """Assemble an agent memory context; tacit memory passes the gate and the query is recorded."""
+    proj, engine = open_engine(workspace)
+    amc = engine.agent_context(task_id, load_context(context), role=role)
+    proj.save(engine)
     typer.echo(f"procedural={len(amc.procedural_memory)} semantic={len(amc.semantic_memory)} "
                f"episodic={len(amc.episodic_memory)} tacit={len(amc.tacit_memory)} "
                f"blocked={len(amc.blocked_tacit_memory)}")
@@ -50,6 +50,7 @@ def memory_query(
         for c in t.use_constraints:
             typer.echo(f"      constraint: {c}")
     for b in amc.blocked_tacit_memory:
-        typer.echo(f"  BLOCKED {b.memory_id or b.fragment_id}: {b.reason}")
-    if amc.required_human_actions:
-        typer.echo("  required human actions: " + "; ".join(amc.required_human_actions))
+        flag = " (a person decides)" if b.escalate else ""
+        typer.echo(f"  BLOCKED {b.memory_id or b.fragment_id}: {b.reason}{flag}")
+    for action in amc.required_human_actions:
+        typer.echo(f"  REQUIRED HUMAN ACTION: {action}")

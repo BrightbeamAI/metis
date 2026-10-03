@@ -5,13 +5,15 @@ from __future__ import annotations
 def create_app():
     from fastapi import FastAPI
 
+    from .. import __version__
     from .routes import router
 
     application = FastAPI(
         title="Metis",
-        description="Governed tacit fragment capture, local-first, CHAP-aligned. "
-                    "Tacit memory is exposed only through condition-aware governance gates.",
-        version="0.1.0")
+        description="Governed tacit fragment capture, local-first. Tacit memory is exposed "
+                    "only through the condition-aware retrieval gate. Single-user reference "
+                    "server: no authentication; bind to localhost.",
+        version=__version__)
     application.include_router(router)
     return application
 

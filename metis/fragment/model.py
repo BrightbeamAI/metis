@@ -62,6 +62,8 @@ class Provenance(BaseModel):
     model_output_status: str | None = None
     human_review_status: str | None = None
     model_assist_refs: list[str] = Field(default_factory=list)
+    # "none", "deterministic_fixture" (no model ran), or "live_model".
+    model_assist_mode: str = "none"
 
 
 class FragmentEvidence(BaseModel):

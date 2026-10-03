@@ -15,6 +15,7 @@ class BlockedItem(BaseModel):
     memory_id: str | None = None
     reason: str
     detail: str | None = None
+    escalate: bool = False
 
 
 class EligibleItem(BaseModel):
@@ -37,5 +38,7 @@ class RetrievalDecision(BaseModel):
     hints_observed: dict[str, Any] = Field(default_factory=dict)
     eligible: list[EligibleItem] = Field(default_factory=list)
     blocked: list[BlockedItem] = Field(default_factory=list)
+    escalation_task_id: str | None = None
+    required_human_actions: list[str] = Field(default_factory=list)
     rationale: str = ""
     decided_at: str = Field(default_factory=clock.now_iso)

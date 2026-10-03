@@ -20,7 +20,7 @@
   <text x="44" y="258" font-size="11" fill="#5A5A5A" font-style="italic">required value is missing</text>
 
   <!-- gate checks -->
-  <rect x="250" y="92" width="330" height="232" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2.5"/>
+  <rect x="250" y="92" width="330" height="252" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2.5"/>
   <text x="415" y="116" font-size="14" font-weight="bold" fill="#EA4700" text-anchor="middle">Gate checks (in order)</text>
   <g font-size="12" fill="#282829">
     <text x="270" y="142">1. revocation status active</text>
@@ -29,9 +29,10 @@
     <text x="270" y="202">4. authority is advisory / controlled</text>
     <text x="270" y="222">5. Tier-2 validated</text>
     <text x="270" y="242">6. review date not expired</text>
-    <text x="270" y="262">7. role authorised, risk not high</text>
+    <text x="270" y="262">7. role authorised</text>
     <text x="270" y="282">8. conditions match, no exclusions</text>
     <text x="270" y="302">9. controlled needs exact match</text>
+    <text x="270" y="322">10. risk not high, else a person decides</text>
   </g>
 
   <line x1="198" y1="182" x2="250" y2="182" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>

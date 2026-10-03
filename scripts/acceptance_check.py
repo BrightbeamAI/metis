@@ -100,12 +100,30 @@ check("19. Local model outputs cannot promote/retrieve/authorise",
       and len(_assists) > 0
       and all(a["content"]["human_review_required"] for a in _assists))
 
-# 20. withdrawn consent blocks retrieval
-eng.governance.withdraw_consent(run.fragment.fragment_id, by="human:operator@plant_a")
+# 26 to 29: the governance contract the paper describes, checked before consent is withdrawn.
 from metis.conditions.context import TacitContext as TC
 
-blocked = not RetrievalGate().evaluate(run.fragment, TC.model_validate(run.match_decision.runtime_context)).ok
-check("20. Withdrawn consent blocks retrieval", blocked)
+match_ctx = TC.model_validate(run.match_decision.runtime_context)
+approvers = [e.envelope["params"]["from"] for e in eng.adapter.chain.entries
+             if e.envelope.get("method") == "decide.approve"]
+check("26. Promotion needs a quorum of distinct, named Mission Group reviewers",
+      len(set(approvers)) >= 2 and all(a.startswith("human:") for a in approvers))
+check("27. Promotion sets a review date and expiry triggers",
+      run.fragment.review_due_at is not None and bool(run.fragment.expiry_triggers))
+from metis.fragment.confidence import evidence_confidence
+
+check("28. Fragment confidence is derived from its evidence",
+      run.fragment.confidence == evidence_confidence(run.fragment.evidence))
+high = eng.retrieve(match_ctx.model_copy(update={"risk_class": "high"}))
+check("29. High-risk retrieval escalates to a person with a recorded task",
+      high.escalation_task_id is not None and bool(high.required_human_actions))
+
+# 20. withdrawn consent blocks retrieval (judged on the engine's own timeline)
+eng.governance.withdraw_consent(run.fragment.fragment_id, by="human:operator@plant_a")
+res20 = eng.evaluate(run.fragment, match_ctx)
+# Withdrawal revokes the fragment, and revocation is the gate's first check.
+check("20. Withdrawn consent blocks retrieval",
+      not res20.ok and "withdrawn" in f"{res20.reason.value} {res20.detail}")
 
 # 21. rejected fragments retained
 eng2 = run_manufacturing().engine
@@ -127,7 +145,7 @@ head = readme[:600]
 check("23. README is Metis-first and engineer-first",
       "Metis" in head and "Quickstart" in readme and "pip install -e ." in readme)
 check("24. CHAP documented as the foundation and linked (not the main product)",
-      "github.com/BrightbeamAI/chap" in readme and "runs on" in readme.lower()
+      "github.com/BrightbeamAI/chap" in readme and "chap-coordinator" in readme
       and not head.lstrip().lower().startswith("chap"))
 
 # 25. evidence verifies (proxy for replayable/passing)

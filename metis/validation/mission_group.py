@@ -1,12 +1,23 @@
-"""The Mission Group is a CHAP *group* participant that performs Tier-2 review."""
+"""The Mission Group performs Tier-2 review.
+
+It appears on the CHAP record as a *group* participant, and its decisions are made by named
+human reviewers under the policy's review rule (``quorum:2`` by default), which the CHAP
+coordinator enforces.
+"""
 from __future__ import annotations
 
 from .tier2 import MissionGroupReview
 
 
 class MissionGroup:
-    def __init__(self, uri: str = "group:mission-group@metis.local") -> None:
+    def __init__(self, uri: str = "group:mission-group@metis.local",
+                 members: list[str] | None = None) -> None:
         self.uri = uri
+        self.members = list(members or [])
+
+    def reviewers(self) -> list[str]:
+        """The participants a Tier-2 review is addressed to."""
+        return self.members or [self.uri]
 
     def review(
         self,

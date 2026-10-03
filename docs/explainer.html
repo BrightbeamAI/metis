@@ -168,7 +168,7 @@
 
 <section id="loop"><div class="wrap">
   <h2>The capture loop</h2>
-  <p class="sub">Observe, Infer, Whisper, Confirm, Remember. Inference produces a hypothesis, never
+  <p class="sub">Observe, Infer, Whisper, Confirm, Store. Inference produces a hypothesis, never
   trusted knowledge. The whisper is short and never asks a worker to justify their performance. Each
   step is a recorded CHAP event.</p>
   <figure><svg class="diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 250" font-family="Arial, Helvetica, sans-serif" role="img" aria-label="Metis capture loop">
@@ -182,7 +182,7 @@
   </defs>
   <rect width="920" height="250" fill="#F2F5FA"/>
   <text x="28" y="38" font-size="20" font-weight="bold" fill="#282829">The capture loop</text>
-  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Remember. Every step is a recorded CHAP event.</text>
+  <text x="28" y="60" font-size="13" fill="#5A5A5A">Observe, Infer, Whisper, Confirm, Store. Every step is a recorded CHAP event.</text>
 
   <!-- 5 loop steps -->
   <g>
@@ -203,7 +203,7 @@
     <text x="607" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">Tier-1 fidelity</text>
 
     <rect x="700" y="92" width="150" height="54" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2"/>
-    <text x="775" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Remember</text>
+    <text x="775" y="118" font-size="14" font-weight="bold" fill="#282829" text-anchor="middle">Store</text>
     <text x="775" y="136" font-size="11" fill="#5A5A5A" text-anchor="middle">store fragment</text>
   </g>
   <line x1="178" y1="119" x2="196" y2="119" stroke="#5A5A5A" stroke-width="2" marker-end="url(#arr)"/>
@@ -344,7 +344,7 @@
   <text x="44" y="258" font-size="11" fill="#5A5A5A" font-style="italic">required value is missing</text>
 
   <!-- gate checks -->
-  <rect x="250" y="92" width="330" height="232" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2.5"/>
+  <rect x="250" y="92" width="330" height="252" rx="10" fill="#FFFFFF" stroke="#EA4700" stroke-width="2.5"/>
   <text x="415" y="116" font-size="14" font-weight="bold" fill="#EA4700" text-anchor="middle">Gate checks (in order)</text>
   <g font-size="12" fill="#282829">
     <text x="270" y="142">1. revocation status active</text>
@@ -353,9 +353,10 @@
     <text x="270" y="202">4. authority is advisory / controlled</text>
     <text x="270" y="222">5. Tier-2 validated</text>
     <text x="270" y="242">6. review date not expired</text>
-    <text x="270" y="262">7. role authorised, risk not high</text>
+    <text x="270" y="262">7. role authorised</text>
     <text x="270" y="282">8. conditions match, no exclusions</text>
     <text x="270" y="302">9. controlled needs exact match</text>
+    <text x="270" y="322">10. risk not high, else a person decides</text>
   </g>
 
   <line x1="198" y1="182" x2="250" y2="182" stroke="#5A5A5A" stroke-width="2" marker-end="url(#a3)"/>
@@ -380,10 +381,10 @@
 </div></section>
 
 <section id="chap"><div class="wrap">
-  <h2>Runs on <span class="em">CHAP</span></h2>
-  <p class="sub">Metis does not invent a protocol. It runs on CHAP, the Collaborative Human-Agent
+  <h2>Recorded with <span class="em">CHAP</span></h2>
+  <p class="sub">Metis does not invent a protocol. It uses CHAP, the Collaborative Human-Agent
   Protocol, so capture, review, retrieval, and revocation are structured collaboration events on a
-  append-only, hash-linked evidence chain. Metis runs on the official chap-coordinator Python
+  append-only, hash-linked evidence chain. Metis drives the official chap-coordinator Python
   reference implementation; the adapter drives a real Coordinator rather than re-implementing the protocol. Repo:
   <a href="https://github.com/BrightbeamAI/chap">github.com/BrightbeamAI/chap</a>.</p>
   <table>
@@ -411,7 +412,7 @@
 <section class="tintbg" id="notwhat"><div class="wrap">
   <h2>What Metis is <span class="em">not</span></h2>
   <div class="grid g2">
-    <div class="card"><h3>Not a new protocol</h3><p>It runs on CHAP and adds no parallel protocol.</p></div>
+    <div class="card"><h3>Not a new protocol</h3><p>It uses CHAP and adds no parallel protocol.</p></div>
     <div class="card"><h3>Not worker surveillance</h3><p>It records no audio, video, biometrics, screenshots, or keystrokes. Capture is consented and worker-visible.</p></div>
     <div class="card"><h3>Not a vector database</h3><p>Retrieval is a condition-aware governance check, not semantic similarity.</p></div>
     <div class="card"><h3>Not autonomous</h3><p>Humans make every governance decision. A local model only ever drafts, and fragments are never treated as fact.</p></div>

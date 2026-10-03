@@ -1,7 +1,7 @@
 # CHAP integration
 
-**Metis does not define its own protocol. It runs on CHAP, the Collaborative Human-Agent
-Protocol** (<https://github.com/BrightbeamAI/chap>).
+**Metis does not define its own protocol. It uses CHAP, the Collaborative Human-Agent
+Protocol** (<https://github.com/BrightbeamAI/chap>), through its reference coordinator.
 
 ## What Metis uses
 

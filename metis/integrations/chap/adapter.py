@@ -1,4 +1,4 @@
-"""CHAPAdapter — the single object Metis uses to speak CHAP.
+"""CHAPAdapter: the single object Metis uses to speak CHAP.
 
 This adapter drives the official ``chap-coordinator`` reference implementation. It does not
 reimplement the protocol: it dispatches JSON-RPC envelopes to a real Coordinator, which owns
@@ -100,6 +100,8 @@ class CHAPAdapter:
         mode: str = "trial",
         mode_ceiling: str = "production",
         coordinator: str = "service:coordinator@metis.local",
+        store: Any = None,
+        ledger: Any = None,
     ) -> None:
         if not workspace_id.startswith("wsp_"):
             workspace_id = "wsp_" + workspace_id
@@ -111,12 +113,15 @@ class CHAPAdapter:
         self.mode_ceiling = mode_ceiling
         self.deterministic = deterministic
 
-        # The official CHAP reference implementation owns protocol + evidence.
+        # The official CHAP reference implementation owns protocol + evidence. With a
+        # ``store`` (chap_coordinator.storage), the coordinator restores every workspace on
+        # start, so a persisted workspace continues its hash-linked chain.
         self.coord = Coordinator(CoordinatorOptions(
             deterministic_ids=deterministic,
             deterministic_clock=deterministic,
             enable_chain=True,
             default_profiles=list(self.profiles),
+            store=store,
         ))
         self._req = 0
         self.participants: dict[str, dict[str, Any]] = {}
@@ -125,9 +130,49 @@ class CHAPAdapter:
         self.artefacts: dict[str, dict[str, Any]] = {}
         self.artefact_evidence: dict[str, int] = {}
         self.chain = ChainView(self.coord, self.workspace_id)
+        self.ledger = ledger  # metis.audit.ledger.EvidenceLedger, or None
 
-        self._dispatch("workspace.create", profiles=list(self.profiles),
-                       mode=mode, mode_ceiling=mode_ceiling, **{"from": coordinator})
+        restored = self.coord.workspaces.get(self.workspace_id)
+        if restored is not None:
+            self._attach(restored)
+        else:
+            if self.ledger is not None and self.ledger.count:
+                from ...audit.ledger import LedgerMismatch
+                raise LedgerMismatch(
+                    f"{self.ledger.path} holds {self.ledger.count} entries but the CHAP store "
+                    f"has no workspace {self.workspace_id}; refusing to start a new chain.")
+            self._dispatch("workspace.create", profiles=list(self.profiles),
+                           mode=mode, mode_ceiling=mode_ceiling, **{"from": coordinator})
+
+    def _attach(self, ws: Any) -> None:
+        """Continue a workspace restored from the CHAP store."""
+        for uri, member in ws.members.items():
+            desc = {"uri": uri, "type": type_of(uri), "role": member.role,
+                    "display_name": member.display_name, "capabilities": member.capabilities}
+            self.participants[uri] = desc
+            self.members.append(desc)
+        for tid, task in ws.tasks.items():
+            self.tasks[tid] = {"id": tid, "kind": task.kind, "assignee": task.assignee,
+                               "delegator": task.delegator, "artefacts": []}
+        for entry in ws.audit:
+            params = entry.envelope.get("params") or {}
+            output = params.get("output")
+            if entry.envelope.get("method") == "task.complete" and isinstance(output, dict) and output.get("id"):
+                self.artefacts[output["id"]] = output
+                self.artefact_evidence[output["id"]] = entry.seq
+        for wid, prompt in ws.whispers.items():
+            self.artefacts[wid] = build_artefact(
+                artefact_id=wid, kind="tacit.whisper_prompt", produced_by=prompt.asker,
+                produced_at=prompt.asked_at,
+                content={"question": prompt.question, "options": prompt.options or [],
+                         "deadline_ms": prompt.deadline_ms, "default_if_lapsed": prompt.default_if_lapsed,
+                         "urgency": prompt.urgency, "category": None},
+                task=prompt.task_id)
+        # Keep JSON-RPC request ids increasing across sessions of the same workspace.
+        self._req = len(ws.audit)
+        if self.ledger is not None:
+            self.ledger.check(self)
+            self.ledger.sync(self)
 
     # ---- time ------------------------------------------------------------------
     def now_iso(self) -> str:
@@ -140,6 +185,8 @@ class CHAPAdapter:
         self._req += 1
         envelope = {"jsonrpc": "2.0", "id": str(self._req), "method": method, "params": params}
         resp = self.coord.dispatch(envelope)
+        if self.ledger is not None:
+            self.ledger.sync(self)
         if isinstance(resp, dict) and resp.get("error"):
             raise RuntimeError(f"CHAP {method} failed: {resp['error']}")
         return resp.get("result") if isinstance(resp, dict) else None
@@ -159,6 +206,9 @@ class CHAPAdapter:
     def join(self, uri: str, role: str, *, display_name: str | None = None,
              capabilities: dict[str, Any] | None = None, scopes: list[str] | None = None) -> dict[str, Any]:
         validate_uri(uri)
+        ws = self.coord.workspaces.get(self.workspace_id)
+        if ws is not None and uri in ws.members:
+            return self.participants.get(uri, {"uri": uri, "type": type_of(uri), "role": role})
         params: dict[str, Any] = {"from": uri, "type": type_of(uri), "role": role}
         if display_name:
             params["display_name"] = display_name
@@ -259,18 +309,20 @@ class CHAPAdapter:
         return _Entry(seq=self._last_seq())
 
     def decide(self, method: str, *, sender: str, based_on: str | None, task_id: str,
-               content: dict[str, Any]) -> None:
+               content: dict[str, Any]) -> dict[str, Any]:
+        """Record one reviewer's decision; return the coordinator's result."""
         self._ensure_member(sender)
         comment = content.get("summary") or content.get("outcome") or ""
         if method == "abstain.declare":
-            self._dispatch("abstain.declare", **{"from": sender}, task_id=task_id, reason=comment or "held")
-        elif method == "escalate.raise":
-            self.escalate(sender=sender, original_task_id=task_id, assignee=sender,
-                          kind="tacit.re_elicit", task_input={"about": based_on, "reason": comment})
-        else:
-            tags = [content["outcome"]] if content.get("outcome") else []
-            self._dispatch(method, **{"from": sender}, task_id=task_id, comment=comment, tags=tags)
-        return None
+            return self._dispatch("abstain.declare", **{"from": sender}, task_id=task_id,
+                                  reason=comment or "held") or {}
+        if method == "escalate.raise":
+            new_id = self.escalate(sender=sender, original_task_id=task_id, assignee=sender,
+                                   kind="tacit.re_elicit", task_input={"about": based_on, "reason": comment})
+            return {"new_task_id": new_id}
+        tags = [content["outcome"]] if content.get("outcome") else []
+        return self._dispatch(method, **{"from": sender}, task_id=task_id, comment=comment,
+                              tags=tags) or {}
 
     def escalate(self, *, sender: str, original_task_id: str, assignee: str, kind: str,
                  task_input: dict[str, Any] | None = None) -> str:
@@ -303,20 +355,21 @@ class CHAPAdapter:
     def artefacts_of_kind(self, kind: str) -> list[dict[str, Any]]:
         return [a for a in self.artefacts.values() if a["kind"] == kind]
 
+    def evidence_record(self, entry: Any) -> dict[str, Any]:
+        """One audit entry in the portable evidence format (export, ledger, replay)."""
+        env = entry.envelope
+        params = env.get("params") or {}
+        return {
+            "seq": entry.seq,
+            "workspace": self.workspace_id,
+            "method_or_type": env.get("method"),
+            "from": params.get("from"),
+            "prev_hash": getattr(entry, "prev_hash", None),
+            "envelope": env,
+        }
+
     def evidence_records(self) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        for e in self.chain.entries:
-            env = e.envelope
-            p = env.get("params") or {}
-            out.append({
-                "seq": e.seq,
-                "workspace": self.workspace_id,
-                "method_or_type": env.get("method"),
-                "from": p.get("from"),
-                "prev_hash": getattr(e, "prev_hash", None),
-                "envelope": env,
-            })
-        return out
+        return [self.evidence_record(e) for e in self.chain.entries]
 
     def descriptor(self) -> dict[str, Any]:
         ws = self.coord.get_workspace(self.workspace_id)

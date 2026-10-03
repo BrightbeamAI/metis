@@ -39,13 +39,19 @@ metis retrieve --context examples/manufacturing_pump_vibration/context_matching.
 metis retrieve --context examples/manufacturing_pump_vibration/context_non_matching.json
 metis memory query --context examples/manufacturing_pump_vibration/context_matching.json
 metis audit read
+metis audit verify
 metis audit export --out evidence.jsonl
 ```
 
 Under the matching context the advisory fragment is eligible and presented with its use constraints;
 under the non-matching context it is blocked with `conditions_do_not_match`. The agent memory context
-combines all four memory stores and lists the required human actions. The exported `evidence.jsonl`
-is the full CHAP evidence chain, independently replayable and verifiable.
+combines all four memory stores and lists the required human actions. Each `retrieve` and
+`memory query` is itself recorded: the workspace's chain grows, and `metis audit verify` confirms that
+the CHAP store and the append-only ledger agree. The exported `evidence.jsonl` is the full CHAP
+evidence chain, independently replayable and verifiable.
+
+Try a high-risk context (set `"risk_class": "high"`): the fragment is withheld, an escalation task
+is opened for the operator, and the output names the required human action.
 
 The other two examples run the same way:
 

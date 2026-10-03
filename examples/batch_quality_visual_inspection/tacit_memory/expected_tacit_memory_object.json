@@ -29,23 +29,24 @@
       "art_01HF7YAT040017HQF6WQYJKW2M",
       "art_01HF7YAT06001VAK6TB3XVXT3Y"
     ],
-    "timestamp": "2023-11-14T22:14:10.000Z",
+    "timestamp": "2023-11-14T22:14:17.000Z",
     "capture_method": "observe->infer->whisper->confirm (synthetic)",
     "human_confirmed_by": "human:operator@plant_b",
     "mission_group_reviewed_by": "group:mission-group@metis.local",
-    "model_provider": "ollama",
-    "model_name": "gemma4",
     "model_input_refs": [],
-    "model_output_status": "draft_pending_human_review",
-    "human_review_status": "tier1_confirmed",
+    "model_output_status": "confirmed_by_worker",
+    "human_review_status": "promoted_to_advisory",
     "model_assist_refs": [
-      "MA-0001",
       "MA-0002"
-    ]
+    ],
+    "model_assist_mode": "deterministic_fixture"
   },
   "evidence": {
     "recurrence_count": 2,
-    "supporting_cases": [],
+    "supporting_cases": [
+      "batch-1",
+      "batch-2"
+    ],
     "comparison_baseline": null,
     "outcome_link": null,
     "uncertainty": "Subjective visual judgement; weak evidence so far.",
@@ -57,7 +58,7 @@
   },
   "authority_layer": "advisory",
   "validation_state": "promoted_to_advisory",
-  "confidence": 0.3,
+  "confidence": 0.21,
   "use_constraints": [
     "Present as an advisory cue requiring exemplar comparison.",
     "Do not convert into a universal rule.",
@@ -80,13 +81,12 @@
     "bq-case-1"
   ],
   "linked_chap_evidence_refs": [
-    21,
-    25
+    24,
+    29
   ],
   "model_assist_refs": [
-    "MA-0001",
     "MA-0002"
   ],
-  "review_due_at": null,
+  "review_due_at": "2024-05-12T22:14:41+00:00",
   "revocation_status": "active"
 }

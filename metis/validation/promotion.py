@@ -15,6 +15,8 @@ class PromotionRecord(BaseModel):
     to_layer: AuthorityLayer
     new_state: ValidationState
     promoted_by: str  # CHAP group/human URI
+    approvers: list[str] = Field(default_factory=list)  # human reviewers who approved
+    decision_rule: str | None = None  # the CHAP review rule that the approvals satisfied
     review_ref: str | None = None
     change_control: dict | None = None
     rationale: str = ""

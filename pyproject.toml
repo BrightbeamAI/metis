@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metis-memory"
-version = "0.1.2"
+version = "0.1.3"
 description = "A CHAP-aligned, local-first toolkit for capturing, validating, governing, and retrieving tacit fragments as governed tacit memory for AI agents."
 readme = "README_PYPI.md"
 license = { text = "Apache-2.0" }
@@ -19,7 +19,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "chap-coordinator>=0.2.9",
+  "chap-coordinator>=0.2.13,<0.3",
   "pydantic>=2.5",
   "typer>=0.9",
   "PyYAML>=6.0",
@@ -29,7 +29,8 @@ dependencies = [
 
 [project.optional-dependencies]
 api = ["fastapi>=0.110", "uvicorn>=0.23"]
-dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.23", "build>=1", "twine>=5"]
+mcp = ["mcp>=1.10,<3"]
+dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.23", "build>=1", "twine>=5", "mcp>=1.10,<3"]
 
 [project.scripts]
 metis = "metis.cli.main:main"
@@ -38,7 +39,7 @@ metis = "metis.cli.main:main"
 Homepage = "https://github.com/BrightbeamAI/metis"
 Documentation = "https://github.com/BrightbeamAI/metis/tree/main/docs"
 "CHAP protocol" = "https://github.com/BrightbeamAI/chap"
-Paper = "https://www.preprints.org/manuscript/202608.0927"
+Paper = "https://doi.org/10.20944/preprints202608.0927.v1"
 
 [tool.setuptools.packages.find]
 include = ["metis*"]

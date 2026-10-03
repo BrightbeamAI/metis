@@ -11,6 +11,7 @@ import datetime as _dt
 from ..conditions.context import TacitContext
 from ..fragment.store import FragmentStore
 from ..retrieval.decision import BlockedItem, EligibleItem, RetrievalDecision
+from ..retrieval.escalation import escalation_actions, open_escalation
 from ..retrieval.gate import RetrievalGate
 from .agent_context import (
     AgentMemoryContext,
@@ -41,7 +42,9 @@ class MemoryBroker:
         tacit_store: TacitMemoryStore,
         gate: RetrievalGate | None = None,
         adapter=None,
+        escalation_assignee: str | None = None,
     ) -> None:
+        self.escalation_assignee = escalation_assignee
         self.procedural = procedural
         self.semantic = semantic
         self.episodic = episodic
@@ -98,7 +101,16 @@ class MemoryBroker:
             else:
                 ctx.blocked_tacit_memory.append(BlockedTacitMemory(
                     memory_id=mo.memory_id, fragment_id=mo.fragment_id,
-                    reason=el.reason.value if el.reason else "unknown", detail=el.detail))
+                    reason=el.reason.value if el.reason else "unknown", detail=el.detail,
+                    escalate=el.escalate))
+
+        escalated = [b for b in ctx.blocked_tacit_memory if b.escalate]
+        if emit and self.adapter is not None and self.escalation_assignee and escalated:
+            ctx.escalation_task_id = open_escalation(
+                self.adapter, requester=requester or self.adapter.coordinator,
+                assignee=self.escalation_assignee, runtime_context=ctx.runtime_context,
+                items=escalated, origin_task=task_id)
+        required_actions.extend(escalation_actions(escalated, ctx.escalation_task_id))
 
         # de-duplicate while preserving order
         seen: set[str] = set()
@@ -119,7 +131,11 @@ class MemoryBroker:
                                    authority_layer=t.authority_layer, use_constraints=t.use_constraints)
                       for t in ctx.tacit_memory],
             blocked=[BlockedItem(fragment_id=b.fragment_id or "", memory_id=b.memory_id,
-                                 reason=b.reason, detail=b.detail) for b in ctx.blocked_tacit_memory],
+                                 reason=b.reason, detail=b.detail, escalate=b.escalate)
+                     for b in ctx.blocked_tacit_memory],
+            escalation_task_id=ctx.escalation_task_id,
+            required_human_actions=escalation_actions(
+                [b for b in ctx.blocked_tacit_memory if b.escalate], ctx.escalation_task_id),
             rationale="MemoryBroker condition-aware retrieval.",
         )
         self.adapter.append_artefact(

@@ -11,7 +11,7 @@ help:
 	@echo "  test      run the pytest suite (no live Ollama required)"
 	@echo "  lint      ruff check"
 	@echo "  format    ruff format"
-	@echo "  regen     rebuild the interactive demo and the example expected outputs"
+	@echo "  regen     regenerate schemas, the interactive demo, and the example expected outputs"
 	@echo "  verify    lint, test, and run the acceptance check"
 	@echo "  build     build sdist and wheel into dist/"
 	@echo "  publish   upload dist/* to PyPI with twine (needs PyPI token)"
@@ -35,6 +35,7 @@ format:
 	ruff format metis tests scripts
 
 regen:
+	$(PYTHON) scripts/generate_schemas.py
 	$(PYTHON) scripts/build_demo.py
 	$(PYTHON) scripts/generate_examples.py
 
