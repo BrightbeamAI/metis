@@ -94,8 +94,9 @@ def build_server(tools: MetisTools) -> Any:
 
     @server.tool(name="contest_fragment", annotations=_annotations(read_only=False),
                  description="Relay a worker's or reviewer's contest of a fragment: challenge, "
-                             "correct, withdraw, or request_re_elicitation. Contests open a review "
-                             "or revoke a fragment; promotion stays with the Mission Group.")
+                             "correct, supersede, withdraw, or request_re_elicitation. A withdrawal "
+                             "revokes the fragment; every other contest goes to a Mission Group "
+                             "review, and the reviewers decide it.")
     def contest_fragment(fragment_id: str, action: str, raised_by: str, rationale: str,
                          proposed_correction: str | None = None) -> dict[str, Any]:
         return tools.contest_fragment(fragment_id, action, raised_by, rationale, proposed_correction)

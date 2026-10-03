@@ -131,8 +131,9 @@ the answer. Whispers are rationed per worker.
 **Governance.** Named Mission Group reviewers weigh each fragment's fidelity, operational relevance,
 normative alignment, and risk. Promotion to Advisory or Controlled needs a quorum of reviewers (two
 by default, enforced by CHAP), sets a review date, and recomputes confidence from the evidence; one
-reviewer can hold, reject, or ask for re-elicitation. Evidence-layer fragments stay with reviewers,
-out of agents' reach. A local model may draft a review summary; the reviewers decide.
+reviewer can hold, reject, or ask for re-elicitation. A fragment in use can go back for re-review
+at any time, after a contest or when its review date comes due. Evidence-layer fragments stay with
+reviewers, out of agents' reach. A local model may draft a review summary; the reviewers decide.
 
 **Memory and retrieval.** A promoted fragment becomes a governed memory object. A broker assembles an
 agent context from procedural, semantic, episodic, and tacit memory, and tacit memory arrives only

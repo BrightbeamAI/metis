@@ -36,9 +36,9 @@ Evidence layer.
 
 The loop runs in two halves. `MetisEngine.begin_capture` observes, infers, and asks the worker one
 whisper; `MetisEngine.answer_whisper` records the worker's own answer, which only the addressed
-human worker may give, and stores the fragment. Pending captures persist with the workspace, so a worker can answer after a restart.
-Whispers are rationed per worker (`WhisperBudget`, five per eight hours by default); a capture
-beyond the budget is deferred and the deferral recorded.
+human worker may give, and stores the fragment. Pending captures persist with the workspace, so a
+worker can answer after a restart. Whispers are rationed per worker (`WhisperBudget`, five per
+eight hours by default); a capture beyond the budget is deferred and the deferral recorded.
 
 ## The validation lifecycle
 
@@ -49,7 +49,10 @@ decision over fidelity, operational relevance, normative alignment, risk, eviden
 consent. It sets the authority layer and emits a `tacit.review_decision` plus the matching
 promotion, rejection, or re-elicitation record. Promotion needs a quorum of named reviewers
 (`quorum:2` by default), which CHAP's review rule enforces; one reviewer can hold, reject, or
-re-elicit. A local model may draft the review summary; the reviewers decide.
+re-elicit. A fragment in use is re-reviewed in place on a fresh review task: it stays in use until
+the reviewers renew it, change its layer, hold it, reject it, or re-elicit it, and a later
+promotion rebuilds its memory object under the same id. A local model may draft the review
+summary; the reviewers decide.
 
 ## The retrieval gate
 

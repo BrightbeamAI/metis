@@ -136,3 +136,19 @@ def test_a_rejected_evidence_fragment_is_only_counted(tools):
     out = tools.retrieve_guidance(MATCH)
     assert stored["fragment_id"] not in {w["fragment_id"] for w in out["withheld"]}
     assert out["not_yet_authorised"] >= 1
+
+
+def test_a_held_fragment_drops_out_of_the_listing(tools):
+    eng = tools.engine
+    fragment_id = eng.fragments.all()[0].fragment_id
+    assert fragment_id in {m["fragment_id"] for m in tools.list_tacit_memory()}
+    eng.tier2_review(fragment_id, "held", decided_by=[eng.mission_group_members[2]],
+                     summary="checking the new pump model")
+    assert fragment_id not in {m["fragment_id"] for m in tools.list_tacit_memory()}
+    assert not tools.retrieve_guidance(MATCH)["guidance"]
+
+
+def test_an_overdue_fragment_drops_out_of_the_listing(tools):
+    frag = tools.engine.fragments.all()[0]
+    frag.review_due_at = "2000-01-01T00:00:00+00:00"
+    assert frag.fragment_id not in {m["fragment_id"] for m in tools.list_tacit_memory()}

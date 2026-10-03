@@ -7,10 +7,11 @@ local model may draft text for them.
 
 A **Capture Cell** is the local setting where capture happens: a CHAP workspace, created by the
 coordinator (a service), with an operator (human), a whisperer (agent), the Mission Group (group)
-and its named reviewers, and an assistant agent. The **Mission Group** performs Tier-2 validation. It appears on the record as a CHAP
-group participant, and its decisions are made by named human reviewers
-(`MetisEngine.mission_group_members`). The **Runtime Orchestrator** is the CHAP coordinator plus the
-retrieval gate, escalation, and whisper budget; it governs retrieval and lifecycle at runtime.
+and its named reviewers, and an assistant agent. The **Mission Group** performs Tier-2 validation.
+It appears on the record as a CHAP group participant, and its decisions are made by named human
+reviewers (`MetisEngine.mission_group_members`). The **Runtime Orchestrator** is the CHAP
+coordinator plus the retrieval gate, escalation, and whisper budget; it governs retrieval and
+lifecycle at runtime.
 
 ## Collective decisions
 
@@ -24,7 +25,8 @@ the approvers and the rule they satisfied.
 
 Withholding authority needs one reviewer: any single reviewer can hold, reject, or ask for
 re-elicitation, because each of these withholds use. A held fragment gets a fresh review when it
-returns.
+returns. Renewing a fragment, or moving it between layers, grants authority again and needs the
+same quorum as the first promotion.
 
 Callers pass the deciding reviewers as `decided_by`. When they omit it, the configured members are
 used in order; that convenience suits demos and tests. A deployment passes authenticated reviewer
@@ -40,8 +42,28 @@ score stays on the candidate as a prior.
 Promotion sets a review date: 180 days for Advisory and 365 for Controlled by default, halved for
 high-risk fragments, plus descriptive expiry triggers (review date reached, procedure revised,
 equipment or process change). After the review date the retrieval gate blocks the fragment with
-`expired_review_date`. Reviewers renew the practice by superseding the fragment with a freshly
-reviewed one.
+`expired_review_date` until the Mission Group renews it through a re-review;
+`MetisEngine.request_review` opens one ahead of the date.
+
+## Re-review
+
+A fragment in use can go back before the Mission Group at any time: when its review date comes
+due, when someone contests it, or when a reviewer asks (`MetisEngine.request_review`). The
+re-review runs on a fresh `tacit.validate.tier2` task that carries a snapshot of the fragment, and
+the fragment stays in use until the reviewers decide. They can:
+
+- **renew** it at its layer, which sets a new review date (quorum);
+- **move** it between the Advisory and Controlled layers (quorum; Controlled needs change-control
+  metadata);
+- **hold** it, which suspends use until a later promotion (one reviewer);
+- **reject** it, which returns it to the Evidence layer (one reviewer);
+- **re-elicit** it: use stops, and the practice is captured again as a new fragment that
+  supersedes this one (one reviewer).
+
+A later promotion rebuilds the fragment's memory object in place, so agents keep the same memory
+id. Every decision is recorded on the review's task, and the policy is checked before any of it
+is recorded. A revoked fragment is out of review, and a revocation or supersession also cancels
+any review still open on it.
 
 ## The three authority layers
 
@@ -70,16 +92,17 @@ recurrence, counterexamples, conditions, consent, and review/expiry.
 ## Contestability
 
 Workers and reviewers can contest a fragment at any time, and each contest is recorded first as a
-`tacit.validation_event`. A challenge, correction, or proposed supersession opens a fresh
-`tacit.validate.tier2` task for the Mission Group; a re-elicitation request opens a
-`tacit.re_elicit` task. The reviewers answer a contest on an unpromoted fragment through its Tier-2
-review, and a contest on a promoted fragment by keeping, revoking, or superseding it. Withdrawal
-belongs to the worker who contributed the fragment: it withdraws consent and revokes the fragment.
-Reviewers retire a fragment through revocation.
+`tacit.validation_event`. A challenge, correction, proposed supersession, or re-elicitation request
+puts the fragment before the Mission Group: it joins the review already open, or opens one (an
+unreviewed fragment's first review starts on its capture task; a fragment in use gets a
+re-review), and the reviewers decide it with a Tier-2 decision. Withdrawal belongs to the worker
+who contributed the fragment: it withdraws consent and revokes the fragment. Reviewers retire a
+fragment through revocation.
 
 ## Lifecycle transitions
 
-Promotion requires a quorum decision of the Mission Group and a `tacit.promotion_record`. Rejection
+Promotion requires a quorum decision of the Mission Group and a `tacit.promotion_record`; a
+renewal or a move between layers records one too. Rejection
 requires a decision and a `tacit.rejection_record`; rejected fragments remain in the audit chain.
 Re-elicitation requires a `tacit.re_elicitation_request`. Revocation requires a CHAP control event
 and a `tacit.revocation_record`; supersession adds a `tacit.supersession_record`. Endogenous

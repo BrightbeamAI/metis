@@ -1,7 +1,7 @@
 """Governance policy, the deterministic rules that gate promotion.
 
-None of these decisions are made by a local model. A model may *draft* a review summary,
-but promotion always requires a human Mission Group decision plus a satisfied policy.
+People make these decisions: every promotion needs a Mission Group decision that satisfies
+this policy. A local model may draft a review summary for the reviewers to use.
 """
 from __future__ import annotations
 

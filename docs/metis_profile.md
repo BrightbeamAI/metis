@@ -8,8 +8,9 @@ envelope and wire methods. The authoritative profile document is
 ## Task kinds
 
 The reference implementation opens `tacit.capture` (a capture, on which the fragment's first
-Tier-2 review also runs), `tacit.validate.tier2` (a fresh review after a hold or a contest),
-`tacit.re_elicit`, `tacit.retrieve`, and `tacit.escalation` tasks, and records every artefact
+Tier-2 review also runs), `tacit.validate.tier2` (a fresh review of a held fragment or of a
+fragment in use), `tacit.re_elicit` (a re-elicitation decided at Tier-2), `tacit.retrieve`, and
+`tacit.escalation` tasks, and records every artefact
 except the whisper prompt as a completed task of the artefact's kind (`tacit.control` records a
 control event). The profile also declares
 `tacit.infer`, `tacit.whisper`, `tacit.confirm`, `tacit.validate.tier1`, `tacit.promote`,

@@ -2,7 +2,7 @@
 
 Mission Group (Tier-2) validation and operator confirmation use CHAP's review capability:
 ``review.request`` then ``decide.approve`` / ``decide.reject`` / ``abstain.declare`` /
-``escalate.raise``. Metis adds NO parallel review system.
+``escalate.raise``. Every Metis review, first or repeated, runs through these methods.
 """
 from __future__ import annotations
 

@@ -8,7 +8,7 @@ contributed it. Each action is an auditable, CHAP-recorded event.
 - **Raised by:** ____________________
 - **Rationale:** ____________________
 - **Proposed correction (if any):** ____________________
-- **Outcome:** Mission Group review opened / re-elicitation requested / consent withdrawn and fragment revoked
+- **Outcome:** consent withdrawn and fragment revoked / Mission Group review (kept / renewed / moved to another layer / held / rejected / re-elicited)
 
 Workers must be able to see records tied to their contribution. Contestability is a standing right
 of every contributor.

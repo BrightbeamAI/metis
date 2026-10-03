@@ -54,12 +54,12 @@ Any other MCP client works the same way: run `metis mcp` as a stdio server.
 |------|--------------|---------------|
 | `retrieve_guidance` | Returns tacit guidance whose recorded conditions match the context, with use constraints, and anything a person must decide. | Records the decision |
 | `agent_memory_context` | Assembles procedural, semantic, episodic, and gated tacit memory for a task. | Records the query |
-| `list_tacit_memory` | Lists agent-visible memory: identifiers, titles, categories, conditions, review dates. The guidance text comes only through the gate. | No |
+| `list_tacit_memory` | Lists agent-visible memory, meaning fragments in use and inside their review date: identifiers, titles, categories, conditions, review dates. The guidance text comes only through the gate. | No |
 | `describe_workspace` | Fragments by authority layer, pending whispers, reviewers, chain status. | No |
 | `submit_observation` | Reports a divergence from procedure; returns one short question for the worker. | Starts a capture |
 | `list_pending_whispers` | Whispers waiting for a worker's answer. | No |
 | `answer_whisper` | Relays the worker's own answer and consent; stores an Evidence-layer fragment when the worker confirms or corrects it and grants consent. | Completes a capture |
-| `contest_fragment` | Relays a challenge, correction, withdrawal, or re-elicitation request. | Opens a review or revokes |
+| `contest_fragment` | Relays a challenge, correction, proposed supersession, withdrawal, or re-elicitation request. A withdrawal revokes the fragment; every other contest goes to a Mission Group review. | Opens or joins a review, or revokes |
 | `audit_verify` | Verifies the evidence chain and checks the ledger agrees. | No |
 | `audit_tail` | The latest chain entries. | No |
 

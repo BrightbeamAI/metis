@@ -23,6 +23,10 @@ All notable changes to Metis are recorded here. The format follows
   own answer and consent. Only the addressed human worker may answer.
 - Whisper budgets that ration prompts per worker and record deferrals.
 - A `ValidationEvent` model and schema for whisper deferrals, declined consent, and contests.
+- Re-review of fragments in use. The Mission Group can renew a fragment (for example after its
+  review date), move it between Advisory and Controlled, hold it, reject it, or send it back for
+  re-elicitation. The fragment stays in use until the decision, a later promotion rebuilds its
+  memory object under the same id, and `MetisEngine.request_review` opens a review ahead of time.
 - Knowledge Audit and Critical Decision Method interview guides.
 
 ### Changed
@@ -37,6 +41,8 @@ All notable changes to Metis are recorded here. The format follows
   and every lineage entry links to its evidence-chain record.
 - Only the worker who contributed a fragment can withdraw consent; reviewers retire
   fragments with `revoke`.
+- Every contest except a withdrawal joins the fragment's open review or opens one, and the
+  reviewers decide it with a Tier-2 decision.
 - Clearer wording in whisper templates, inference hypotheses, gate rationales, escalation
   actions, and agent instructions.
 - Each JSON Schema file is named after the artefact kind whose `schema` URI points to it:

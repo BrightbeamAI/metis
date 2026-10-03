@@ -11,9 +11,11 @@ Every method returns plain JSON-safe data. This module does not depend on the MC
 """
 from __future__ import annotations
 
+import datetime as _dt
 import threading
 from typing import Any
 
+from .. import clock
 from ..conditions.context import TacitContext
 from ..consent.contestability import ContestAction
 from ..consent.model import ConsentRecord, ConsentStatus
@@ -21,7 +23,7 @@ from ..engine import MetisEngine
 from ..integrations.chap.participants import type_of
 from ..project import Project
 from ..retrieval.blocked_reasons import HUMAN_READABLE, BlockedReason
-from ..taxonomy.categories import CATEGORY_META, AuthorityLayer, RevocationStatus
+from ..taxonomy.categories import CATEGORY_META, AuthorityLayer
 
 INSTRUCTIONS = (
     "Metis serves governed tacit memory: reviewed fragments of expert practice that apply only "
@@ -47,6 +49,13 @@ def _explain(reason: str) -> str:
         return HUMAN_READABLE[BlockedReason(reason)]
     except ValueError:
         return reason
+
+
+def _overdue(fragment: Any, now: _dt.datetime) -> bool:
+    if not fragment.review_due_at:
+        return False
+    due = _dt.datetime.fromisoformat(fragment.review_due_at.replace("Z", "+00:00"))
+    return now > (due if due.tzinfo else due.replace(tzinfo=_dt.timezone.utc))
 
 
 def _require_human(uri: str, what: str) -> None:
@@ -112,13 +121,16 @@ class MetisTools:
             }
 
     def _visible_memory(self) -> list[Any]:
+        """Memory whose fragment is in use now: promoted, active, consented, and inside its
+        review date. A held, rejected, re-eliciting, or overdue fragment drops out until the
+        reviewers reinstate or renew it."""
         eng = self.engine
+        now = clock.now_dt()
         out = []
         for mo in eng.tacit_store.all():
             frag = eng.fragments.get(mo.fragment_id)
-            if (frag is not None and mo.authority_layer != AuthorityLayer.evidence
-                    and mo.revocation_status == RevocationStatus.active
-                    and frag.consent.permits_retrieval()):
+            if (frag is not None and frag.is_operationally_usable()
+                    and frag.consent.permits_retrieval() and not _overdue(frag, now)):
                 out.append(mo)
         return out
 

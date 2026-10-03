@@ -23,8 +23,8 @@ Tasks the reference implementation opens:
 | Kind | Opened for | Assigned to |
 |------|------------|-------------|
 | `tacit.capture` | one capture: observation, inference, whisper, and confirmation; the fragment's first Tier-2 review runs on it | the whisperer agent |
-| `tacit.validate.tier2` | a fresh Mission Group review, opened when a held fragment returns or a challenge, correction, or proposed supersession arrives | the Mission Group |
-| `tacit.re_elicit` | a re-elicitation request | the Mission Group for a contest; the deciding reviewer for a Tier-2 re-elicit decision |
+| `tacit.validate.tier2` | a fresh Mission Group review: when a held fragment returns, or when a fragment in use is re-reviewed (a contest, a renewal, or a reviewer's request) | the Mission Group |
+| `tacit.re_elicit` | a re-elicitation decided at Tier-2 | the deciding reviewer |
 | `tacit.retrieve` | one retrieval through the gate | the requesting agent |
 | `tacit.escalation` | a decision handed to a person: a high-risk situation or a near miss | the operator by default |
 
@@ -74,7 +74,9 @@ reached), `consent_declined` (the worker answered and withheld consent, so nothi
 
 `captured → worker_confirmed → tier1_confirmed → tier2_pending →`
 `{ promoted_to_advisory | promoted_to_controlled | held | rejected | re_elicit }`,
-with terminal/lifecycle states `withdrawn`, `superseded`, `expired`.
+with terminal/lifecycle states `withdrawn`, `superseded`, `expired`. A promoted fragment is
+re-reviewed in place: it keeps its state until the reviewers renew it, move it to the other
+operational layer, hold it, reject it, or send it back for re-elicitation.
 
 ## 4. Authority layers
 
@@ -90,15 +92,23 @@ promotes only a review CHAP has completed. One reviewer can hold (`abstain.decla
 (`decide.reject`), or ask for re-elicitation (`escalate.raise`). Promotion sets a review date and
 expiry triggers; the promotion record names the approvers and the rule.
 
+A fragment in use goes back to review on a fresh `tacit.validate.tier2` task carrying a snapshot
+of the fragment, opened by a contest, by a renewal, or at a reviewer's request. It stays in use
+until the decision. Renewal and moves between Advisory and Controlled need the quorum, and a
+later promotion rebuilds the fragment's memory object under the same memory id. Every contest
+except a withdrawal joins the fragment's open review or opens one. A revoked fragment is out of
+review, and a revocation or supersession cancels any review still open on it.
+
 ## 6. Retrieval rules
 
 Tacit memory is retrieved only through the condition-aware gate. It checks, in order: revocation
 status, consent, source pathway (endogenous fragments need review), authority layer, validation
 state, review date, role, conditions with their validity window and exclusions, exact matching
-for Controlled fragments, and risk class. Eligibility is decided deterministically from these recorded
-properties. A high-risk situation, or a near miss (the identity conditions match and a situational
-condition fails), opens a `tacit.escalation` task and adds a required human action. A
-`tacit.retrieval_decision` artefact and an evidence entry are produced for every recorded attempt.
+for Controlled fragments, and risk class. Eligibility is decided deterministically from these
+recorded properties. A high-risk situation, or a near miss (the identity conditions match and a
+situational condition fails), opens a `tacit.escalation` task and adds a required human action.
+A `tacit.retrieval_decision` artefact and an evidence entry are produced for every recorded
+attempt.
 
 ## 7. Memory-object rules
 

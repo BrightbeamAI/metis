@@ -19,7 +19,7 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 | Doc | What it covers |
 |-----|----------------|
 | [memory_architecture.md](memory_architecture.md) | Procedural, semantic, episodic, and tacit memory; the TacitMemoryObject, AgentMemoryContext, and MemoryBroker. |
-| [governance_model.md](governance_model.md) | Capture Cell, Mission Group, Runtime Orchestrator, the three authority layers, Tier-1 and Tier-2 review, quorum decisions, review dates, confidence, and lifecycle transitions. |
+| [governance_model.md](governance_model.md) | Capture Cell, Mission Group, Runtime Orchestrator, the three authority layers, Tier-1 and Tier-2 review, quorum decisions, review dates, confidence, re-review, contestability, and lifecycle transitions. |
 | [condition_aware_retrieval.md](condition_aware_retrieval.md) | Why retrieval is a governance gate, the ordered checks, escalation to a person, and the closed set of blocked reasons. |
 | [taxonomy_k1_k17.md](taxonomy_k1_k17.md) | The K1 to K17 tacit categories, the six domains, and the source pathways. |
 | [agent_memory_use.md](agent_memory_use.md) | How an AI agent should consume Metis output and respect use constraints. |

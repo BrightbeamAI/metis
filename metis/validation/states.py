@@ -1,8 +1,10 @@
 """The validation state machine.
 
-Tier-1 confirmation concerns descriptive fidelity only. Tier-2 Mission Group review decides
-the organisational role a fragment may play. Transitions are explicit and auditable; no
-local model output may move a fragment between states.
+Tier-1 confirmation concerns descriptive fidelity. Tier-2 Mission Group review decides the
+organisational role a fragment may play, at first promotion and again whenever a fragment in
+use is re-reviewed: reviewers can renew it, move it between the Advisory and Controlled layers,
+hold it, reject it, or send it back for re-elicitation. Transitions are explicit and
+auditable, and people make every one of them.
 """
 from __future__ import annotations
 
@@ -20,12 +22,22 @@ VALID_TRANSITIONS: dict[ValidationState, set[ValidationState]] = {
     },
     VS.held: {VS.tier2_pending, VS.rejected, VS.re_elicit},
     VS.re_elicit: {VS.captured, VS.rejected},
-    VS.promoted_to_advisory: {VS.promoted_to_controlled, VS.withdrawn, VS.superseded, VS.expired, VS.held},
-    VS.promoted_to_controlled: {VS.withdrawn, VS.superseded, VS.expired, VS.held},
+    # A re-review of a fragment in use can renew it, move it between layers, hold it, reject
+    # it, or send it back for re-elicitation.
+    VS.promoted_to_advisory: {
+        VS.promoted_to_advisory, VS.promoted_to_controlled, VS.held, VS.rejected, VS.re_elicit,
+        VS.withdrawn, VS.superseded, VS.expired,
+    },
+    VS.promoted_to_controlled: {
+        VS.promoted_to_controlled, VS.promoted_to_advisory, VS.held, VS.rejected, VS.re_elicit,
+        VS.withdrawn, VS.superseded, VS.expired,
+    },
     VS.rejected: set(),
     VS.withdrawn: set(),
     VS.superseded: set(),
-    VS.expired: {VS.tier2_pending},  # re-review can revive an expired fragment
+    VS.expired: {
+        VS.promoted_to_advisory, VS.promoted_to_controlled, VS.held, VS.rejected, VS.re_elicit,
+    },
 }
 
 

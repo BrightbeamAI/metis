@@ -10,7 +10,7 @@ def _promote(engine, res):
     return res.fragment
 
 
-def test_challenge_records_event_and_escalates_to_mission_group(captured_fragment):
+def test_a_challenge_records_the_event_and_starts_the_review(captured_fragment):
     engine, res = captured_fragment
     out = engine.governance.contest(
         res.fragment.fragment_id, ContestAction.challenge,
@@ -18,9 +18,10 @@ def test_challenge_records_event_and_escalates_to_mission_group(captured_fragmen
     assert out["contestability_record"].startswith("art_")
     events = engine.adapter.artefacts_of_kind("tacit.validation_event")
     assert any(a["content"].get("event") == "contestability" for a in events)
-    task = engine.adapter.tasks[out["mission_group_task"]]
-    assert task["assignee"] == engine.mission_group_uri
-    assert task["kind"] == "tacit.validate.tier2"
+    # An unreviewed fragment's first review starts on its capture task.
+    assert res.fragment.validation_state.value == "tier2_pending"
+    assert engine.governance.review_open(res.fragment.fragment_id)
+    assert out["mission_group_task"] == engine.governance.refs[res.fragment.fragment_id]["task"]
     assert engine.verify().ok
 
 
@@ -47,15 +48,17 @@ def test_withdraw_revokes_and_blocks_retrieval(captured_fragment, match_context)
     assert not engine.evaluate(frag, match_context).ok
 
 
-def test_re_elicitation_creates_request_and_mission_group_task(captured_fragment):
+def test_a_re_elicitation_request_goes_to_the_review(captured_fragment):
     engine, res = captured_fragment
     out = engine.governance.contest(
         res.fragment.fragment_id, ContestAction.request_re_elicitation,
         raised_by=engine.operator_uri, rationale="conditions are too broad")
-    assert out["re_elicitation_request"].startswith("art_")
-    assert any(a["kind"] == "tacit.re_elicitation_request" for a in engine.adapter.artefacts.values())
-    task = engine.adapter.tasks[out["mission_group_task"]]
-    assert task["kind"] == "tacit.re_elicit" and task["assignee"] == engine.mission_group_uri
+    request = engine.adapter.artefacts[out["re_elicitation_request"]]
+    assert request["kind"] == "tacit.re_elicitation_request"
+    assert request["task"] == out["mission_group_task"]
+    assert engine.governance.review_open(res.fragment.fragment_id)
+    engine.tier2_review(res.fragment.fragment_id, "re_elicit", summary="conditions too broad")
+    assert res.fragment.validation_state.value == "re_elicit"
     assert engine.verify().ok
 
 

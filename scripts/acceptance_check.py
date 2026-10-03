@@ -117,6 +117,13 @@ check("28. Fragment confidence is derived from its evidence",
 high = eng.retrieve(match_ctx.model_copy(update={"risk_class": "high"}))
 check("29. High-risk retrieval escalates to a person with a recorded task",
       high.escalation_task_id is not None and bool(high.required_human_actions))
+run.fragment.review_due_at = "2000-01-01T00:00:00+00:00"  # the review date has passed
+_expired = not eng.evaluate(run.fragment, match_ctx).ok
+eng.tier2_review(run.fragment.fragment_id, "promoted_to_advisory", summary="renewed",
+                 decided_by=approvers[:2])
+check("30. A fragment in use is re-reviewed and renewed by the quorum",
+      _expired and eng.evaluate(run.fragment, match_ctx).ok
+      and run.fragment.lineage[-1].note.startswith("renewed") and eng.verify().ok)
 
 # 20. withdrawn consent blocks retrieval (judged on the engine's own timeline)
 eng.governance.withdraw_consent(run.fragment.fragment_id, by="human:operator@plant_a")

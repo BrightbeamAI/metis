@@ -25,8 +25,9 @@ human practice. That makes its misuse a real risk. Read this before you deploy i
 - Workers must be able to see records associated with their contribution
   (`consent.worker_visible_record`).
 - Workers and reviewers can challenge, correct, supersede, or request re-elicitation of a
-  fragment, and the contributing worker can withdraw it. Each action is an auditable event that
-  opens a Mission Group task or, for a withdrawal, revokes the fragment.
+  fragment, and the contributing worker can withdraw it. Each action is an auditable event: a
+  withdrawal revokes the fragment, and every other action puts it before the Mission Group, whose
+  decision is recorded.
 - Withdrawing consent blocks future retrieval at once; the fragment's record stays on the chain
   for audit.
 - Whisper prompts are short and non-accusatory. They never ask a worker to justify their

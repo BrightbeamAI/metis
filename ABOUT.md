@@ -88,7 +88,8 @@ CHAP is meant to be extended.
 | Whisper, operator confirmation | `whisper.ask` / `whisper.answer` |
 | Mission Group review | `review.request` under a `quorum:2` rule; approvals as `decide.approve`, a hold as `abstain.declare`, re-elicitation as `escalate.raise` |
 | Escalation to a person | a `tacit.escalation` task assigned to the operator |
-| Contest by a worker or reviewer | a `tacit.validation_event` artefact and a fresh Mission Group task |
+| Re-review of a fragment in use | `review.request` on a fresh `tacit.validate.tier2` task; the fragment stays in use until the decision |
+| Contest by a worker or reviewer | a `tacit.validation_event` artefact, then a Mission Group review the reviewers decide |
 | Revocation, supersession | `control.*` events plus records |
 | Audit trail | hash-linked (JCS) evidence chain, kept in CHAP's SQLite store; Ed25519 signing available through CHAP's optional `security-signed/1.0` profile |
 

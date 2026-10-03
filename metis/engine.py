@@ -162,6 +162,12 @@ class MetisEngine:
         return self.governance.tier2_review(fragment_id, outcome, **kw)
 
     @clock.scoped
+    def request_review(self, fragment_id: str, *, by: str | None = None, reason: str = "") -> str:
+        """Open a Mission Group review of a fragment (for example, a renewal before its review
+        date); return the CHAP task the reviewers decide on."""
+        return self.governance.request_review(fragment_id, by=by, reason=reason)
+
+    @clock.scoped
     def retrieve(self, context: TacitContext, *, role: str | None = None, emit: bool = True) -> RetrievalDecision:
         ids = {mo.fragment_id: mo.memory_id for mo in self.tacit_store.all()}
         decision = self.gate.retrieve(self.fragments.all(), context, role=role, memory_ids=ids)

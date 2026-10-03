@@ -236,7 +236,8 @@
 <section class="tintbg" id="layers"><div class="wrap">
   <h2>Three authority layers</h2>
   <p class="sub">Promotion sets what a fragment is allowed to do. A quorum of named reviewers decides
-  it, and every promotion carries a review date.</p>
+  it, and every promotion carries a review date. A fragment in use can go back for re-review at any
+  time: reviewers renew it, change its layer, hold it, reject it, or re-elicit it.</p>
   <div class="layers">
     <div class="layer ev"><span class="tag">EVIDENCE</span>
       <div><b>Learning and review only.</b><p>Raw observations, confirmations, early hypotheses, and
@@ -400,7 +401,8 @@
     <tr><td>Mission Group review</td><td><code class="inline">review.request</code> under a <code class="inline">quorum:2</code> rule; approvals as <code class="inline">decide.approve</code>, a hold as <code class="inline">abstain.declare</code>, re-elicitation as <code class="inline">escalate.raise</code></td></tr>
     <tr><td>Retrieval decision</td><td>A <code class="inline">tacit.retrieve</code> task, with the <code class="inline">tacit.retrieval_decision</code> artefact recorded against it</td></tr>
     <tr><td>Escalation to a person</td><td>A <code class="inline">tacit.escalation</code> task assigned to the operator</td></tr>
-    <tr><td>Contest by a worker or reviewer</td><td>A <code class="inline">tacit.validation_event</code> artefact and a fresh Mission Group task</td></tr>
+    <tr><td>Re-review of a fragment in use</td><td><code class="inline">review.request</code> on a fresh <code class="inline">tacit.validate.tier2</code> task; the fragment stays in use until the decision</td></tr>
+    <tr><td>Contest by a worker or reviewer</td><td>A <code class="inline">tacit.validation_event</code> artefact, then a Mission Group review the reviewers decide</td></tr>
     <tr><td>Revocation, supersession</td><td><code class="inline">control.*</code> events plus records</td></tr>
     <tr><td>Audit trail</td><td>Hash-linked (JCS) evidence chain; Ed25519 signing available through CHAP's optional security-signed/1.0 profile</td></tr>
   </table>

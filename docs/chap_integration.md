@@ -41,7 +41,8 @@ every one of them.
 | Operator confirmation (Tier-1) | a `tacit.operator_confirmation` artefact |
 | Mission Group Tier-2 review | `review.request` with the policy's rule (`quorum:2` by default), then one `decide.approve` per approving reviewer; `decide.reject` to reject, `abstain.declare` to hold, `escalate.raise` to re-elicit |
 | Escalation to a person | a `tacit.escalation` task assigned to the operator, carrying the runtime context and the escalated fragments |
-| Contest (challenge, correct, supersede, re-elicit) | a `tacit.validation_event` artefact, then a fresh `tacit.validate.tier2` or `tacit.re_elicit` task for the Mission Group |
+| Re-review of a fragment in use | `review.request` on a fresh `tacit.validate.tier2` task carrying a snapshot of the fragment, then the decisions above; the fragment stays in use until they are recorded |
+| Contest (challenge, correct, supersede, re-elicit) | a `tacit.validation_event` artefact, then the fragment's open review, or a new one the reviewers decide |
 | Revocation / supersession | `control.cancel` / `control.supersede`, plus the `tacit.revocation_record` / `tacit.supersession_record` |
 | Audit trail | the Coordinator's append-only, hash-linked evidence chain |
 

@@ -7,10 +7,10 @@ plus the whisper, review, control, and routing profiles, and keeps a small regis
 artefacts it produces for convenient querying.
 
 The public surface is now_iso, join, create_task, append_artefact, whisper_ask/answer,
-review_request, decide, escalate, control_event, evidence_records, descriptor, verify, and
-the ``chain`` / ``artefacts`` / ``artefact_evidence`` attributes. Given a store, the
-Coordinator persists the workspace and the adapter reattaches to it on the next start; given
-a ledger, every dispatch is appended to the workspace's evidence ledger.
+review_request, decide, escalate, control_event, cancel_task, task_state, evidence_records,
+descriptor, verify, and the ``chain`` / ``artefacts`` / ``artefact_evidence`` attributes.
+Given a store, the Coordinator persists the workspace and the adapter reattaches to it on the
+next start; given a ledger, every dispatch is appended to the workspace's evidence ledger.
 """
 from __future__ import annotations
 
@@ -355,7 +355,19 @@ class CHAPAdapter:
         self._dispatch(method, **cp)
         return _Entry(seq=self._last_seq())
 
+    def cancel_task(self, task_id: str, *, sender: str, reason: str) -> _Entry:
+        """Cancel one task, for example a review that a revocation ends."""
+        self._ensure_member(sender)
+        self._dispatch("control.cancel", **{"from": sender}, task_id=task_id, reason=reason)
+        return _Entry(seq=self._last_seq())
+
     # ---- queries ---------------------------------------------------------------
+    def task_state(self, task_id: str) -> str | None:
+        """The coordinator's state for a task (for example ``review_requested``)."""
+        ws = self.coord.get_workspace(self.workspace_id)
+        task = ws.tasks.get(task_id) if ws else None
+        return task.state if task else None
+
     def artefacts_of_kind(self, kind: str) -> list[dict[str, Any]]:
         return [a for a in self.artefacts.values() if a["kind"] == kind]
 
