@@ -21,6 +21,14 @@ All notable changes to Metis are recorded here. The format follows
 - `metis server` administration commands for workspaces, members, and API keys.
 - A container image, a Docker Compose stack with PostgreSQL and Keycloak, and a Helm chart. See
   deploy/README.md.
+- The web app at `/app` and `GET /v1/me/inbox`: workers answer whispers and manage their
+  contributions, reviewers vote, and escalation handlers decide, across their workspaces.
+- Escalation decisions (`MetisEngine.decide_escalation`, recorded as `tacit.escalation_decision`):
+  the guidance applies, does not apply, or goes to the reviewers.
+- Whisper deadlines: an unanswered whisper lapses at its deadline (`lapse_whispers`, a
+  `whisper_lapsed` validation event), swept by the server or `metis server sweep`.
+- Notifications by email, Slack, Microsoft Teams, and signed webhooks, planned inside each
+  write's transaction, kept in an outbox, and delivered with retries.
 
 ### Changed
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader

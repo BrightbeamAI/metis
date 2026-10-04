@@ -46,8 +46,15 @@ Two kinds of blocked result go to a person. The gate flags them with `escalate =
 
 When a recorded retrieval or memory query contains escalated items, Metis opens one
 `tacit.escalation` CHAP task for the person on duty (the operator by default,
-`MetisEngine.escalation_assignee`), records its id on the decision, and adds a required human action
-to the agent's context. The agent receives that action and waits for the person's decision.
+`MetisEngine.escalation_assignee`; on the server, the workspace's escalation group), records its id
+on the decision, and adds a required human action to the agent's context. The agent receives that
+action and waits for the person's decision.
+
+The person records it with `MetisEngine.decide_escalation`, which completes the task with a
+`tacit.escalation_decision`: the guidance `applies` in this situation, it `does_not_apply`, or
+the Mission Group should look again (`refer_to_review`, which opens a review of each fragment).
+The decision covers that situation only; what a fragment may do in general stays with the
+reviewers.
 
 ## Blocked reasons
 

@@ -231,3 +231,17 @@ def test_a_damaged_chain_is_refused(db_url):
     with pytest.raises((StorageCorruption, LedgerMismatch)):
         damaged.read("wsp_plant_a", lambda e: e.adapter.chain.count)
     damaged.close()
+
+
+def test_a_version_1_database_is_upgraded(db_url):
+    repo = SqlRepository(db_url)
+    repo.create(_settings(), by=ADMIN)
+    with repo.db.begin() as conn:
+        conn.execute(text("DROP TABLE metis_outbox"))
+        conn.execute(text("UPDATE metis_schema SET version = 1"))
+    repo.close()
+    upgraded = SqlRepository(db_url)
+    assert upgraded.migrate() == 2
+    assert upgraded.outbox() == []
+    assert upgraded.read("wsp_plant_a", lambda e: e.mission_group_members) == [R1, R2]
+    upgraded.close()

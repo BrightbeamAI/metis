@@ -45,6 +45,25 @@ trustedProxy:
 
 # Participant URIs that hold the global admin role, for example human:ana@example.com.
 admins: []
+
+# The address people use to reach Metis; notifications link to its web app (/app).
+publicUrl: ""
+
+# The web app signs people in with this public OIDC client (authorization code with PKCE).
+# Register its redirect URI as <publicUrl>/app and give its tokens the API audience.
+ui:
+  clientId: ""
+  scopes: "openid profile email"
+
+notifications:
+  # A Secret holding a notifications file (see docs/server.md). Secrets the file names with
+  # *_env come from extraEnv, for example from another Secret.
+  existingSecret: ""
+  existingSecretKey: notifications.yaml
+
+# Background work: lapsing overdue whispers, review-date notices, and delivering notifications.
+sweepIntervalSeconds: 300
+dispatchIntervalSeconds: 5
 corsOrigins: []
 whisperDeadlineHours: 168
 useLiveModel: false

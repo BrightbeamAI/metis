@@ -47,7 +47,7 @@ Paper = "https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf"
 include = ["metis*"]
 
 [tool.setuptools.package-data]
-"metis" = ["py.typed"]
+"metis" = ["py.typed", "server/static/*.html"]
 
 [tool.ruff]
 line-length = 100

@@ -37,6 +37,11 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
 
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+
   metis:
     build:
       context: ../..
@@ -49,12 +54,22 @@ services:
       METIS_OIDC_ROLES_CLAIM: realm_access.roles
       METIS_API_KEYS_FILE: /config/api-keys.yaml
       METIS_LOG_LEVEL: info
+      # The web app at http://localhost:8000/app signs people in through Keycloak.
+      METIS_UI_CLIENT_ID: metis-cli
+      METIS_PUBLIC_URL: http://localhost:8000
+      # Notification emails go to Mailpit; read them at http://localhost:8025.
+      METIS_SMTP_HOST: mailpit
+      METIS_SMTP_PORT: "1025"
+      METIS_SMTP_STARTTLS: "false"
+      METIS_SMTP_FROM: metis@example.com
     volumes:
       - config:/config
     depends_on:
       db:
         condition: service_healthy
       keycloak:
+        condition: service_started
+      mailpit:
         condition: service_started
     ports:
       - "127.0.0.1:8000:8000"

@@ -37,6 +37,7 @@ from .retrieval.decision import RetrievalDecision
 from .retrieval.escalation import escalation_actions, open_escalation
 from .retrieval.gate import RetrievalGate
 from .validation.mission_group import MissionGroup
+from .validation.states import InvalidTransition
 
 
 class MetisEngine:
@@ -308,6 +309,110 @@ class MetisEngine:
                       emit: bool = True, requester: str | None = None) -> AgentMemoryContext:
         return self.broker.query(task_id, context, role=role, emit=emit,
                                  requester=requester or self.agent_uri)
+
+    # ---- escalations and deadlines -------------------------------------------------
+    _CLOSED = ("completed", "cancelled", "declined", "superseded")
+
+    def escalation_tasks(self, *, open_only: bool = True) -> list[dict[str, Any]]:
+        """The retrievals the gate handed to a person, oldest first, with any decision."""
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        out = []
+        for task in (ws.tasks.values() if ws else []):
+            if task.kind != "tacit.escalation" or (open_only and task.state in self._CLOSED):
+                continue
+            output = task.output if isinstance(task.output, dict) else {}
+            out.append({"task_id": task.id, "state": task.state, "assignee": task.assignee,
+                        "requested_by": task.delegator, "created_at": task.created_at,
+                        "runtime_context": task.input.get("runtime_context"),
+                        "fragments": task.input.get("fragments", []),
+                        "origin_task": task.input.get("origin_task"),
+                        "decision": output.get("content") if output.get("kind")
+                        == "tacit.escalation_decision" else None})
+        return sorted(out, key=lambda t: t["created_at"])
+
+    @clock.scoped
+    def decide_escalation(self, task_id: str, outcome: str, *, by: str,
+                          rationale: str) -> dict[str, Any]:
+        """Record a person's decision on an escalated retrieval.
+
+        ``applies`` and ``does_not_apply`` decide this situation only. ``refer_to_review`` also
+        puts each fragment before the Mission Group, which decides what the fragment may do.
+        The decision completes the ``tacit.escalation`` task with a
+        ``tacit.escalation_decision`` artefact.
+        """
+        from .integrations.chap.participants import type_of
+        from .retrieval.escalation import EscalationDecision, EscalationOutcome
+
+        outcome = EscalationOutcome(outcome)
+        if type_of(by) != "human":
+            raise PermissionError("A person decides an escalated retrieval.")
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        task = ws.tasks.get(task_id) if ws else None
+        if task is None or task.kind != "tacit.escalation":
+            raise KeyError(f"No escalation {task_id}.")
+        if task.state in self._CLOSED:
+            raise InvalidTransition(f"Escalation {task_id} is {task.state}; it was decided already.")
+        fragments = [f["fragment_id"] for f in task.input.get("fragments", []) if f.get("fragment_id")]
+        review_tasks: list[str] = []
+        if outcome == EscalationOutcome.refer_to_review:
+            for fragment_id in fragments:
+                try:
+                    review_tasks.append(self.request_review(
+                        fragment_id, by=by, reason=f"escalation {task_id}: {rationale}"))
+                except InvalidTransition:
+                    continue  # out of review already (withdrawn, rejected, superseded)
+        decision = EscalationDecision(
+            task_id=task_id, outcome=outcome, decided_by=by, rationale=rationale,
+            fragments=fragments, runtime_context=task.input.get("runtime_context") or {},
+            requested_by=task.delegator, review_tasks=review_tasks)
+        artefact = self.adapter.complete_task(task_id, sender=by, kind="tacit.escalation_decision",
+                                              content=decision.model_dump(mode="json"))
+        return {"decision": decision.model_dump(mode="json"), "artefact": artefact}
+
+    def overdue_whispers(self, now: Any = None) -> list[str]:
+        """Pending whispers whose deadline has passed at ``now`` (default: the current time)."""
+        import datetime as _dt
+
+        now = now or clock.now_dt()
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        overdue = []
+        for whisper_id in self.pending_captures:
+            prompt = ws.whispers.get(whisper_id) if ws else None
+            if prompt is None or prompt.state != "pending":
+                continue
+            asked = _dt.datetime.fromisoformat(prompt.asked_at.replace("Z", "+00:00"))
+            if now >= asked + _dt.timedelta(milliseconds=prompt.deadline_ms):
+                overdue.append(whisper_id)
+        return overdue
+
+    @clock.scoped
+    def lapse_whispers(self, now: Any = None) -> list[str]:
+        """Close the captures whose whisper went unanswered past its deadline.
+
+        CHAP marks each whisper lapsed and records the lapse; Metis records a
+        ``whisper_lapsed`` validation event, stores nothing, and drops the pending capture.
+        Returns the lapsed whisper ids.
+        """
+        now = now or clock.now_dt()
+        if not self.overdue_whispers(now):
+            return []
+        emitted = self.adapter.coord.check_whisper_lapses(
+            self.adapter.workspace_id, now.isoformat().replace("+00:00", "Z"))
+        if self.adapter.ledger is not None:
+            self.adapter.ledger.sync(self.adapter)
+        lapsed = []
+        for note in emitted:
+            whisper_id = (note.get("params") or {}).get("whisper_id")
+            pending = self.pending_captures.pop(whisper_id, None)
+            if pending is None:
+                continue
+            self.adapter.append_artefact(
+                "tacit.validation_event", produced_by=self.whisperer_uri,
+                content={"event": "whisper_lapsed", "worker": pending.worker,
+                         "candidate_id": pending.candidate.candidate_id},
+                task=pending.task_id, based_on=whisper_id)
+            lapsed.append(whisper_id)
+        return lapsed
 
     # ---- persistence -------------------------------------------------------------
     def export_state(self) -> dict[str, Any]:

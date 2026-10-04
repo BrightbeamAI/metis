@@ -56,6 +56,12 @@ class ServerSettings(BaseModel):
     use_live_model: bool = False
     engine_cache_size: int = 64
     log_level: str = "info"
+    # Background work, people's links, and the web app
+    public_url: str | None = None
+    sweep_interval_seconds: int = 300
+    dispatch_interval_seconds: int = 5
+    ui_client_id: str | None = None
+    ui_scopes: str = "openid profile email"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> ServerSettings:
@@ -82,6 +88,11 @@ class ServerSettings(BaseModel):
             "use_live_model": _flag(env.get("METIS_USE_LIVE_MODEL")),
             "engine_cache_size": env.get("METIS_ENGINE_CACHE_SIZE"),
             "log_level": env.get("METIS_LOG_LEVEL"),
+            "public_url": env.get("METIS_PUBLIC_URL"),
+            "sweep_interval_seconds": env.get("METIS_SWEEP_INTERVAL_SECONDS"),
+            "dispatch_interval_seconds": env.get("METIS_DISPATCH_INTERVAL_SECONDS"),
+            "ui_client_id": env.get("METIS_UI_CLIENT_ID"),
+            "ui_scopes": env.get("METIS_UI_SCOPES"),
         }
         return cls(**{k: v for k, v in values.items() if v not in (None, "")})
 

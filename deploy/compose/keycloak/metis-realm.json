@@ -7,8 +7,14 @@
   "accessTokenLifespan": 900,
   "roles": {
     "realm": [
-      {"name": "metis-admin", "description": "Creates Metis workspaces and manages their members"},
-      {"name": "metis-auditor", "description": "Reads the evidence of every Metis workspace"}
+      {
+        "name": "metis-admin",
+        "description": "Creates Metis workspaces and manages their members"
+      },
+      {
+        "name": "metis-auditor",
+        "description": "Reads the evidence of every Metis workspace"
+      }
     ]
   },
   "clients": [
@@ -25,13 +31,17 @@
     },
     {
       "clientId": "metis-cli",
-      "name": "Metis sign-in for people (development only)",
+      "name": "Metis web app and sign-in for people (development only)",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["+"],
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
       "protocolMappers": [
         {
           "name": "metis-api audience",
@@ -44,7 +54,11 @@
             "access.token.claim": "true"
           }
         }
-      ]
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:*"
+      }
     },
     {
       "clientId": "shift-assistant",
@@ -72,31 +86,85 @@
   ],
   "users": [
     {
-      "username": "ana", "email": "ana@example.com", "emailVerified": true, "enabled": true,
-      "firstName": "Ana", "lastName": "Admin",
-      "credentials": [{"type": "password", "value": "ana-dev-only", "temporary": false}],
-      "realmRoles": ["metis-admin"]
+      "username": "ana",
+      "email": "ana@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Ana",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ana-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "metis-admin"
+      ]
     },
     {
-      "username": "wendy", "email": "wendy@example.com", "emailVerified": true, "enabled": true,
-      "firstName": "Wendy", "lastName": "Operator",
-      "credentials": [{"type": "password", "value": "wendy-dev-only", "temporary": false}]
+      "username": "wendy",
+      "email": "wendy@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Wendy",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "wendy-dev-only",
+          "temporary": false
+        }
+      ]
     },
     {
-      "username": "rhea", "email": "rhea@example.com", "emailVerified": true, "enabled": true,
-      "firstName": "Rhea", "lastName": "Quality",
-      "credentials": [{"type": "password", "value": "rhea-dev-only", "temporary": false}]
+      "username": "rhea",
+      "email": "rhea@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Rhea",
+      "lastName": "Quality",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "rhea-dev-only",
+          "temporary": false
+        }
+      ]
     },
     {
-      "username": "raj", "email": "raj@example.com", "emailVerified": true, "enabled": true,
-      "firstName": "Raj", "lastName": "Process",
-      "credentials": [{"type": "password", "value": "raj-dev-only", "temporary": false}]
+      "username": "raj",
+      "email": "raj@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Raj",
+      "lastName": "Process",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "raj-dev-only",
+          "temporary": false
+        }
+      ]
     },
     {
-      "username": "audrey", "email": "audrey@example.com", "emailVerified": true, "enabled": true,
-      "firstName": "Audrey", "lastName": "Auditor",
-      "credentials": [{"type": "password", "value": "audrey-dev-only", "temporary": false}],
-      "realmRoles": ["metis-auditor"]
+      "username": "audrey",
+      "email": "audrey@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Audrey",
+      "lastName": "Auditor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "audrey-dev-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "metis-auditor"
+      ]
     },
     {
       "username": "service-account-shift-assistant",

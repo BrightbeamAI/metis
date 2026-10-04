@@ -87,6 +87,11 @@ class VoteIn(_Body):
                           "proposes them")
 
 
+class EscalationDecisionIn(_Body):
+    outcome: Literal["applies", "does_not_apply", "refer_to_review"]
+    rationale: str = Field(min_length=1, description="Why, in a sentence the requester can act on")
+
+
 class RetrieveIn(_Body):
     context: dict[str, Any]
     role: str | None = None

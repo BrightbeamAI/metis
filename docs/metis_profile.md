@@ -25,7 +25,7 @@ steps as separate tasks.
 `tacit.operator_confirmation`, `tacit.validation_event`, `tacit.review_decision`,
 `tacit.promotion_record`, `tacit.rejection_record`, `tacit.re_elicitation_request`,
 `tacit.retrieval_decision`, `tacit.revocation_record`, `tacit.supersession_record`,
-`tacit.consent_record`, `tacit.model_assist_record`, `tacit.membership_record`. Each carries a `schema` reference, as CHAP
+`tacit.consent_record`, `tacit.model_assist_record`, `tacit.membership_record`, `tacit.escalation_decision`. Each carries a `schema` reference, as CHAP
 requires for implementation-defined kinds; JSON Schemas for the core kinds live in
 [../schemas/](../schemas/), one file per kind.
 

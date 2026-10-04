@@ -8,11 +8,37 @@ into required human actions that an agent must honour.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from enum import Enum
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from .blocked_reasons import BlockedReason
 
 _RISK = BlockedReason.risk_class_requires_human_escalation.value
+
+
+class EscalationOutcome(str, Enum):
+    applies = "applies"                  # the guidance applies in this situation
+    does_not_apply = "does_not_apply"    # the guidance must not be used here
+    refer_to_review = "refer_to_review"  # the Mission Group should look at the fragment again
+
+
+class EscalationDecision(BaseModel):
+    """The content of a ``tacit.escalation_decision``: a person's decision on an escalated
+    retrieval. It concerns this situation only; changing what a fragment may do stays with the
+    Mission Group."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    task_id: str
+    outcome: EscalationOutcome
+    decided_by: str
+    rationale: str
+    fragments: list[str] = Field(default_factory=list)
+    runtime_context: dict[str, Any] = Field(default_factory=dict)
+    requested_by: str | None = None
+    review_tasks: list[str] = Field(default_factory=list)
 
 
 def escalation_actions(items: Sequence[Any], task_id: str | None = None) -> list[str]:

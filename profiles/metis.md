@@ -58,14 +58,15 @@ tacit.whisper_response      tacit.operator_confirmation tacit.validation_event
 tacit.review_decision       tacit.promotion_record      tacit.rejection_record
 tacit.re_elicitation_request tacit.retrieval_decision   tacit.revocation_record
 tacit.supersession_record   tacit.consent_record        tacit.model_assist_record
-tacit.membership_record
+tacit.membership_record     tacit.escalation_decision
 ```
 
 JSON Schemas for the core kinds are published in [../schemas/](../schemas/): `tacit.fragment`,
 `tacit.memory_object`, `tacit.agent_memory_context`, `tacit.retrieval_decision`,
 `tacit.review_decision`, `tacit.promotion_record`, `tacit.revocation_record`,
-`tacit.consent_record`, `tacit.validation_event`, `tacit.model_assist_record`, and
-`tacit.membership_record`, plus `tacit_context` for the conditions and runtime context they embed.
+`tacit.consent_record`, `tacit.validation_event`, `tacit.model_assist_record`,
+`tacit.membership_record`, and `tacit.escalation_decision`, plus `tacit_context` for the
+conditions and runtime context they embed.
 
 A `tacit.membership_record` records one change to a workspace member's Metis roles: the
 participant, the roles they hold afterwards, the roles granted and revoked, and who made the
@@ -74,8 +75,14 @@ the Mission Group is the set of members with the `reviewer` role. Only people ho
 reviewer, escalation, and admin roles, and only agents hold the agent role.
 
 A `tacit.validation_event` names its `event`: `whisper_deferred` (the worker's prompt budget was
-reached), `consent_declined` (the worker answered and withheld consent, so nothing was stored), or
-`contestability` (a worker or reviewer contested a fragment).
+reached), `consent_declined` (the worker answered and withheld consent, so nothing was stored),
+`whisper_lapsed` (the worker did not answer before the whisper's deadline, so the capture closed
+with nothing stored), or `contestability` (a worker or reviewer contested a fragment).
+
+A `tacit.escalation_decision` completes a `tacit.escalation` task. A person records whether the
+guidance `applies` in the escalated situation, `does_not_apply`, or needs the Mission Group
+(`refer_to_review`, which opens a review of each fragment). The decision covers that situation
+only.
 
 ## 3. Validation states
 

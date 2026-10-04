@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends
 from ... import guidance as views
 from ...governance.membership import Role
 from ...identity import Principal
-from ..access import require
-from ..deps import principal, repository
-from ..schemas import AgentContextIn, RetrieveIn
+from ..access import require, roles_in
+from ..deps import NotFound, principal, repository
+from ..schemas import AgentContextIn, EscalationDecisionIn, RetrieveIn
 
 router = APIRouter(tags=["agents"])
 
@@ -60,17 +60,33 @@ def escalations(workspace_id: str, open_only: bool = True, p: Principal = Depend
     def view(engine: Any) -> list[dict[str, Any]]:
         require(engine, p, Role.escalation, Role.reviewer, Role.auditor, Role.admin,
                 global_auditor=True)
-        ws = engine.adapter.coord.get_workspace(engine.adapter.workspace_id)
-        out = []
-        for task in (ws.tasks.values() if ws else []):
-            if task.kind != "tacit.escalation":
-                continue
-            if open_only and task.state in ("completed", "cancelled", "declined", "superseded"):
-                continue
-            out.append({"task_id": task.id, "state": task.state, "assignee": task.assignee,
-                        "requested_by": task.delegator, "created_at": task.created_at,
-                        "runtime_context": task.input.get("runtime_context"),
-                        "fragments": task.input.get("fragments", []),
-                        "origin_task": task.input.get("origin_task")})
-        return sorted(out, key=lambda t: t["created_at"])
+        return engine.escalation_tasks(open_only=open_only)
     return repo.read(workspace_id, view)
+
+
+@router.get("/v1/workspaces/{workspace_id}/escalations/{task_id}",
+            summary="One escalation and its decision, for people and the agent that asked")
+def escalation(workspace_id: str, task_id: str, p: Principal = Depends(principal),
+               repo: Any = Depends(repository)) -> dict[str, Any]:
+    def view(engine: Any) -> dict[str, Any]:
+        item = next((t for t in engine.escalation_tasks(open_only=False)
+                     if t["task_id"] == task_id), None)
+        readers = {Role.escalation, Role.reviewer, Role.auditor, Role.admin}
+        if item is None or not (roles_in(engine, p) & readers or p.is_auditor
+                                or item["requested_by"] == p.uri):
+            raise NotFound(f"No escalation {task_id}.")
+        return item
+    return repo.read(workspace_id, view)
+
+
+@router.post("/v1/workspaces/{workspace_id}/escalations/{task_id}/decision",
+             summary="Decide an escalated retrieval (escalation)")
+def decide_escalation(workspace_id: str, task_id: str, body: EscalationDecisionIn,
+                      p: Principal = Depends(principal), repo: Any = Depends(repository)) -> dict[str, Any]:
+    """``applies`` and ``does_not_apply`` decide this situation only; ``refer_to_review`` also
+    opens a Mission Group review of each fragment involved."""
+    def record(engine: Any) -> dict[str, Any]:
+        require(engine, p, Role.escalation)
+        return engine.decide_escalation(task_id, body.outcome, by=p.uri,
+                                        rationale=body.rationale)["decision"]
+    return repo.write(workspace_id, record)

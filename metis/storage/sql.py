@@ -8,6 +8,8 @@ Tables
                            store schema, so CHAP tooling can read it.
 ``metis_evidence_ledger``  one row per CHAP evidence entry, appended as it is recorded. Database
                            triggers refuse updates and deletes, so recorded history stays as it is.
+``metis_outbox``           notifications awaiting delivery, written in the same transaction as
+                           the evidence they report (see ``metis.notify``).
 ``metis_schema``           the schema version.
 
 One writer per workspace
@@ -38,6 +40,7 @@ from typing import Any, TypeVar
 
 from sqlalchemy import (
     Column,
+    Index,
     Integer,
     MetaData,
     String,
@@ -67,7 +70,7 @@ from .repository import (
 
 T = TypeVar("T")
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 metadata = MetaData()
 schema_table = Table("metis_schema", metadata, Column("version", Integer, nullable=False))
@@ -95,6 +98,24 @@ ledger_table = Table(
     Column("record", Text, nullable=False),
     Column("recorded_at", String(40), nullable=False),
 )
+
+outbox_table = Table(
+    "metis_outbox", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("workspace_id", String(80), nullable=False),
+    Column("event", String(40), nullable=False),
+    Column("channel", String(80), nullable=False),
+    Column("recipient", Text, nullable=True),
+    Column("payload", Text, nullable=False),
+    Column("dedupe_key", String(400), nullable=True, unique=True),
+    Column("status", String(16), nullable=False),
+    Column("attempts", Integer, nullable=False),
+    Column("next_attempt_at", String(32), nullable=False),
+    Column("created_at", String(32), nullable=False),
+    Column("delivered_at", String(32), nullable=True),
+    Column("last_error", Text, nullable=True),
+)
+Index("ix_metis_outbox_due", outbox_table.c.status, outbox_table.c.next_attempt_at)
 
 _SQLITE_TRIGGERS = (
     "CREATE TRIGGER IF NOT EXISTS metis_ledger_no_update BEFORE UPDATE ON metis_evidence_ledger "
@@ -332,8 +353,11 @@ class SqlRepository:
     """
 
     def __init__(self, url: str, *, echo: bool = False, cache_size: int = 64,
-                 engine_options: dict[str, Any] | None = None, migrate: bool = True) -> None:
+                 engine_options: dict[str, Any] | None = None, migrate: bool = True,
+                 notifier: Any = None) -> None:
         self.url = normalise_url(url)
+        # A metis.notify.Notifier: plans notifications inside each write's transaction.
+        self.notifier = notifier if notifier is not None and notifier.enabled else None
         self.db = _create_db(self.url, echo=echo)
         self.dialect = self.db.dialect.name
         self.engine_options = dict(engine_options or {})
@@ -366,6 +390,9 @@ class SqlRepository:
                 raise StorageCorruption(
                     f"The database schema is version {version}; this Metis knows up to "
                     f"{SCHEMA_VERSION}. Upgrade Metis.")
+            elif version < SCHEMA_VERSION:  # every upgrade so far only adds tables
+                conn.execute(update(schema_table).values(version=SCHEMA_VERSION))
+                version = SCHEMA_VERSION
         return version
 
     def ping(self) -> bool:
@@ -472,6 +499,42 @@ class SqlRepository:
             raise WorkspaceConflict(f"{workspace_id} was changed by another writer.")
         return expected + 1
 
+    # -- notifications --
+    def _observe_new(self) -> Any:
+        if self.notifier is None:
+            return None
+        from ..notify.planner import WorkspaceView
+
+        return WorkspaceView(chain=0)
+
+    def _notify(self, conn: Connection, engine: MetisEngine, before: Any) -> None:
+        """Write the notifications this transaction's changes call for to the outbox."""
+        if self.notifier is None or before is None:
+            return
+        from ..notify.outbox import insert_rows
+
+        insert_rows(conn, outbox_table, self.notifier.rows(self.notifier.plan(engine, before)),
+                    skip_duplicates=False)
+
+    def enqueue(self, notifications: list[Any]) -> int:
+        """Add notifications outside a workspace write (for example review-date notices);
+        a notification whose dedupe key was queued before is skipped."""
+        if self.notifier is None or not notifications:
+            return 0
+        from ..notify.outbox import insert_rows
+
+        with self._global(), self.db.begin() as conn:
+            return insert_rows(conn, outbox_table, self.notifier.rows(notifications),
+                               skip_duplicates=True)
+
+    def outbox(self, *, status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        """Outbox rows, newest first, optionally of one status."""
+        query = select(outbox_table).order_by(outbox_table.c.id.desc()).limit(limit)
+        if status:
+            query = query.where(outbox_table.c.status == status)
+        with self._global(), self.db.connect() as conn:
+            return [dict(r._mapping) for r in conn.execute(query)]
+
     # -- public operations --
     def create(self, settings: WorkspaceSettings, *, by: str) -> dict[str, Any]:
         """Create a workspace with its system participants and initial members."""
@@ -492,11 +555,13 @@ class SqlRepository:
                         review_rule=settings.review_rule,
                         whisper_deadline_ms=settings.whisper_deadline_ms)
                     engine.join_system_participants()
+                    before = self._observe_new()
                     for member in settings.members:
                         engine.set_member(member.uri, list(member.roles), by=by,
                                           display_name=member.display_name,
                                           reason="initial member")
                     self._persist(engine)
+                    self._notify(conn, engine, before)
                     now = _now()
                     conn.execute(insert(workspaces_table).values(
                         id=workspace_id, name=settings.name, site=settings.site, version=1,
@@ -562,8 +627,10 @@ class SqlRepository:
                     row = self._row(conn, workspace_id)
                     engine = self._engine_for(conn, workspace_id, row)
                     try:
+                        before = self.notifier.observe(engine) if self.notifier else None
                         result = fn(engine)
                         version = self._save(conn, engine, workspace_id, row.version)
+                        self._notify(conn, engine, before)
                     finally:
                         engine.adapter.store.discard()
                         self._bind(engine, None)

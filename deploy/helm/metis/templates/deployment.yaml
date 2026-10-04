@@ -94,6 +94,24 @@ spec:
             - name: METIS_CORS_ORIGINS
               value: {{ join "," . | quote }}
             {{- end }}
+            {{- with .Values.publicUrl }}
+            - name: METIS_PUBLIC_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.ui.clientId }}
+            - name: METIS_UI_CLIENT_ID
+              value: {{ . | quote }}
+            - name: METIS_UI_SCOPES
+              value: {{ $.Values.ui.scopes | quote }}
+            {{- end }}
+            {{- if .Values.notifications.existingSecret }}
+            - name: METIS_NOTIFICATIONS_FILE
+              value: /config/notifications/{{ .Values.notifications.existingSecretKey }}
+            {{- end }}
+            - name: METIS_SWEEP_INTERVAL_SECONDS
+              value: {{ .Values.sweepIntervalSeconds | quote }}
+            - name: METIS_DISPATCH_INTERVAL_SECONDS
+              value: {{ .Values.dispatchIntervalSeconds | quote }}
             - name: METIS_WHISPER_DEADLINE_HOURS
               value: {{ .Values.whisperDeadlineHours | quote }}
             - name: METIS_USE_LIVE_MODEL
@@ -128,6 +146,11 @@ spec:
               mountPath: /config/api-keys
               readOnly: true
             {{- end }}
+            {{- if .Values.notifications.existingSecret }}
+            - name: notifications
+              mountPath: /config/notifications
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
@@ -142,6 +165,11 @@ spec:
         - name: api-keys
           secret:
             secretName: {{ .Values.apiKeys.existingSecret }}
+        {{- end }}
+        {{- if .Values.notifications.existingSecret }}
+        - name: notifications
+          secret:
+            secretName: {{ .Values.notifications.existingSecret }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

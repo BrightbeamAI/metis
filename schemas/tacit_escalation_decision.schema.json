@@ -1,0 +1,73 @@
+{
+  "$defs": {
+    "EscalationOutcome": {
+      "enum": [
+        "applies",
+        "does_not_apply",
+        "refer_to_review"
+      ],
+      "title": "EscalationOutcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The content of a ``tacit.escalation_decision``: a person's decision on an escalated\nretrieval. It concerns this situation only; changing what a fragment may do stays with the\nMission Group.",
+  "properties": {
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "outcome": {
+      "$ref": "#/$defs/EscalationOutcome"
+    },
+    "decided_by": {
+      "title": "Decided By",
+      "type": "string"
+    },
+    "rationale": {
+      "title": "Rationale",
+      "type": "string"
+    },
+    "fragments": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Fragments",
+      "type": "array"
+    },
+    "runtime_context": {
+      "additionalProperties": true,
+      "title": "Runtime Context",
+      "type": "object"
+    },
+    "requested_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requested By"
+    },
+    "review_tasks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Review Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "task_id",
+    "outcome",
+    "decided_by",
+    "rationale"
+  ],
+  "title": "EscalationDecision",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metis.dev/schemas/0.1/tacit_escalation_decision.schema.json"
+}

@@ -163,35 +163,43 @@ def vote(workspace_id: str, fragment_id: str, body: VoteIn, p: Principal = Depen
     return repo.write(workspace_id, record)
 
 
+def review_items(engine: Any, p: Principal, *, with_fragment: bool = False) -> list[dict[str, Any]]:
+    """Fragments awaiting a first review, with an open review, held, or past their review date."""
+    gov, now = engine.governance, clock.now_dt()
+    need = gov.policy.approvals_required(len(engine.mission_group_members))
+    queue = []
+    for frag in engine.fragments.all():
+        if frag.revocation_status != RevocationStatus.active:
+            continue
+        fid = frag.fragment_id
+        is_open = gov.review_open(fid)
+        awaiting = frag.validation_state == ValidationState.tier1_confirmed
+        due = frag.validation_state in _IN_USE and overdue(frag, now)
+        if not (is_open or awaiting or due or frag.validation_state == ValidationState.held):
+            continue
+        approvals = gov.review_approvals(fid)
+        item = {
+            "fragment_id": fid, "title": frag.title, "category": frag.category.value,
+            "validation_state": frag.validation_state.value,
+            "authority_layer": frag.authority_layer.value,
+            "review_open": is_open,
+            "review_task": gov.refs.get(fid, {}).get("task") if is_open else None,
+            "approvals": [{"reviewer": r, "outcome": o} for r, o in approvals.items()],
+            "approvals_required": need, "review_due_at": frag.review_due_at,
+            "overdue": due, "your_approval": approvals.get(p.uri),
+            "proposal": gov.proposals.get(fid) if is_open else None,
+        }
+        if with_fragment:
+            item["fragment"] = fragment_view(frag)
+        queue.append(item)
+    return queue
+
+
 @router.get("/v1/workspaces/{workspace_id}/reviews", summary="The Mission Group's review queue")
 def review_queue(workspace_id: str, p: Principal = Depends(principal),
                  repo: Any = Depends(repository)) -> list[dict[str, Any]]:
-    """Fragments awaiting a first review, with an open review, or past their review date."""
+    """Fragments awaiting a first review, with an open review, held, or past their review date."""
     def view(engine: Any) -> list[dict[str, Any]]:
         require(engine, p, Role.reviewer, Role.admin, Role.auditor, global_auditor=True)
-        gov, now = engine.governance, clock.now_dt()
-        need = gov.policy.approvals_required(len(engine.mission_group_members))
-        queue = []
-        for frag in engine.fragments.all():
-            if frag.revocation_status != RevocationStatus.active:
-                continue
-            fid = frag.fragment_id
-            is_open = gov.review_open(fid)
-            awaiting = frag.validation_state == ValidationState.tier1_confirmed
-            due = frag.validation_state in _IN_USE and overdue(frag, now)
-            if not (is_open or awaiting or due or frag.validation_state == ValidationState.held):
-                continue
-            approvals = gov.review_approvals(fid)
-            queue.append({
-                "fragment_id": fid, "title": frag.title, "category": frag.category.value,
-                "validation_state": frag.validation_state.value,
-                "authority_layer": frag.authority_layer.value,
-                "review_open": is_open,
-                "review_task": gov.refs.get(fid, {}).get("task") if is_open else None,
-                "approvals": [{"reviewer": r, "outcome": o} for r, o in approvals.items()],
-                "approvals_required": need, "review_due_at": frag.review_due_at,
-                "overdue": due, "your_approval": approvals.get(p.uri),
-                "proposal": gov.proposals.get(fid) if is_open else None,
-            })
-        return queue
+        return review_items(engine, p)
     return repo.read(workspace_id, view)

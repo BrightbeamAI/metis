@@ -43,7 +43,10 @@ Metis governs how tacit fragments are captured, validated, and retrieved.
   on the workspace's chain. Requests run in database transactions with one writer per workspace,
   and the evidence ledger table refuses updates and deletes. Serve it over HTTPS through an
   ingress or reverse proxy, and keep the database, the API keys file, and the identity
-  provider's configuration in your secret store.
+  provider's configuration in your secret store. The web app signs people in with PKCE, keeps the
+  access token in the browser session, and builds every page from text, never from markup in
+  the data. Notifications to shared channels (Slack, Teams) carry no one's personal content, and
+  webhook deliveries are signed when a secret is set.
 
 - **The FastAPI server** (`metis.api`) is a single-user reference server. It has no
   authentication and records the identities callers supply, so run it on localhost only. Every

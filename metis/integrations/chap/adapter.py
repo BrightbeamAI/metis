@@ -376,6 +376,21 @@ class CHAPAdapter:
         self._dispatch(method, **cp)
         return _Entry(seq=self._last_seq())
 
+    def complete_task(self, task_id: str, *, sender: str, kind: str, content: Any,
+                      based_on: str | None = None) -> str:
+        """Complete ``task_id`` with an artefact of ``kind`` as its output; return the artefact id."""
+        self._ensure_member(sender)
+        artefact_id = self.coord.ids.artefact_id()
+        artefact = build_artefact(artefact_id=artefact_id, kind=kind, produced_by=sender,
+                                  produced_at=self.now_iso(), content=content, task=task_id,
+                                  based_on=based_on)
+        self._dispatch("task.complete", **{"from": sender}, task_id=task_id, output=artefact)
+        self.artefacts[artefact_id] = artefact
+        self.artefact_evidence[artefact_id] = self._last_seq()
+        if task_id in self.tasks:
+            self.tasks[task_id].setdefault("artefacts", []).append(artefact_id)
+        return artefact_id
+
     def cancel_task(self, task_id: str, *, sender: str, reason: str) -> _Entry:
         """Cancel one task, for example a review that a revocation ends."""
         self._ensure_member(sender)

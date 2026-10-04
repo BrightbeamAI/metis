@@ -1,7 +1,7 @@
 # The Metis server
 
 The Metis server runs governed tacit memory for many people and agents at once. It is the same
-engine as the toolkit, with five additions around it:
+engine as the toolkit, with these additions around it:
 
 - **Identity from sign-in.** A request acts as the identity its credentials prove: an OIDC
   access token, an API key, or a trusted proxy's headers. No request names the identity it acts
@@ -12,6 +12,9 @@ engine as the toolkit, with five additions around it:
   promotion completes when the approvals meet the review rule.
 - **Transactions.** A request commits everything it recorded (domain state, CHAP chain, evidence
   ledger) together, or nothing, and each workspace has one writer at a time.
+- **People's workflows.** An inbox and web app for workers, reviewers, and escalation handlers;
+  decisions on escalated retrievals; whisper deadlines; and notifications by email, Slack,
+  Teams, or webhook.
 - **Deployment.** PostgreSQL or SQLite storage, a container image, Docker Compose, and a Helm
   chart. See [deploy/README.md](../deploy/README.md).
 
@@ -26,7 +29,7 @@ Install it with `pip install "metis-memory[server,postgres]"` and start it with
 | `reviewer` | people | vote on reviews, open reviews, retire fragments, contest fragments, read every fragment |
 | `agent` | agents | receive governed guidance and assembled memory; list visible memory |
 | `capture` | agents, services, or people | report observations for any worker in the workspace |
-| `escalation` | people | see the retrievals the gate hands to a person |
+| `escalation` | people | see and decide the retrievals the gate hands to a person |
 | `auditor` | people or services | read fragments and the evidence chain, verify it, and export it |
 | `admin` | people | manage the workspace's members |
 
@@ -106,8 +109,93 @@ The calls below follow the pump example. Each runs as the identity its token pro
    {"context": {"equipment_family": "centrifugal_pump", "operating_mode": "high_load"}}
    ```
 
-6. **An auditor verifies the chain.** `GET /v1/workspaces/wsp_plant_a/audit/verify` replays the
+6. **A person decides an escalation.** A high-risk situation, or a near miss, opens an escalation.
+   A member with the escalation role records whether the guidance `applies`, `does_not_apply`, or
+   needs the reviewers (`refer_to_review`); the agent reads the decision from
+   `GET /v1/workspaces/wsp_plant_a/escalations/{task_id}`.
+
+   ```http
+   POST /v1/workspaces/wsp_plant_a/escalations/{task_id}/decision
+   {"outcome": "does_not_apply", "rationale": "High risk: follow SOP-17 strictly."}
+   ```
+
+7. **An auditor verifies the chain.** `GET /v1/workspaces/wsp_plant_a/audit/verify` replays the
    hash-linked chain and compares it with the evidence ledger, entry for entry.
+
+## The web app
+
+People work in the web app at `/app`. Each person sees the sections their roles call for:
+
+- **Whispers:** the questions about their own work, with the record that prompted each one. They
+  confirm or correct the account in their own words, grant or decline consent, defer, or dismiss.
+- **Reviews:** fragments awaiting their vote, with the content, conditions, evidence, and any
+  proposal under review.
+- **Escalations:** situations an agent's guidance needs a person to decide.
+- **My contributions:** the fragments they contributed and where each stands, with challenge and
+  withdraw.
+
+The app signs people in through your identity provider with the authorization code flow and PKCE.
+Register a public client whose redirect URI is `<public URL>/app`, give its tokens the API
+audience, and set `METIS_UI_CLIENT_ID`. Behind a trusted proxy the app uses the proxy's sign-in;
+with API keys configured it also accepts a key, for development.
+
+## Whisper deadlines
+
+A whisper stays open for the workspace's deadline (`METIS_WHISPER_DEADLINE_HOURS`, a week by
+default). The server's sweep (every `METIS_SWEEP_INTERVAL_SECONDS`) lapses a whisper left
+unanswered past it: CHAP records the lapse, Metis records a `whisper_lapsed` validation event, and
+nothing is stored. `metis server sweep` runs the same pass from a scheduler.
+
+## Notifications
+
+People and systems hear about what concerns them. Each notification is planned inside the
+transaction that recorded the change, kept in an outbox, and delivered in the background, with
+retries; `metis server outbox list` shows them.
+
+| Event | Who hears |
+| --- | --- |
+| `whisper.asked` | the worker asked |
+| `whisper.lapsed` | the capture source that reported the observation |
+| `review.requested`, `review.approval` | the reviewers whose vote is outstanding |
+| `review.decided` | the contributing worker and the reviewers |
+| `escalation.opened` | members with the escalation role |
+| `escalation.decided` | the agent that asked, and the other escalation handlers |
+| `fragment.contested`, `fragment.revoked` | the reviewers and the contributing worker |
+| `fragment.review_due` | the reviewers, once per review date |
+| `member.changed` | the member whose roles changed |
+
+Channels:
+
+- **Email** sends one message per person and may include that person's own content, such as the
+  question a whisper asks them.
+- **Slack** and **Microsoft Teams** post to a shared channel, so they carry only events with no
+  one's personal content.
+- **Webhooks** receive every event as JSON, signed with HMAC-SHA256 in `X-Metis-Signature` when a
+  secret is set.
+
+Configure channels with `METIS_SMTP_HOST` (and `METIS_SMTP_PORT`, `METIS_SMTP_USERNAME`,
+`METIS_SMTP_PASSWORD`, `METIS_SMTP_FROM`), `METIS_NOTIFY_SLACK_WEBHOOK_URL`,
+`METIS_NOTIFY_TEAMS_WEBHOOK_URL`, or `METIS_NOTIFY_WEBHOOK_URL` with
+`METIS_NOTIFY_WEBHOOK_SECRET`. For several channels, or to limit a channel to some events or
+workspaces, name a file in `METIS_NOTIFICATIONS_FILE`:
+
+```yaml
+public_url: https://metis.example.com
+channels:
+  - name: email
+    type: email
+    smtp: {host: smtp.example.com, port: 587, username: metis,
+           password_env: METIS_SMTP_PASSWORD, from: metis@example.com}
+  - name: plant-a-quality
+    type: teams
+    webhook_url_env: PLANT_A_TEAMS_WEBHOOK
+    workspaces: [wsp_plant_a]
+  - name: integrations
+    type: webhook
+    url: https://hooks.example.com/metis
+    secret_env: METIS_WEBHOOK_SECRET
+    events: [review.decided, escalation.opened, escalation.decided]
+```
 
 ## API
 
@@ -115,6 +203,8 @@ The calls below follow the pump example. Each runs as the identity its token pro
 | --- | --- |
 | `GET /healthz`, `GET /readyz` | anyone |
 | `GET /v1/me` | anyone signed in |
+| `GET /v1/me/inbox` | anyone signed in: their whispers, reviews, escalations, and contributions |
+| `GET /app` | the web app; it signs people in itself |
 | `GET /v1/workspaces` | anyone signed in: their workspaces, or every workspace for a global auditor or admin |
 | `POST /v1/workspaces` | global admin |
 | `GET /v1/workspaces/{id}` | members, global auditor |
@@ -133,6 +223,8 @@ The calls below follow the pump example. Each runs as the identity its token pro
 | `POST /v1/workspaces/{id}/retrieve`, `.../agent-context` | agent |
 | `GET /v1/workspaces/{id}/memory` | agent, reviewer, auditor, admin |
 | `GET /v1/workspaces/{id}/escalations` | escalation, reviewer, auditor, admin |
+| `GET /v1/workspaces/{id}/escalations/{task}` | escalation, reviewer, auditor, admin; the agent that asked |
+| `POST /v1/workspaces/{id}/escalations/{task}/decision` | escalation |
 | `GET /v1/workspaces/{id}/audit`, `.../audit/verify`, `.../audit/export` | auditor, admin |
 
 Responses use standard status codes: 401 without valid credentials, 403 when the caller's roles
@@ -142,10 +234,10 @@ for invalid input.
 
 ## Storage and consistency
 
-The SQL repository keeps four tables: `metis_workspaces` (each workspace's domain state and a
+The SQL repository keeps five tables: `metis_workspaces` (each workspace's domain state and a
 version counter), `chap_workspaces` (the CHAP snapshot, in CHAP's own store schema),
 `metis_evidence_ledger` (one row per evidence entry, append-only, enforced by database
-triggers), and `metis_schema`.
+triggers), `metis_outbox` (notifications awaiting delivery), and `metis_schema`.
 
 A write runs inside one transaction. Within a process, a lock serialises each workspace's
 writers; across processes, a PostgreSQL advisory lock does; and a version check on save refuses

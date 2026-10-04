@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metis</title>
+<style>
+  :root {
+    --ink: #282829; --muted: #6b6b6e; --line: #e2ded9; --paper: #f7f4f2; --card: #ffffff;
+    --accent: #ea4700; --accent-soft: #fff0e5; --ok: #238047; --ok-soft: #ebf7ef;
+    --warn: #9a5b00; --warn-soft: #fff6e0; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 18px 28px;
+           background: var(--card); border-bottom: 1px solid var(--line); }
+  .mark { display: grid; gap: 4px; }
+  .mark span { display: block; width: 26px; height: 4px; background: var(--accent); border-radius: 2px; }
+  .brand { font-size: 22px; font-weight: 600; letter-spacing: -0.2px; }
+  .who { margin-left: auto; color: var(--muted); font-size: 15px; text-align: right; }
+  main { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  nav button { border: 1px solid var(--line); background: var(--card); color: var(--ink);
+               padding: 9px 16px; border-radius: 999px; font-size: 16px; cursor: pointer; }
+  nav button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  nav .count { display: inline-block; min-width: 22px; margin-left: 6px; padding: 0 7px;
+               border-radius: 999px; background: var(--accent); color: #fff; font-size: 13px; }
+  h1 { font-size: 30px; margin: 4px 0 6px; letter-spacing: -0.4px; }
+  .lead { color: var(--muted); margin: 0 0 22px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 22px 24px; margin-bottom: 18px; }
+  .where { font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted);
+           font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .question { font-size: 22px; font-weight: 600; margin: 8px 0 12px; }
+  .quote { border-left: 4px solid var(--accent); background: var(--accent-soft);
+           padding: 10px 14px; border-radius: 0 10px 10px 0; margin: 10px 0; }
+  .muted { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .chip { font-size: 14px; padding: 3px 10px; border-radius: 999px; background: var(--paper);
+          border: 1px solid var(--line); }
+  .badge { font-size: 13px; padding: 2px 9px; border-radius: 999px; font-weight: 600; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.accent { background: var(--accent-soft); color: var(--accent); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+  button.primary, button.secondary, button.danger {
+    font-size: 16px; padding: 10px 18px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
+  button.primary { background: var(--accent); color: #fff; }
+  button.secondary { background: var(--card); color: var(--ink); border-color: var(--line); }
+  button.danger { background: #fff; color: #a3200b; border-color: #f0c9c1; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid #ffb27d; outline-offset: 2px; }
+  textarea, input[type=text], input[type=password] { width: 100%; font: inherit; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  label { display: block; font-size: 15px; margin: 12px 0 4px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; font-size: 16px; }
+  .check input { width: 20px; height: 20px; margin-top: 3px; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .signin { max-width: 520px; margin: 60px auto; text-align: center; }
+  .error { color: #a3200b; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink);
+           color: #fff; padding: 12px 18px; border-radius: 10px; opacity: 0; transition: opacity 0.2s; }
+  #toast.show { opacity: 1; }
+  details summary { cursor: pointer; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="mark" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="brand">Metis</div>
+  <div class="who" id="who"></div>
+</header>
+<main id="main"><p class="muted">Loading…</p></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+const state = { config: null, token: null, apiKey: null, me: null, inbox: null, tab: null };
+const main = document.getElementById("main");
+
+// ---- small DOM helpers: every piece of data goes in as text, never as markup ----
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (value === null || value === undefined || value === false) continue;
+    if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else if (key === "class") node.className = value;
+    else node.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat()) {
+    if (child === null || child === undefined || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+function toast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text; t.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+const plain = (value) => String(value || "").replace(/_/g, " ");
+const person = (uri) => String(uri || "").startsWith("human:") ? uri.slice(6) : String(uri || "");
+
+// ---- sign-in -------------------------------------------------------------------
+function b64url(bytes) {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function randomString(n) { return b64url(crypto.getRandomValues(new Uint8Array(n))); }
+async function discover() {
+  const oidc = state.config.oidc;
+  if (!oidc.authorization_endpoint) {
+    const response = await fetch(oidc.issuer.replace(/\/$/, "") + "/.well-known/openid-configuration");
+    if (!response.ok) throw new Error("The identity provider could not be reached.");
+    const doc = await response.json();
+    Object.assign(oidc, { authorization_endpoint: doc.authorization_endpoint,
+      token_endpoint: doc.token_endpoint, end_session_endpoint: doc.end_session_endpoint });
+  }
+  return oidc;
+}
+async function signInWithProvider() {
+  const oidc = await discover();
+  const verifier = randomString(48);
+  const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+  const st = randomString(16);
+  sessionStorage.setItem("metis.pkce", JSON.stringify({ verifier, state: st }));
+  const url = new URL(oidc.authorization_endpoint);
+  url.search = new URLSearchParams({ response_type: "code", client_id: oidc.client_id,
+    redirect_uri: location.origin + location.pathname, scope: oidc.scopes, state: st,
+    code_challenge: challenge, code_challenge_method: "S256" }).toString();
+  location.assign(url.toString());
+}
+async function finishProviderSignIn(params) {
+  const saved = JSON.parse(sessionStorage.getItem("metis.pkce") || "null");
+  sessionStorage.removeItem("metis.pkce");
+  history.replaceState(null, "", location.pathname);
+  if (!saved || saved.state !== params.get("state")) throw new Error("The sign-in response did not match; sign in again.");
+  const oidc = await discover();
+  const response = await fetch(oidc.token_endpoint, { method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "authorization_code", code: params.get("code"),
+      redirect_uri: location.origin + location.pathname, client_id: oidc.client_id,
+      code_verifier: saved.verifier }) });
+  if (!response.ok) throw new Error("The identity provider refused the sign-in.");
+  const tokens = await response.json();
+  state.token = tokens.access_token;
+  sessionStorage.setItem("metis.token", state.token);
+}
+async function signOut() {
+  sessionStorage.removeItem("metis.token"); sessionStorage.removeItem("metis.key");
+  state.token = state.apiKey = null;
+  let end = null;
+  try { end = state.config && state.config.oidc && (await discover()).end_session_endpoint; } catch (x) { end = null; }
+  if (end && state.config.oidc.client_id) {
+    const url = new URL(end);
+    url.search = new URLSearchParams({ client_id: state.config.oidc.client_id,
+      post_logout_redirect_uri: location.origin + location.pathname }).toString();
+    location.assign(url.toString());
+  } else { location.reload(); }
+}
+
+// ---- API -------------------------------------------------------------------------
+async function api(path, options = {}) {
+  const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+  if (state.token) headers.Authorization = "Bearer " + state.token;
+  else if (state.apiKey) headers.Authorization = "Bearer " + state.apiKey;
+  const response = await fetch(path, Object.assign({}, options, { headers, credentials: "same-origin" }));
+  if (response.status === 401) { const error = new Error("Sign in again."); error.status = 401; throw error; }
+  const body = response.headers.get("content-type")?.includes("json") ? await response.json() : null;
+  if (!response.ok) throw new Error((body && body.detail) || ("The server answered " + response.status));
+  return body;
+}
+const post = (path, body) => api(path, { method: "POST", body: JSON.stringify(body || {}) });
+
+// ---- views -------------------------------------------------------------------------
+function renderSignIn(message) {
+  main.replaceChildren();
+  const box = el("div", { class: "signin card" }, el("h1", {}, "Sign in to Metis"));
+  if (message) box.append(el("p", { class: "error" }, message));
+  const oidc = state.config && state.config.oidc;
+  if (oidc) {
+    box.append(el("p", { class: "muted" }, "Use your organisation's account."),
+      el("button", { class: "primary", onclick: () => signInWithProvider() }, "Sign in"));
+  }
+  if (state.config && state.config.api_keys) {
+    const input = el("input", { type: "password", id: "key", autocomplete: "off",
+                                placeholder: "metis_…" });
+    box.append(el("details", { open: !oidc },
+      el("summary", {}, "Sign in with an API key"),
+      el("label", { for: "key" }, "API key"), input,
+      el("div", { class: "actions" }, el("button", { class: "secondary", onclick: async () => {
+        state.apiKey = input.value.trim(); sessionStorage.setItem("metis.key", state.apiKey);
+        await start();
+      } }, "Continue"))));
+  }
+  if (!box.querySelector("button")) box.append(el("p", { class: "muted" },
+    "This server signs people in through its proxy or identity provider. Ask your administrator."));
+  main.append(box);
+}
+
+const TABS = [["whispers", "Whispers"], ["reviews", "Reviews"], ["escalations", "Escalations"],
+              ["contributions", "My contributions"]];
+function pickTab() {
+  // Open on the first section with something waiting.
+  if (!state.tab) state.tab = (TABS.find(([key]) => key !== "contributions" && state.inbox[key].length) || TABS[0])[0];
+}
+function tabs() {
+  const inbox = state.inbox;
+  return el("nav", { "aria-label": "Inbox" }, TABS.map(([key, label]) => {
+    const count = key === "contributions" ? null : inbox[key].length;
+    return el("button", { "aria-pressed": String(state.tab === key),
+      onclick: () => { state.tab = key; render(); } }, label,
+      count ? el("span", { class: "count" }, count) : null);
+  }));
+}
+
+const shown = (value) => Array.isArray(value) ? value.length > 0
+  : value !== null && value !== undefined && value !== "" && typeof value !== "object";
+function chipsFor(record) {
+  const chips = Object.entries(record || {}).filter(([, value]) => shown(value))
+    .map(([key, value]) => el("span", { class: "chip" }, plain(key) + ": " + (Array.isArray(value) ? value.map(plain).join(", ") : plain(value))));
+  return chips.length ? el("div", { class: "chips" }, chips) : null;
+}
+const conditions = (fragment) => chipsFor(fragment.conditions);
+
+function whisperCard(w) {
+  const consent = el("input", { type: "checkbox", id: "c-" + w.whisper_id });
+  const correction = el("textarea", { rows: 3, placeholder: "Describe it in your own words" });
+  const correctBox = el("div", { hidden: true }, el("label", {}, "Your account"), correction);
+  const answer = async (response) => {
+    if ((response === "confirm" || response === "correct") && !consent.checked) {
+      toast("Tick the consent box to keep your account, or choose Dismiss."); return;
+    }
+    if (response === "correct" && !correction.value.trim()) { correctBox.hidden = false; correction.focus(); return; }
+    await post(`/v1/workspaces/${w.workspace.id}/whispers/${w.whisper_id}/answer`, {
+      response, consent: consent.checked ? "granted" : "declined",
+      corrected_text: response === "correct" ? correction.value.trim() : null });
+    toast(response === "confirm" || response === "correct" ? "Thank you. Your account is kept for review." : "Your answer is recorded.");
+    await refresh();
+  };
+  return el("article", { class: "card" },
+    el("div", { class: "where" }, w.workspace.name),
+    el("div", { class: "question" }, w.question),
+    el("div", { class: "quote" }, el("strong", {}, "What the record shows: "), w.observation),
+    w.work_as_imagined ? el("p", { class: "muted" }, "The procedure says: " + w.work_as_imagined) : null,
+    el("p", { class: "muted" }, "Metis's guess, for you to confirm or correct: " + w.candidate.hypothesis),
+    correctBox,
+    el("label", { class: "check" }, consent,
+      el("span", {}, "I agree that my account is kept and reviewed. I can withdraw it at any time.")),
+    el("div", { class: "actions" },
+      el("button", { class: "primary", onclick: () => answer("confirm").catch(e => toast(e.message)) }, "That's right"),
+      el("button", { class: "secondary", onclick: () => { correctBox.hidden = false; answer("correct").catch(e => toast(e.message)); } }, "Correct it"),
+      el("button", { class: "secondary", onclick: () => answer("defer").catch(e => toast(e.message)) }, "Later"),
+      el("button", { class: "secondary", onclick: () => answer("dismiss").catch(e => toast(e.message)) }, "Not relevant")),
+    w.deadline_at ? el("p", { class: "muted" }, "Open until " + new Date(w.deadline_at).toLocaleString()) : null);
+}
+
+function reviewCard(r) {
+  const f = r.fragment || {};
+  const summary = el("textarea", { rows: 2, placeholder: "Your reasons, in a sentence" });
+  const constraints = el("textarea", { rows: 3, placeholder: "One use constraint per line" });
+  const base = `/v1/workspaces/${r.workspace.id}/fragments/${r.fragment_id}/votes`;
+  const vote = async (outcome, extra = {}) => {
+    if (["held", "rejected", "re_elicit"].includes(outcome) && !summary.value.trim()) { toast("Give a reason."); summary.focus(); return; }
+    const result = await post(base, Object.assign({ outcome, summary: summary.value.trim() }, extra));
+    toast(result.status === "pending" ? `Approval recorded: ${result.approvals.length} of ${result.required}.` : "The review is decided: " + plain(result.validation_state) + ".");
+    await refresh();
+  };
+  const proposal = r.proposal;
+  const approve = proposal
+    ? el("button", { class: "primary", onclick: () => vote(proposal.outcome).catch(e => toast(e.message)) }, "Approve as proposed")
+    : el("button", { class: "primary", onclick: () => {
+        const lines = constraints.value.split("\n").map(line => line.trim()).filter(Boolean);
+        vote("promoted_to_advisory", { use_constraints: lines.length ? lines : null }).catch(e => toast(e.message));
+      } }, "Approve as advisory");
+  return el("article", { class: "card" },
+    el("div", { class: "where" }, r.workspace.name + " · " + r.fragment_id + " · " + plain(r.category)),
+    el("div", { class: "question" }, r.title || "Untitled fragment"),
+    el("div", { class: "quote" }, f.content || ""),
+    conditions(f),
+    el("div", { class: "chips" },
+      el("span", { class: "badge accent" }, plain(r.validation_state)),
+      r.overdue ? el("span", { class: "badge warn" }, "past its review date") : null,
+      el("span", { class: "chip" }, `${r.approvals.length} of ${r.approvals_required} approvals`),
+      f.evidence ? el("span", { class: "chip" }, `evidence: ${plain(f.evidence.evidence_strength)}, ${f.evidence.recurrence_count} cases`) : null),
+    proposal ? el("div", { class: "card", style: "background:var(--paper)" },
+      el("strong", {}, "Proposed by " + person(proposal.proposed_by) + ": " + plain(proposal.outcome)),
+      (proposal.use_constraints || []).length ? el("ul", {}, proposal.use_constraints.map(c => el("li", {}, c))) : el("p", { class: "muted" }, "With the default use constraints.")) : null,
+    proposal ? null : el("div", {}, el("label", {}, "Use constraints that travel with it (optional)"), constraints),
+    el("label", {}, "Reasons"), summary,
+    el("div", { class: "actions" }, approve,
+      el("button", { class: "secondary", onclick: () => vote("held").catch(e => toast(e.message)) }, "Hold"),
+      el("button", { class: "secondary", onclick: () => vote("re_elicit").catch(e => toast(e.message)) }, "Send back to the worker"),
+      el("button", { class: "danger", onclick: () => vote("rejected").catch(e => toast(e.message)) }, "Reject")));
+}
+
+function escalationCard(e) {
+  const rationale = el("textarea", { rows: 2, placeholder: "Why, in a sentence the agent's user can act on" });
+  const decide = async (outcome) => {
+    if (!rationale.value.trim()) { toast("Give a reason."); rationale.focus(); return; }
+    await post(`/v1/workspaces/${e.workspace.id}/escalations/${e.task_id}/decision`,
+               { outcome, rationale: rationale.value.trim() });
+    toast("Decision recorded."); await refresh();
+  };
+  const context = chipsFor(e.runtime_context);
+  return el("article", { class: "card" },
+    el("div", { class: "where" }, e.workspace.name + " · " + e.task_id),
+    el("div", { class: "question" }, "Does this guidance apply here?"),
+    el("p", { class: "muted" }, "Asked by " + e.requested_by),
+    context,
+    el("ul", {}, (e.fragments || []).map(f => el("li", {}, f.fragment_id + ": " + plain(f.reason) + (f.detail ? " (" + f.detail + ")" : "")))),
+    el("label", {}, "Reasons"), rationale,
+    el("div", { class: "actions" },
+      el("button", { class: "primary", onclick: () => decide("applies").catch(x => toast(x.message)) }, "It applies"),
+      el("button", { class: "secondary", onclick: () => decide("does_not_apply").catch(x => toast(x.message)) }, "It does not apply"),
+      el("button", { class: "secondary", onclick: () => decide("refer_to_review").catch(x => toast(x.message)) }, "Ask the reviewers")));
+}
+
+function contributionCard(c) {
+  const base = `/v1/workspaces/${c.workspace.id}/fragments/${c.fragment_id}`;
+  const active = c.revocation_status === "active";
+  const reason = el("textarea", { rows: 2, placeholder: "What should change, and why" });
+  const contestBox = el("div", { hidden: true }, el("label", {}, "Your challenge"), reason,
+    el("div", { class: "actions" }, el("button", { class: "primary", onclick: async () => {
+      if (!reason.value.trim()) { reason.focus(); return; }
+      try { await post(base + "/contest", { action: "challenge", rationale: reason.value.trim() });
+            toast("Sent to the reviewers."); await refresh(); } catch (x) { toast(x.message); }
+    } }, "Send")));
+  return el("article", { class: "card" },
+    el("div", { class: "where" }, c.workspace.name + " · " + c.fragment_id),
+    el("div", { class: "question" }, c.title || "Untitled fragment"),
+    el("div", { class: "quote" }, c.content),
+    el("div", { class: "chips" },
+      el("span", { class: active ? "badge ok" : "badge warn" }, plain(active ? c.validation_state : c.revocation_status)),
+      el("span", { class: "chip" }, "layer: " + c.authority_layer),
+      c.review_open ? el("span", { class: "chip" }, "under review") : null),
+    active ? el("div", { class: "actions" },
+      el("button", { class: "secondary", onclick: () => { contestBox.hidden = false; reason.focus(); } }, "Challenge it"),
+      el("button", { class: "danger", onclick: async () => {
+        if (!confirm("Withdraw your consent? Agents stop receiving this fragment, and the record of it stays on the evidence chain.")) return;
+        try { await post(base + "/withdraw", {}); toast("Consent withdrawn."); await refresh(); } catch (x) { toast(x.message); }
+      } }, "Withdraw consent")) : null,
+    contestBox);
+}
+
+const VIEWS = {
+  whispers: { title: "Whispers for you", lead: "Short questions about your own work. Answer in your own words.", card: whisperCard,
+              empty: "No questions are waiting for you." },
+  reviews: { title: "Reviews", lead: "Fragments awaiting your decision as a reviewer.", card: reviewCard,
+             empty: "Nothing awaits your review." },
+  escalations: { title: "Escalations", lead: "Situations where an agent's guidance needs a person's decision.", card: escalationCard,
+                 empty: "No escalations are open." },
+  contributions: { title: "My contributions", lead: "The accounts you contributed, and where they stand.", card: contributionCard,
+                   empty: "You have not contributed any fragments yet." },
+};
+
+function render() {
+  pickTab();
+  const view = VIEWS[state.tab] ? VIEWS[state.tab] : VIEWS.whispers;
+  const items = state.inbox[state.tab] || [];
+  main.replaceChildren(tabs(), el("h1", {}, view.title), el("p", { class: "lead" }, view.lead),
+    items.length ? el("div", {}, items.map(view.card)) : el("div", { class: "card empty" }, view.empty));
+}
+
+async function refresh() {
+  state.inbox = await api("/v1/me/inbox");
+  render();
+}
+
+async function start() {
+  try {
+    state.me = await api("/v1/me");
+  } catch (error) {
+    if (error.status === 401) { state.token = state.apiKey = null; sessionStorage.removeItem("metis.token"); sessionStorage.removeItem("metis.key"); return renderSignIn(); }
+    return renderSignIn(error.message);
+  }
+  document.getElementById("who").replaceChildren(
+    el("div", {}, state.me.display_name || state.me.uri),
+    el("button", { class: "secondary", style: "margin-top:6px;padding:4px 10px;font-size:14px", onclick: signOut }, "Sign out"));
+  await refresh();
+}
+
+(async function boot() {
+  try {
+    state.config = await (await fetch("/app/config")).json();
+    const params = new URLSearchParams(location.search);
+    if (params.get("code") && state.config.oidc) await finishProviderSignIn(params);
+    state.token = state.token || sessionStorage.getItem("metis.token");
+    state.apiKey = sessionStorage.getItem("metis.key");
+    await start();
+  } catch (error) {
+    renderSignIn(error.message);
+  }
+})();
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ import logging
 import re
 import time
 import uuid
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request, Response
@@ -95,16 +96,40 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
     settings = settings or ServerSettings.from_env()
     auth = authenticator or settings.authenticator()
     if repository is None:
+        from ..notify import Notifier, load_channels
         from ..storage.sql import SqlRepository
 
+        channels, public_url = load_channels()
         repository = SqlRepository(
             settings.database_url, cache_size=settings.engine_cache_size,
-            engine_options={"use_live_model": settings.use_live_model})
+            engine_options={"use_live_model": settings.use_live_model},
+            notifier=Notifier(channels, public_url=public_url or settings.public_url))
 
-    app = FastAPI(title="Metis", version=__version__, description=DESCRIPTION)
+    from ..notify import Dispatcher
+    from .background import Sweeper
+
+    notifier = getattr(repository, "notifier", None)
+    dispatcher = Dispatcher(repository, notifier.channels) if notifier is not None else None
+    sweeper = Sweeper(repository)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> Any:
+        if dispatcher is not None:
+            dispatcher.start(settings.dispatch_interval_seconds)
+        sweeper.start(settings.sweep_interval_seconds)
+        try:
+            yield
+        finally:
+            sweeper.stop()
+            if dispatcher is not None:
+                dispatcher.stop()
+
+    app = FastAPI(title="Metis", version=__version__, description=DESCRIPTION, lifespan=lifespan)
     app.state.settings = settings
     app.state.repo = repository
     app.state.auth = auth
+    app.state.dispatcher = dispatcher
+    app.state.sweeper = sweeper
 
     if settings.cors_origins:
         from fastapi.middleware.cors import CORSMiddleware

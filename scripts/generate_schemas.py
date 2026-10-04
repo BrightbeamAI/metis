@@ -25,6 +25,7 @@ from metis.memory.agent_context import AgentMemoryContext
 from metis.memory.tacit import TacitMemoryObject
 from metis.models.structured_outputs import ModelAssistRecord
 from metis.retrieval.decision import RetrievalDecision
+from metis.retrieval.escalation import EscalationDecision
 from metis.validation.events import ValidationEvent
 from metis.validation.promotion import PromotionRecord
 from metis.validation.tier2 import MissionGroupReview
@@ -33,6 +34,7 @@ BASE = "https://metis.dev/schemas/0.1"
 SCHEMAS = {
     "tacit_agent_memory_context": AgentMemoryContext,
     "tacit_consent_record": ConsentRecord,
+    "tacit_escalation_decision": EscalationDecision,
     "tacit_context": TacitContext,
     "tacit_fragment": TacitFragment,
     "tacit_membership_record": MembershipRecord,

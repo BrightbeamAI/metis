@@ -25,13 +25,18 @@ loop: a maintenance-system connector reports what a worker did differently, the 
 the account and grants consent, two reviewers promote it, an agent receives it as guidance, and
 an auditor verifies the evidence chain.
 
-The stack exposes three services on `127.0.0.1`:
+The stack exposes these services on `127.0.0.1`:
 
 | Service | Address | Notes |
 | --- | --- | --- |
-| Metis | http://localhost:8000/docs | The interactive API reference |
+| Metis web app | http://localhost:8000/app | Sign in as one of the people below |
+| Metis API | http://localhost:8000/docs | The interactive API reference |
+| Mailpit | http://localhost:8025 | The notification emails Metis sends |
 | Keycloak | http://localhost:8080 | Realm `metis`; console user `admin`, password `admin-dev-only` |
 | PostgreSQL | localhost:5432 | Database `metis`, user `metis`, password `metis-dev-only` |
+
+After `try-it.sh`, sign in to the web app as `wendy` or `rhea` to see the inbox, and open Mailpit
+to read the notifications each step sent.
 
 The `metis` realm has five people, each with the password `<name>-dev-only`: `ana` (global
 admin), `wendy`, `rhea`, `raj`, and `audrey` (global auditor). Workspace roles come from each
@@ -80,9 +85,13 @@ These credentials are for a local machine only. Remove the stack and its data wi
    serves HTTPS and applies your rate limits. To let the proxy sign people in instead (for
    example oauth2-proxy), set `METIS_TRUSTED_PROXY_SECRET` to a secret the proxy sends in
    `X-Metis-Proxy-Secret`.
-6. **Back up the database.** It holds every workspace's domain state, CHAP chain, and evidence
+6. **Set up the web app and notifications.** Register a public client for the web app with the
+   redirect URI `<public URL>/app` and the API audience, then set `METIS_UI_CLIENT_ID` and
+   `METIS_PUBLIC_URL`. Configure email, Slack, Teams, or webhooks as the
+   [server guide](../docs/server.md#notifications) describes.
+7. **Back up the database.** It holds every workspace's domain state, CHAP chain, and evidence
    ledger. The ledger table refuses updates and deletes, so recorded history stays as recorded.
-7. **Partition busy workspaces.** Each write stores the workspace's full CHAP snapshot, so its
+8. **Partition busy workspaces.** Each write stores the workspace's full CHAP snapshot, so its
    cost grows with the length of the chain. A workspace per site, line, or team keeps chains to
    a size that writes in milliseconds.
 
@@ -108,6 +117,15 @@ Every setting is an environment variable.
 | `METIS_WHISPER_DEADLINE_HOURS` | `168` | How long a worker has to answer a whisper, for new workspaces |
 | `METIS_USE_LIVE_MODEL` | `false` | Use the configured local model (Ollama) for drafting |
 | `METIS_ENGINE_CACHE_SIZE` | `64` | Workspaces kept in memory between requests |
+| `METIS_PUBLIC_URL` | | The address people use; notifications link to its web app |
+| `METIS_UI_CLIENT_ID` | | The public OIDC client the web app signs people in with |
+| `METIS_UI_SCOPES` | `openid profile email` | The scopes the web app asks for |
+| `METIS_NOTIFICATIONS_FILE` | | Notification channels; see the server guide |
+| `METIS_SMTP_HOST`, `METIS_SMTP_PORT`, `METIS_SMTP_USERNAME`, `METIS_SMTP_PASSWORD`, `METIS_SMTP_FROM`, `METIS_SMTP_STARTTLS` | | An email channel |
+| `METIS_NOTIFY_SLACK_WEBHOOK_URL`, `METIS_NOTIFY_TEAMS_WEBHOOK_URL` | | A Slack or Teams channel |
+| `METIS_NOTIFY_WEBHOOK_URL`, `METIS_NOTIFY_WEBHOOK_SECRET` | | A signed webhook channel |
+| `METIS_SWEEP_INTERVAL_SECONDS` | `300` | How often whisper deadlines and review dates are checked; `0` turns it off |
+| `METIS_DISPATCH_INTERVAL_SECONDS` | `5` | How often queued notifications are delivered; `0` turns it off |
 | `METIS_LOG_LEVEL` | `info` | Server log level |
 
 ## Kubernetes

@@ -16,9 +16,11 @@ server_app = typer.Typer(help="Run and administer the multi-user Metis server.",
 workspace_cmds = typer.Typer(help="Create and list server workspaces.", no_args_is_help=True)
 member_cmds = typer.Typer(help="Manage workspace members.", no_args_is_help=True)
 key_cmds = typer.Typer(help="Issue and revoke API keys.", no_args_is_help=True)
+outbox_cmds = typer.Typer(help="Inspect and deliver queued notifications.", no_args_is_help=True)
 server_app.add_typer(workspace_cmds, name="workspace")
 server_app.add_typer(member_cmds, name="member")
 server_app.add_typer(key_cmds, name="api-key")
+server_app.add_typer(outbox_cmds, name="outbox")
 
 CLI_ACTOR = "service:metis-cli"
 
@@ -33,11 +35,16 @@ def _need_server_extra() -> None:
 
 
 def _repository():
+    """The server's repository, with the same notification channels as the server."""
     _need_server_extra()
+    from ...notify import Notifier, load_channels
     from ...server.settings import ServerSettings
     from ...storage.sql import SqlRepository
 
-    return SqlRepository(ServerSettings.from_env().database_url)
+    settings = ServerSettings.from_env()
+    channels, public_url = load_channels()
+    return SqlRepository(settings.database_url,
+                         notifier=Notifier(channels, public_url=public_url or settings.public_url))
 
 
 def _keys_file(path: str | None) -> str:
@@ -180,3 +187,37 @@ def key_revoke(
         raise typer.Exit(code=1)
     ApiKeyAuthenticator.write_file(path, kept)
     typer.echo(f"revoked {key_id}")
+
+
+@server_app.command("sweep")
+def sweep_cmd() -> None:
+    """Lapse whispers past their deadline and queue review-date notices, once. Run it from a
+    scheduler when the server's own sweep is off (METIS_SWEEP_INTERVAL_SECONDS=0)."""
+    from ...server.background import sweep
+
+    typer.echo(json.dumps(sweep(_repository())))
+
+
+@outbox_cmds.command("list")
+def outbox_list(
+    status: str = typer.Option(None, help="pending, sending, delivered, or failed."),
+    limit: int = typer.Option(50, help="How many rows, newest first."),
+) -> None:
+    """List queued notifications."""
+    for row in _repository().outbox(status=status, limit=limit):
+        error = f"  error: {row['last_error']}" if row["last_error"] else ""
+        typer.echo(f"{row['id']}  {row['status']:<9} {row['event']:<20} {row['channel']}"
+                   f"{'  to ' + row['recipient'] if row['recipient'] else ''}"
+                   f"  attempts={row['attempts']}{error}")
+
+
+@outbox_cmds.command("deliver")
+def outbox_deliver() -> None:
+    """Deliver every notification that is due, once."""
+    from ...notify import Dispatcher
+
+    repo = _repository()
+    if repo.notifier is None:
+        typer.secho("No notification channels are configured.", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(json.dumps(Dispatcher(repo, repo.notifier.channels).run_once()))

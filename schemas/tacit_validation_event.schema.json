@@ -5,6 +5,7 @@
       "enum": [
         "whisper_deferred",
         "consent_declined",
+        "whisper_lapsed",
         "contestability"
       ],
       "title": "Event",
