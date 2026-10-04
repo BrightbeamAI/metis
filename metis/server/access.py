@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..governance.lifecycle import contributed
 from ..governance.membership import Role
 from ..identity import Principal
 
@@ -44,14 +45,43 @@ def require_member(engine: Any, principal: Principal) -> set[Role]:
     raise Forbidden(f"{principal.uri} is not a member of {engine.adapter.workspace_id}.")
 
 
-def contributed(fragment: Any, uri: str) -> bool:
-    """True when ``uri`` is the worker who contributed ``fragment``."""
-    p = fragment.provenance
-    return uri in {p.originating_participant, p.observed_by, p.human_confirmed_by,
-                   fragment.attribution.worker_or_group} - {None}
 
 
 def can_read_fragment(engine: Any, principal: Principal, fragment: Any) -> bool:
     if roles_in(engine, principal) & FRAGMENT_READERS or principal.is_auditor:
         return True
     return contributed(fragment, principal.uri)
+
+
+class ScopedRepository:
+    """The workspace repository as one signed-in caller sees it.
+
+    A workspace the caller has never been a member of looks exactly like one that does not
+    exist, and is never loaded for them; a former member can still open it (a worker who left
+    may withdraw consent for what they contributed). Global admins and auditors see every
+    workspace. Everything else passes through to the repository.
+    """
+
+    def __init__(self, repo: Any, principal: Principal) -> None:
+        self._repo = repo
+        self.principal = principal
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._repo, name)
+
+    def _visible(self, workspace_id: str) -> None:
+        p = self.principal
+        if p.is_admin or p.is_auditor:
+            return
+        if self._repo.member_roles(workspace_id, p.uri) is None:
+            from ..storage.repository import UnknownWorkspace
+
+            raise UnknownWorkspace(workspace_id)
+
+    def read(self, workspace_id: str, fn: Any) -> Any:
+        self._visible(workspace_id)
+        return self._repo.read(workspace_id, fn)
+
+    def write(self, workspace_id: str, fn: Any, **kwargs: Any) -> Any:
+        self._visible(workspace_id)
+        return self._repo.write(workspace_id, fn, **kwargs)

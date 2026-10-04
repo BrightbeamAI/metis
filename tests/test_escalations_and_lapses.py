@@ -95,3 +95,39 @@ def test_an_unanswered_whisper_lapses_at_its_deadline():
     with pytest.raises(KeyError):
         eng.answer_whisper(pending.whisper_id, response="confirm", answered_by=WORKER)
     assert eng.lapse_whispers(later) == [] and eng.verify().ok
+
+
+def test_an_open_escalation_is_reused_and_a_decision_holds_for_the_same_situation():
+    eng = _engine(escalation_grant_hours=12)
+    fid = _promoted(eng)
+    first = eng.retrieve(RISKY, requester=AGENT)
+    again = eng.retrieve(RISKY, requester=AGENT)
+    assert first.escalation_task_id == again.escalation_task_id
+    assert len(eng.escalation_tasks()) == 1  # one person, asked once
+    eng.decide_escalation(first.escalation_task_id, "applies", by=R2, rationale="Low flow.")
+    granted = eng.retrieve(RISKY, requester=AGENT)
+    assert [e.fragment_id for e in granted.eligible] == [fid]
+    assert granted.escalation_decisions == {fid: first.escalation_task_id}
+    assert granted.escalation_task_id is None and granted.required_human_actions == []
+    recorded = eng.adapter.artefacts_of_kind("tacit.retrieval_decision")[-1]["content"]
+    assert recorded["escalation_decisions"] == {fid: first.escalation_task_id}
+    other = eng.retrieve(RISKY, requester="agent:another")  # another requester asks afresh
+    assert other.escalation_task_id not in (None, first.escalation_task_id)
+    now = dt.datetime.now(dt.timezone.utc)
+    situation = granted.runtime_context
+    assert eng.escalations.decided(AGENT, situation, now + dt.timedelta(hours=11)).applies \
+        == {fid: first.escalation_task_id}
+    assert eng.escalations.decided(AGENT, situation, now + dt.timedelta(hours=13)).applies == {}
+
+
+def test_a_decision_that_guidance_does_not_apply_is_not_asked_again():
+    eng = _engine()
+    fid = _promoted(eng)
+    task = eng.retrieve(RISKY, requester=AGENT).escalation_task_id
+    eng.decide_escalation(task, "does_not_apply", by=R2, rationale="Not at this flow.")
+    after = eng.retrieve(RISKY, requester=AGENT)
+    assert not after.eligible and after.escalation_task_id is None
+    [withheld] = after.blocked
+    assert withheld.fragment_id == fid and not withheld.escalate
+    assert "does not apply" in withheld.detail
+

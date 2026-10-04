@@ -5,6 +5,12 @@
 {{- if not (or .Values.oidc.issuer .Values.apiKeys.existingSecret .Values.trustedProxy.existingSecret) }}
 {{- fail "Configure sign-in: oidc.issuer, apiKeys.existingSecret, or trustedProxy.existingSecret" }}
 {{- end }}
+{{- if and (not $postgres) (not .Values.persistence.enabled) (not .Values.persistence.acknowledgeEphemeral) }}
+{{- fail "SQLite without persistence loses every workspace when the pod goes: enable persistence, use PostgreSQL, or set persistence.acknowledgeEphemeral=true" }}
+{{- end }}
+{{- if and .Values.migrations.runAsJob (not $postgres) }}
+{{- fail "migrations.runAsJob needs PostgreSQL" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,12 +30,21 @@ spec:
     metadata:
       labels:
         {{- include "metis.selectorLabels" . | nindent 8 }}
-      {{- with .Values.podAnnotations }}
+      {{- $checksum := and .Values.database.url (not .Values.database.existingSecret) }}
+      {{- if or $checksum .Values.podAnnotations }}
       annotations:
+        {{- if $checksum }}
+        # roll the pods when the chart's own Secret changes; for your Secrets, restart them
+        checksum/database: {{ .Values.database.url | sha256sum | trunc 16 | quote }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "metis.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -66,15 +81,22 @@ spec:
               value: {{ .Values.oidc.emailClaim | quote }}
             - name: METIS_OIDC_NAME_CLAIM
               value: {{ .Values.oidc.nameClaim | quote }}
-            - name: METIS_OIDC_ADMIN_ROLE
-              value: {{ .Values.oidc.adminRole | quote }}
-            - name: METIS_OIDC_AUDITOR_ROLE
-              value: {{ .Values.oidc.auditorRole | quote }}
+            - name: METIS_OIDC_REQUIRE_EMAIL_VERIFIED
+              value: {{ .Values.oidc.requireEmailVerified | quote }}
+            {{- with .Values.oidc.participantClaim }}
+            - name: METIS_OIDC_PARTICIPANT_CLAIM
+              value: {{ . | quote }}
+            {{- end }}
             {{- with .Values.oidc.jwksUrl }}
             - name: METIS_OIDC_JWKS_URL
               value: {{ . | quote }}
             {{- end }}
             {{- end }}
+            # The global role names, for OIDC roles and for the groups a trusted proxy forwards.
+            - name: METIS_OIDC_ADMIN_ROLE
+              value: {{ .Values.oidc.adminRole | quote }}
+            - name: METIS_OIDC_AUDITOR_ROLE
+              value: {{ .Values.oidc.auditorRole | quote }}
             {{- if .Values.apiKeys.existingSecret }}
             - name: METIS_API_KEYS_FILE
               value: /config/api-keys/{{ .Values.apiKeys.existingSecretKey }}
@@ -126,30 +148,77 @@ spec:
             - name: METIS_TEAMS_TENANT_ID
               valueFrom: {secretKeyRef: {name: {{ . }}, key: tenant-id, optional: true}}
             {{- end }}
+            {{- with .Values.teams.allowedTenants }}
+            - name: METIS_TEAMS_ALLOWED_TENANTS
+              value: {{ join "," . | quote }}
+            {{- end }}
+            {{- with .Values.teams.serviceHosts }}
+            - name: METIS_TEAMS_SERVICE_HOSTS
+              value: {{ join "," . | quote }}
+            {{- end }}
             - name: METIS_SWEEP_INTERVAL_SECONDS
-              value: {{ .Values.sweepIntervalSeconds | quote }}
+              value: {{ int64 .Values.sweepIntervalSeconds | quote }}
             - name: METIS_DISPATCH_INTERVAL_SECONDS
-              value: {{ .Values.dispatchIntervalSeconds | quote }}
+              value: {{ int64 .Values.dispatchIntervalSeconds | quote }}
             - name: METIS_WHISPER_DEADLINE_HOURS
-              value: {{ .Values.whisperDeadlineHours | quote }}
+              value: {{ int64 .Values.whisperDeadlineHours | quote }}
             - name: METIS_USE_LIVE_MODEL
               value: {{ .Values.useLiveModel | quote }}
+            {{- with .Values.model.url }}
+            - name: METIS_MODEL_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.model.name }}
+            - name: METIS_MODEL_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            - name: METIS_ESCALATION_GRANT_HOURS
+              value: {{ .Values.escalationGrantHours | quote }}
+            - name: METIS_OUTBOX_RETENTION_DAYS
+              value: {{ int64 .Values.outboxRetentionDays | quote }}
+            - name: METIS_MAX_BODY_BYTES
+              value: {{ int64 .Values.limits.maxBodyBytes | quote }}
+            - name: METIS_LOCK_TIMEOUT_SECONDS
+              value: {{ int64 .Values.limits.lockTimeoutSeconds | quote }}
+            - name: METIS_STATEMENT_TIMEOUT_SECONDS
+              value: {{ int64 .Values.limits.statementTimeoutSeconds | quote }}
+            - name: METIS_DB_POOL_SIZE
+              value: {{ int64 .Values.database.poolSize | quote }}
+            - name: METIS_DB_MAX_OVERFLOW
+              value: {{ int64 .Values.database.maxOverflow | quote }}
+            - name: METIS_MIGRATE_ON_START
+              value: {{ (not .Values.migrations.runAsJob) | quote }}
             - name: METIS_LOG_LEVEL
               value: {{ .Values.logLevel | quote }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          startupProbe:  # the schema is checked or migrated before the port opens
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /readyz
               port: http
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
               port: http
-            initialDelaySeconds: 10
             periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- if .Values.preStopSleepSeconds }}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["python", "-c", "import time; time.sleep({{ int .Values.preStopSleepSeconds }})"]
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
@@ -203,9 +272,19 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- if .Values.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else if and .Values.spreadReplicas (gt (int .Values.replicaCount) 1) }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "metis.selectorLabels" . | nindent 20 }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:

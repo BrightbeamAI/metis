@@ -30,18 +30,24 @@ metis server member set --workspace wsp_plant_a --uri agent:shift-assistant --ro
 ## The contract an agent keeps
 
 - Ask for guidance with the current situation, and give every field you know: an unknown value
-  does not count as a match.
+  does not count as a match. Always give the situation's `risk_class` (`low`, `moderate`, `high`,
+  or `critical`); a request without one is refused, because high-risk situations go to a person.
 - Treat guidance as situated advice for those conditions, and honour every use constraint.
 - When `required_human_actions` lists anything, stop. A person decides, and `check_escalation`
   (or `MetisClient.wait_for_escalation`) reports the decision: `applies`, `does_not_apply`, or
-  `refer_to_review`. Act on the guidance only when it applies.
+  `refer_to_review`. After `applies`, the same agent asking again with the same context within
+  the decision's window (12 hours by default) receives the guidance, recorded as given on that
+  person's decision. Asking again before anyone decides reuses the same escalation, so a person
+  is asked once.
 - Leave workers' answers and reviewers' votes to people. Workers answer whispers and reviewers vote
   in the web app; no agent tool does either.
 
 ## Remote MCP
 
-The server answers MCP over streamable HTTP at `/mcp`. Send the agent's API key or access token
-as a bearer token on every request; the endpoint is stateless, so any replica serves any request.
+The server answers MCP over streamable HTTP at `/mcp` (POST, with JSON responses). Send the
+agent's API key or access token as a bearer token on every request; the endpoint is stateless, so
+any replica serves any request. A refusal (a missing role, a workspace the agent does not belong
+to, invalid input) comes back as a tool error with its reason.
 
 | Tool | Role | What it does |
 | --- | --- | --- |
@@ -113,9 +119,10 @@ for item in result["guidance"]:
     print(item["guidance"], item["use_constraints"])
 ```
 
-`api_key=` and `token=` (a string, or a function that returns a fresh token) sign in too. Errors
-raise `NotAuthenticated`, `Forbidden`, `NotFound`, `Conflict`, or `Invalid`, each carrying the
-server's reason. `AsyncMetisClient` has the same methods as coroutines. The client also covers
+`api_key=` and `token=` (a string, or a function that returns a fresh token) sign in too. With
+`ClientCredentials`, a token the server rejects is replaced once, and the request sent again.
+Errors raise `NotAuthenticated`, `Forbidden`, `NotFound`, `Conflict`, or `Invalid`, each carrying
+the server's reason. `AsyncMetisClient` has the same methods as coroutines. The client also covers
 capture sources (`observe`), workers (`answer_whisper`, `contest`, `withdraw`), reviewers
 (`reviews`, `vote`), escalation handlers (`decide_escalation`), and auditors (`audit_verify`).
 
@@ -134,7 +141,8 @@ for block in response.content:
 ```
 
 `openai_tools()` and `openai_responses_tools()` give the same tools for the OpenAI Chat
-Completions and Responses APIs.
+Completions and Responses APIs. A refusal or a bad argument comes back from `call` as
+`{"error": ..., "status": ...}` for the model to read, so it ends no agent run.
 
 ## LangChain
 

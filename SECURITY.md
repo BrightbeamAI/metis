@@ -40,13 +40,22 @@ Metis governs how tacit fragments are captured, validated, and retrieved.
   the identity its credentials prove: an OIDC access token verified against the provider's keys,
   an API key stored only as a SHA-256 hash, or a trusted proxy's headers accompanied by a shared
   secret. Roles in each workspace decide what a caller may do, and every role change is recorded
-  on the workspace's chain. Requests run in database transactions with one writer per workspace,
-  and the evidence ledger table refuses updates and deletes. Serve it over HTTPS through an
-  ingress or reverse proxy, and keep the database, the API keys file, and the identity
-  provider's configuration in your secret store. The web app signs people in with PKCE, keeps the
-  access token in the browser session, and builds every page from text, never from markup in
-  the data. Notifications to shared channels (Slack, Teams) carry no one's personal content, and
-  webhook deliveries are signed when a secret is set.
+  on the workspace's chain. Global admin is for people, and global auditor for people and
+  services; agents hold neither. A workspace someone never belonged to is invisible to them.
+  Requests run in database transactions with one writer per workspace, and the evidence ledger
+  table refuses updates and deletes; with migrations run by the table owner, the servers' own
+  database role can only append to it (see docs/operations.md). Each rebuilt workspace's chain is
+  verified, and a commit token per write keeps a server from overwriting a restored database.
+  Request bodies and every text field have size limits. Serve it over HTTPS through an ingress or
+  reverse proxy, and keep the database, the API keys file, and the identity provider's
+  configuration in your secret store. The web app signs people in with PKCE, keeps the access
+  token in the browser session until it expires (an API key only in memory), runs only its own
+  script under a Content-Security-Policy, and builds every page from text, never from markup in
+  the data. Notifications to shared channels (Slack, Teams) carry no one's personal content,
+  record text is escaped in every channel, and webhook deliveries are signed over a timestamp
+  when a secret is set.
+  The Slack and Teams endpoints verify every request's signature or token; the Teams bot accepts
+  only the tenants you name and sends only to the Bot Framework's service hosts.
 
 - **The FastAPI server** (`metis.api`) is a single-user reference server. It has no
   authentication and records the identities callers supply, so run it on localhost only. Every

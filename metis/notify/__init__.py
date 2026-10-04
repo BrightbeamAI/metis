@@ -14,7 +14,7 @@ from .channels import (
 )
 from .config import load_channels
 from .events import EVENTS, Notification
-from .outbox import Dispatcher, Notifier
+from .outbox import Dispatcher, Notifier, prune, redact, retry_failed
 from .planner import Planner
 
 __all__ = [
@@ -30,4 +30,7 @@ __all__ = [
     "TeamsChannel",
     "WebhookChannel",
     "load_channels",
+    "prune",
+    "redact",
+    "retry_failed",
 ]

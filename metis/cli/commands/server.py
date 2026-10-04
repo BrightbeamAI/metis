@@ -34,17 +34,13 @@ def _need_server_extra() -> None:
         raise typer.Exit(code=1)
 
 
-def _repository():
+def _repository(*, migrate: bool | None = None):
     """The server's repository, with the same notification channels as the server."""
     _need_server_extra()
-    from ...notify import Notifier, load_channels
+    from ...server.factory import build_repository
     from ...server.settings import ServerSettings
-    from ...storage.sql import SqlRepository
 
-    settings = ServerSettings.from_env()
-    channels, public_url = load_channels()
-    return SqlRepository(settings.database_url,
-                         notifier=Notifier(channels, public_url=public_url or settings.public_url))
+    return build_repository(ServerSettings.from_env(), migrate=migrate)
 
 
 def _keys_file(path: str | None) -> str:
@@ -80,8 +76,9 @@ def run(
 
 @server_app.command("migrate")
 def migrate() -> None:
-    """Create or upgrade the database schema."""
-    version = _repository().migrate()
+    """Create or upgrade the database schema. Run it as the role that owns the tables, for
+    example from a pre-upgrade job, when servers run with METIS_MIGRATE_ON_START=false."""
+    version = _repository(migrate=True).migrate()
     typer.echo(f"schema version {version}")
 
 
@@ -141,7 +138,8 @@ def key_create(
     key_id: str = typer.Option(..., "--id", help="A unique name for the key."),
     uri: str = typer.Option(..., help="The participant the key signs in as, for example agent:shift-assistant."),
     display_name: str = typer.Option(None, "--name", help="A display name."),
-    global_role: list[str] = typer.Option([], "--global-role", help="admin or auditor."),
+    global_role: list[str] = typer.Option([], "--global-role",
+                                          help="admin (people), auditor, or metrics."),
     path: str = typer.Option(None, "--file", help="The keys file (default: METIS_API_KEYS_FILE)."),
 ) -> None:
     """Issue an API key. The key is printed once; the file keeps only its hash."""
@@ -189,13 +187,35 @@ def key_revoke(
     typer.echo(f"revoked {key_id}")
 
 
+@server_app.command("forget-chat-identity")
+def forget_chat_identity(
+    participant: str = typer.Option(..., help="The person, for example human:ana@example.com."),
+    platform: str = typer.Option("teams", help="The chat tool."),
+) -> None:
+    """Forget where Metis reaches a person in a chat tool, so the next account they install the
+    app from is bound to them."""
+    forgotten = _repository().forget_chat_identity(platform, participant=participant)
+    typer.echo(f"forgot {forgotten} identity for {participant} in {platform}")
+
+
+@server_app.command("status")
+def status_cmd() -> None:
+    """What an operator watches: schema version, workspaces, and notifications by status."""
+    repo = _repository(migrate=False)
+    typer.echo(json.dumps({"schema_version": repo.check_schema(), "workspaces": len(repo.list()),
+                           "outbox": repo.outbox_counts(),
+                           "oldest_pending_notification": repo.outbox_oldest_pending()}))
+
+
 @server_app.command("sweep")
 def sweep_cmd() -> None:
     """Lapse whispers past their deadline and queue review-date notices, once. Run it from a
     scheduler when the server's own sweep is off (METIS_SWEEP_INTERVAL_SECONDS=0)."""
     from ...server.background import sweep
+    from ...server.settings import ServerSettings
 
-    typer.echo(json.dumps(sweep(_repository())))
+    days = ServerSettings.from_env().outbox_retention_days
+    typer.echo(json.dumps(sweep(_repository(), retention_days=days)))
 
 
 @outbox_cmds.command("list")
@@ -209,6 +229,16 @@ def outbox_list(
         typer.echo(f"{row['id']}  {row['status']:<9} {row['event']:<20} {row['channel']}"
                    f"{'  to ' + row['recipient'] if row['recipient'] else ''}"
                    f"  attempts={row['attempts']}{error}")
+
+
+@outbox_cmds.command("retry")
+def outbox_retry(
+    row: list[int] = typer.Option([], "--id", help="A failed row to send again; all if none."),
+) -> None:
+    """Send failed notifications again, from the first attempt."""
+    from ...notify import retry_failed
+
+    typer.echo(f"requeued {retry_failed(_repository(), row or None)}")
 
 
 @outbox_cmds.command("deliver")

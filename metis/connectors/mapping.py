@@ -129,12 +129,18 @@ class SourceMapping(BaseModel):
     records: str | None = Field(None, description="Where the list of records sits in a payload")
 
     def worker_uri(self, value: Any) -> str:
+        """The worker's participant URI. People are named by email, compared without case, as
+        sign-in names them."""
         text = str(value or "").strip()
         if not text:
             raise ValueError("The record names no worker.")
         if text in self.worker_map:
-            return self.worker_map[text]
-        if text.startswith("human:") and URI_RE.match(text):
+            text = self.worker_map[text].strip()
+        if text.lower().startswith("human:"):
+            person = "human:" + text.split(":", 1)[1].lower()
+            if URI_RE.match(person):
+                return person
+        elif ":" in text and URI_RE.match(text):
             return text
         if "@" in text and " " not in text:
             return f"human:{text.lower()}"

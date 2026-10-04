@@ -21,7 +21,10 @@ engine as the toolkit, with these additions around it:
   chart. See [deploy/README.md](../deploy/README.md).
 
 Install it with `pip install "metis-memory[server,postgres]"` and start it with
-`metis server run`. The interactive API reference is at `/docs` on a running server.
+`metis server run`. Set `METIS_API_DOCS=true` for the interactive API reference at `/docs`; the
+schema is always at `/openapi.json`. A pip install carries no `prompts/` directory, so whispers
+use the generic wording unless `METIS_REPO` names a checkout of the repository (the container
+image includes the prompts). Running it in production: [operations.md](operations.md).
 
 ## Roles
 
@@ -35,10 +38,17 @@ Install it with `pip install "metis-memory[server,postgres]"` and start it with
 | `auditor` | people or services | read fragments and the evidence chain, verify it, and export it |
 | `admin` | people | manage the workspace's members |
 
-Two roles hold across workspaces and come from sign-in: the global `admin` creates workspaces
-and manages any workspace's members, and the global `auditor` reads every workspace. A global
-role grants no workspace role, so an administrator who reviews fragments is also a reviewer
-member of that workspace. The Mission Group is the set of members with the reviewer role.
+Two roles hold across workspaces and come from sign-in: the global `admin` (people only) creates
+workspaces and manages any workspace's members, and the global `auditor` (people and services)
+reads every workspace. A third, `metrics`, reads only the server's counts, for monitoring. A global role grants no workspace role, so an administrator who reviews
+fragments is also a reviewer member of that workspace. The Mission Group is the set of members
+with the reviewer role. A reviewer never decides on a fragment they contributed, and an
+approval counts only while its reviewer is a member: when a reviewer leaves, the open reviews
+that counted on them start again for the remaining reviewers.
+
+A workspace someone has never belonged to looks to them exactly like one that does not exist (404).
+A former member's requests still reach it, where their roles (now none) decide, so a worker who
+left can still withdraw consent for what they contributed.
 
 ## Signing in
 
@@ -49,9 +59,14 @@ member of that workspace. The Mission Group is the set of members with the revie
 | Trusted proxy | `METIS_TRUSTED_PROXY_SECRET` | `human:<email>` from the proxy's `X-Forwarded-Email` header |
 
 Send a token or key as `Authorization: Bearer <token>`; an API key may also go in `X-API-Key`.
-An identity provider may set the participant URI outright in the `metis_participant` claim. The
-roles claim (`METIS_OIDC_ROLES_CLAIM`) grants the global roles named by
-`METIS_OIDC_ADMIN_ROLE` and `METIS_OIDC_AUDITOR_ROLE`.
+A request that carries a credential twice is refused. A token whose `email_verified` is false
+names the person by subject (`human:<subject>@<issuer host>`); with
+`METIS_OIDC_REQUIRE_EMAIL_VERIFIED=true`, so does a token that does not say. With
+`METIS_OIDC_PARTICIPANT_CLAIM` set, a provider may name the participant URI in that claim, of the
+same kind as the token (a person's token names a `human:`, a client's an `agent:` or `service:`).
+The roles claim (`METIS_OIDC_ROLES_CLAIM`) grants the global roles named by
+`METIS_OIDC_ADMIN_ROLE` and `METIS_OIDC_AUDITOR_ROLE`. If the provider's keys cannot be fetched,
+OIDC sign-in answers 503 and API keys keep working.
 
 ## One fragment through the server
 
@@ -71,7 +86,8 @@ The calls below follow the pump example. Each runs as the identity its token pro
 
 2. **A capture source reports an observation for a worker.** Metis infers a candidate (a
    hypothesis only) and asks the worker one whisper. The observation is recorded as the
-   connector's.
+   connector's. Reporting the same observation again returns the same whisper, so a source can
+   retry safely; another observation under a recorded id is refused (409).
 
    ```http
    POST /v1/workspaces/wsp_plant_a/observations
@@ -104,17 +120,23 @@ The calls below follow the pump example. Each runs as the identity its token pro
 
 5. **An agent asks for guidance.** The gate returns the fragment only where its recorded
    conditions match, with its use constraints, and hands high-risk situations and near misses to
-   a person. The decision is recorded under the agent's identity.
+   a person. The context must name its `risk_class` (`low`, `moderate`, `high`, or `critical`).
+   The decision is recorded under the agent's identity.
 
    ```http
    POST /v1/workspaces/wsp_plant_a/retrieve
-   {"context": {"equipment_family": "centrifugal_pump", "operating_mode": "high_load"}}
+   {"context": {"equipment_family": "centrifugal_pump", "operating_mode": "high_load",
+                "risk_class": "moderate"}}
    ```
 
-6. **A person decides an escalation.** A high-risk situation, or a near miss, opens an escalation.
-   A member with the escalation role records whether the guidance `applies`, `does_not_apply`, or
-   needs the reviewers (`refer_to_review`); the agent reads the decision from
-   `GET /v1/workspaces/wsp_plant_a/escalations/{task_id}`.
+6. **A person decides an escalation.** A high-risk situation, or a near miss, opens an escalation;
+   the agent asking again in the same situation gets the same escalation. A member with the
+   escalation role records whether the guidance `applies`, `does_not_apply`, or needs the
+   reviewers (`refer_to_review`); the agent reads the decision from
+   `GET /v1/workspaces/wsp_plant_a/escalations/{task_id}`. The decision holds for that agent and
+   that exact situation for `METIS_ESCALATION_GRANT_HOURS` (12 by default): asking again then
+   returns the guidance a person said applies, and the retrieval records whose decision it was;
+   guidance a person said does not apply stays withheld without asking again.
 
    ```http
    POST /v1/workspaces/wsp_plant_a/escalations/{task_id}/decision
@@ -157,7 +179,7 @@ retries; `metis server outbox list` shows them.
 | Event | Who hears |
 | --- | --- |
 | `whisper.asked` | the worker asked |
-| `whisper.lapsed` | the capture source that reported the observation |
+| `whisper.lapsed` | the capture source that reported the observation (through a webhook with `include_personal`) |
 | `review.requested`, `review.approval` | the reviewers whose vote is outstanding |
 | `review.decided` | the contributing worker and the reviewers |
 | `escalation.opened` | members with the escalation role |
@@ -172,14 +194,24 @@ Channels:
   question a whisper asks them.
 - **Slack** and **Microsoft Teams** post to a shared channel, so they carry only events with no
   one's personal content.
-- **Webhooks** receive every event as JSON, signed with HMAC-SHA256 in `X-Metis-Signature` when a
-  secret is set.
+- **Webhooks** receive the events that carry no one's personal content, as JSON; with
+  `include_personal: true` (or `METIS_NOTIFY_WEBHOOK_PERSONAL=true`) they also receive
+  `whisper.asked`, `whisper.lapsed`, and `member.changed`, and each event's recipients. With a
+  secret, `X-Metis-Signature` is `sha256=` followed by the HMAC-SHA256 of
+  `<X-Metis-Timestamp>.<body>`: recompute it, refuse timestamps more than a few minutes old, and
+  ignore an `X-Metis-Delivery` id you have seen, because a delivery may arrive twice.
+
+Text from records and people is escaped for each channel, so it cannot add links or mentions. A
+failed delivery is retried with growing delays and then marked failed; `metis server outbox
+retry` sends failed notifications again. Error messages name the status and host, never a full
+URL, since webhook URLs carry secrets.
 
 Configure channels with `METIS_SMTP_HOST` (and `METIS_SMTP_PORT`, `METIS_SMTP_USERNAME`,
-`METIS_SMTP_PASSWORD`, `METIS_SMTP_FROM`), `METIS_NOTIFY_SLACK_WEBHOOK_URL`,
+`METIS_SMTP_PASSWORD`, `METIS_SMTP_FROM`, `METIS_SMTP_STARTTLS`), `METIS_NOTIFY_SLACK_WEBHOOK_URL`,
 `METIS_NOTIFY_TEAMS_WEBHOOK_URL`, or `METIS_NOTIFY_WEBHOOK_URL` with
 `METIS_NOTIFY_WEBHOOK_SECRET`. For several channels, or to limit a channel to some events or
-workspaces, name a file in `METIS_NOTIFICATIONS_FILE`:
+workspaces, name a file in `METIS_NOTIFICATIONS_FILE`; the file then lists every channel, and the
+variables above are ignored:
 
 ```yaml
 public_url: https://metis.example.com
@@ -204,6 +236,7 @@ channels:
 | Method and path | Who may call it |
 | --- | --- |
 | `GET /healthz`, `GET /readyz` | anyone |
+| `GET /v1/admin/status`, `GET /metrics` | global `metrics` or auditor: counts for operators; see [operations.md](operations.md#monitoring) |
 | `GET /v1/me` | anyone signed in |
 | `GET /v1/me/inbox` | anyone signed in: their whispers, reviews, escalations, and contributions |
 | `GET /app` | the web app; it signs people in itself |
@@ -228,29 +261,44 @@ channels:
 | `GET /v1/workspaces/{id}/escalations/{task}` | escalation, reviewer, auditor, admin; the agent that asked |
 | `POST /v1/workspaces/{id}/escalations/{task}/decision` | escalation |
 | `GET /v1/workspaces/{id}/audit`, `.../audit/verify`, `.../audit/export` | auditor, admin |
-| `/mcp` | MCP over streamable HTTP, for agents and capture sources; see [agent_integrations.md](agent_integrations.md) |
+| `POST /mcp` | MCP over streamable HTTP, for agents and capture sources; see [agent_integrations.md](agent_integrations.md) |
 | `GET /v1/connectors` | anyone signed in: the configured sources |
 | `POST /v1/workspaces/{id}/ingest/{source}` | capture; see [connectors.md](connectors.md) |
 | `POST /integrations/slack/interactions`, `POST /integrations/teams/messages` | Slack and the Bot Framework, which sign their requests |
 
 Responses use standard status codes: 401 without valid credentials, 403 when the caller's roles
 do not allow the action, 404 for something that does not exist (or that the caller may not
-know exists), 409 when the action conflicts with a fragment's state or an open review, and 422
-for invalid input.
+know exists), 409 when the action conflicts with a fragment's state or an open review, 413 for a
+request body above `METIS_MAX_BODY_BYTES`, 415 for a change sent without a JSON body and without
+an `Authorization` or `X-API-Key` header (a cross-site form can send neither), 422 for invalid
+input, and 503 with
+`Retry-After` when the workspace stays busy past `METIS_LOCK_TIMEOUT_SECONDS` or the identity
+provider is unreachable. An API route's 5xx response carries a `request_id` that matches the
+server's log.
+
+Every text field has a size limit: ids 128 characters, names and titles 200, notes and reasons
+2000, accounts and corrections 4000, and a context 4 KB as JSON with values of up to 256
+characters. Whatever Metis accepts is recorded for good, so the HTTP API, remote MCP, and the
+connectors apply the same limits.
 
 ## Storage and consistency
 
-The SQL repository keeps these tables: `metis_workspaces` (each workspace's domain state and a
-version counter), `chap_workspaces` (the CHAP snapshot, in CHAP's own store schema),
-`metis_evidence_ledger` (one row per evidence entry, append-only, enforced by database
-triggers), `metis_outbox` (notifications awaiting delivery), `metis_chat_identities` (where to
-reach people in Teams), and `metis_schema`.
+The SQL repository keeps these tables: `metis_workspaces` (each workspace's domain state, a
+version counter, and a token unique to each commit), `chap_workspaces` (the CHAP snapshot, in
+CHAP's own store schema), `metis_evidence_ledger` (one row per evidence entry, append-only,
+enforced by database triggers), `metis_members` (who belongs, or once belonged, to each
+workspace), `metis_outbox` (notifications awaiting delivery), `metis_chat_identities` (where to
+reach people in Teams), and `metis_schema` (the schema version and the oldest that can use it).
 
 A write runs inside one transaction. Within a process, a lock serialises each workspace's
 writers; across processes, a PostgreSQL advisory lock does; and a version check on save refuses
 a stale writer, which is retried on fresh state. The CHAP snapshot is taken once per
-transaction. A failed request rolls back everything it recorded, and the next request starts
-from the committed state. A read records nothing.
+transaction, and a write that changed nothing commits nothing. A failed request rolls back
+everything it recorded, and the next request starts from the committed state. A read records
+nothing, and sees one consistent snapshot of the database. A server rebuilds a workspace it has
+cached whenever the stored commit token differs. A rebuilt workspace's chain is verified, and
+its ledger must hold as many entries as the chain, ending with the same entry;
+`.../audit/verify` compares every entry.
 
 Each write stores the workspace's full CHAP snapshot, so its cost grows with the chain. Give
 each site, line, or team its own workspace.

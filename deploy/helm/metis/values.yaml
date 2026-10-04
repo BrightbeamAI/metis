@@ -20,6 +20,21 @@ database:
   url: ""
   existingSecret: ""
   existingSecretKey: database-url
+  poolSize: 5
+  maxOverflow: 10
+
+# Schema migrations. By default each pod migrates on start (safe with several replicas). With
+# runAsJob, a pre-install and pre-upgrade Job runs `metis server migrate` and the pods only
+# check the schema, so the pods' database role needs no right to change tables. PostgreSQL only.
+migrations:
+  runAsJob: false
+  # A Secret with the URL of a role that owns the tables, for the Job; the database Secret
+  # when empty.
+  existingSecret: ""
+  existingSecretKey: database-url
+  # The servers' own database role (the one in database.existingSecret): each migration grants
+  # it what it needs and no more, so it can only append to the evidence ledger.
+  appRole: ""
 
 # Sign-in. Configure OIDC, API keys, a trusted proxy, or a combination.
 oidc:
@@ -29,8 +44,10 @@ oidc:
   rolesClaim: roles            # Keycloak: realm_access.roles
   emailClaim: email
   nameClaim: name
-  adminRole: metis-admin
+  adminRole: metis-admin       # also the group name a trusted proxy forwards
   auditorRole: metis-auditor
+  requireEmailVerified: false  # name people by email only when the token marks it verified
+  participantClaim: ""         # a claim that may name the participant URI; off when empty
 
 apiKeys:
   # A Secret holding the API keys file, created with `metis server api-key create --file`.
@@ -71,22 +88,48 @@ slack:
   existingSecret: ""        # keys: bot-token, signing-secret
 teams:
   existingSecret: ""        # keys: app-id, app-password, and optionally tenant-id
+  # The Microsoft Entra tenants whose people may use the bot (besides tenant-id).
+  allowedTenants: []
+  serviceHosts: []          # Bot Framework hosts; the public and government clouds by default
 
 # Background work: lapsing overdue whispers, review-date notices, and delivering notifications.
 sweepIntervalSeconds: 300
 dispatchIntervalSeconds: 5
+outboxRetentionDays: 30     # delivered and failed notifications are cleared after this
 corsOrigins: []
 whisperDeadlineHours: 168
-useLiveModel: false
+escalationGrantHours: 12    # how long a person's decision on an escalated situation holds
 logLevel: info
 extraEnv: []
 
-# Storage for SQLite, when no database URL is given.
+# The local model (Ollama) for drafting, for example a Service in the cluster.
+useLiveModel: false
+model:
+  url: ""                   # for example http://ollama:11434
+  name: ""                  # gemma4 when empty
+
+limits:
+  maxBodyBytes: 4194304     # larger request bodies get 413; set your ingress to the same
+  lockTimeoutSeconds: 30    # a workspace busy longer answers 503 with Retry-After
+  statementTimeoutSeconds: 60
+
+# Storage for SQLite, when no database URL is given. The volume holds the evidence chain, so
+# `helm uninstall` keeps it (delete the claim yourself). Without persistence the chart refuses
+# to render unless acknowledgeEphemeral is true: everything is lost when the pod goes.
 persistence:
   enabled: true
+  keepOnUninstall: true
+  acknowledgeEphemeral: false
   size: 1Gi
   storageClass: ""
   accessModes: [ReadWriteOnce]
+
+# With several replicas: keep one running during voluntary disruptions, and spread them out.
+podDisruptionBudget:
+  minAvailable: 1
+spreadReplicas: true
+terminationGracePeriodSeconds: 40
+preStopSleepSeconds: 5      # lets the Service stop routing before shutdown begins
 
 service:
   type: ClusterIP

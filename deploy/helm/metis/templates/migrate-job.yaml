@@ -1,0 +1,63 @@
+{{- if .Values.migrations.runAsJob }}
+{{- if not (or .Values.database.existingSecret .Values.migrations.existingSecret) }}
+{{- fail "migrations.runAsJob needs database.existingSecret or migrations.existingSecret: the Job runs before the chart creates its own Secret" }}
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "metis.fullname" . }}-migrate
+  labels:
+    {{- include "metis.labels" . | nindent 4 }}
+  annotations:
+    # Runs before the pods change, so new pods find the schema they need.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        {{- include "metis.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["migrate"]
+          env:
+            - name: METIS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.migrations.existingSecret }}
+                  name: {{ .Values.migrations.existingSecret }}
+                  key: {{ .Values.migrations.existingSecretKey }}
+                  {{- else }}
+                  name: {{ .Values.database.existingSecret }}
+                  key: {{ .Values.database.existingSecretKey }}
+                  {{- end }}
+            {{- with .Values.migrations.appRole }}
+            # the servers' own role: granted what it needs and no more on each migration
+            - name: METIS_DB_APP_ROLE
+              value: {{ . | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

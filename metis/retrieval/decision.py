@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
 from .. import clock
 
@@ -39,6 +39,16 @@ class RetrievalDecision(BaseModel):
     eligible: list[EligibleItem] = Field(default_factory=list)
     blocked: list[BlockedItem] = Field(default_factory=list)
     escalation_task_id: str | None = None
+    # Eligible fragments that apply because a person decided an escalation of this same
+    # situation: fragment id -> escalation task. Written only when there are some.
+    escalation_decisions: dict[str, str] | None = None
     required_human_actions: list[str] = Field(default_factory=list)
     rationale: str = ""
     decided_at: str = Field(default_factory=clock.now_iso)
+
+    @model_serializer(mode="wrap")
+    def _omit_unused(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if data.get("escalation_decisions") is None:
+            data.pop("escalation_decisions", None)
+        return data

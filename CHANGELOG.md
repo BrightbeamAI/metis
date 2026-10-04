@@ -40,10 +40,28 @@ All notable changes to Metis are recorded here. The format follows
   systems into observations through `POST /v1/workspaces/{id}/ingest/{source}` or
   `metis connector import`, each record captured once.
 - Whispers in Slack (direct messages with answer buttons and a correction form) and Microsoft
-  Teams (Adaptive Cards from the Metis bot), answered in place and recorded as the worker. See
-  docs/connectors.md.
+  Teams (Adaptive Cards from the Metis bot, for the tenants you name), answered in place and
+  recorded as the worker. See docs/connectors.md.
+- Operating the server: `GET /metrics` and `GET /v1/admin/status` for a global `metrics` role
+  (or the global auditor), `metis server status`, `metis server outbox retry`, notification
+  retention (`METIS_OUTBOX_RETENTION_DAYS`), schema migrations that can run as a separate job
+  (`METIS_MIGRATE_ON_START`) and grant the servers' own role only what it needs
+  (`METIS_DB_APP_ROLE`), and docs/operations.md.
+- Limits: request bodies (`METIS_MAX_BODY_BYTES`), every text field (`metis.limits`), and
+  workspace lock and statement timeouts that answer 503 with `Retry-After`.
+- `draft_capture` and `draft_confirmation`: a server asks the local model before it locks a
+  workspace, and passes the drafts to `begin_capture` and `answer_whisper`.
+- `RetrievalDecision.escalation_decisions`: the fragments given because a person decided an
+  escalation of the same situation, written only when there are some.
 
 ### Changed
+- A reviewer does not decide on a fragment they contributed.
+- A retrieval that escalates reuses its requester's open escalation of the same situation, and a
+  person's decision holds for that requester and situation for `escalation_grant_hours` (12 by
+  default): guidance a person said applies is given, and guidance they said does not apply stays
+  withheld without asking again.
+- Domain state from a newer Metis is refused, and state keys an engine does not know are kept
+  when it writes.
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader
   needs. The PyPI description gives each figure's alt text in its place.
 - Paper links, including the PyPI project link and the citation file's URL, point to the PDF on

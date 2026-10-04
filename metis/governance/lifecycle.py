@@ -34,6 +34,14 @@ from ..validation.states import InvalidTransition, assert_transition
 from .authority import layer_for_outcome, state_for_outcome
 from .policy import GovernancePolicy
 
+
+def contributed(fragment: TacitFragment, uri: str) -> bool:
+    """True when ``uri`` contributed ``fragment``: observed, originated, or confirmed it, or is
+    the worker it is attributed to."""
+    p = fragment.provenance
+    return uri in {p.originating_participant, p.observed_by, p.human_confirmed_by,
+                   fragment.attribution.worker_or_group} - {None}
+
 VS = ValidationState
 _PROMOTIONS = ("promoted_to_advisory", "promoted_to_controlled")
 # A fragment in these states is re-reviewed in place: its state holds until the decision.
@@ -98,6 +106,15 @@ class Governance:
         self.refs[fragment.fragment_id] = ref
         return ref
 
+    def _reviewers_for(self, fragment: TacitFragment) -> list[str]:
+        """The Mission Group reviewers who may decide on ``fragment``: everyone but its
+        contributor, who is never asked to review their own account."""
+        reviewers = [r for r in self.mission_group.reviewers() if not contributed(fragment, r)]
+        if not reviewers:
+            raise PermissionError(f"Only {fragment.fragment_id}'s contributor reviews in this "
+                                  "workspace; add another reviewer.")
+        return reviewers
+
     def _close_review(self, fragment_id: str) -> None:
         ref = self.refs.get(fragment_id)
         if ref is not None:
@@ -111,7 +128,8 @@ class Governance:
     def _sync_review_status(self, frag: TacitFragment) -> None:
         frag.provenance.human_review_status = frag.validation_state.value
 
-    def _deciders(self, outcome: str, decided_by: list[str] | None) -> list[str]:
+    def _deciders(self, outcome: str, decided_by: list[str] | None,
+                  fragment: TacitFragment | None = None) -> list[str]:
         """The reviewers whose decisions are recorded for ``outcome``.
 
         Granting authority needs as many distinct Mission Group approvals as the review rule
@@ -120,11 +138,17 @@ class Governance:
         order when it is omitted.
         """
         members = self.mission_group.reviewers()
+        if fragment is not None:  # a contributor never decides on their own fragment
+            members = [m for m in members if not contributed(fragment, m)]
         chosen = list(dict.fromkeys(decided_by)) if decided_by else None
         if not chosen and self.policy.require_named_reviewers:
             raise PermissionError(
                 "Name the reviewers who decide (decided_by): this engine records real decisions.")
         if chosen:
+            own = [u for u in chosen if fragment is not None and contributed(fragment, u)]
+            if own:
+                raise PermissionError(f"{', '.join(own)} contributed {fragment.fragment_id}; the "
+                                      "other reviewers decide on it.")
             outsiders = [u for u in chosen if u not in members]
             if outsiders:
                 raise PermissionError(f"Not Mission Group reviewers: {', '.join(outsiders)}")
@@ -176,7 +200,7 @@ class Governance:
         assert_transition(frag.validation_state, VS.tier2_pending)
         frag.validation_state = VS.tier2_pending
         entry = self.adapter.review_request(
-            sender=by, reviewers=self.mission_group.reviewers(),
+            sender=by, reviewers=self._reviewers_for(frag),
             artefact_id=ref["artefact"], task_id=ref["task"], rule=self.policy.review_rule)
         frag.add_lineage(state=VS.tier2_pending.value, by=by,
                          note=f"submitted for Mission Group review ({self.policy.review_rule})",
@@ -208,9 +232,10 @@ class Governance:
             return ref["task"]
         if state in _IN_USE or state == VS.tier2_pending:
             # tier2_pending here means its review task closed without a recorded decision.
+            reviewers = self._reviewers_for(frag)
             ref = self._open_review_task(frag, reason=reason)
             entry = self.adapter.review_request(
-                sender=by, reviewers=self.mission_group.reviewers(),
+                sender=by, reviewers=reviewers,
                 artefact_id=ref["artefact"], task_id=ref["task"], rule=self.policy.review_rule)
             if state in _IN_USE:
                 ref["review"] = _OPEN
@@ -252,7 +277,7 @@ class Governance:
             raise ValueError(f"Unknown outcome: {outcome}")
         frag = self.fragments.require(fragment_id)
         by = by or self.mission_group.uri
-        deciders = self._deciders(outcome, decided_by)
+        deciders = self._deciders(outcome, decided_by, frag)
         frag, ref, target, in_use = self._open_for_decision(
             frag, outcome, by=by, summary=summary, change_control=change_control)
 
@@ -358,6 +383,9 @@ class Governance:
             raise ValueError(f"Unknown outcome: {outcome}")
         if reviewer not in self.mission_group.members:
             raise PermissionError(f"Not a Mission Group reviewer: {reviewer}")
+        if contributed(self.fragments.require(fragment_id), reviewer):
+            raise PermissionError(f"{reviewer} contributed {fragment_id}; the other reviewers "
+                                  "decide on it.")
         if outcome not in _PROMOTIONS:
             return {"status": "decided", **self.tier2_review(
                 fragment_id, outcome, decided_by=[reviewer], by=by, summary=summary,
@@ -394,7 +422,7 @@ class Governance:
                                     based_on=ref["artefact"], task_id=ref["task"],
                                     content={"outcome": outcome, "summary": summary}).get("state")
         decided = [*approvals, reviewer]
-        need = self.policy.approvals_required(len(self.mission_group.members))
+        need = self.policy.approvals_required(len(self._reviewers_for(frag)))
         if state != "completed":
             self.proposals[fragment_id] = {
                 "outcome": outcome, "proposed_by": decided[0],
@@ -421,6 +449,28 @@ class Governance:
                     linked_semantic_refs=linked_semantic_refs,
                     linked_episodic_refs=linked_episodic_refs)}
 
+    def restart_reviews_without(self, reviewer: str, *, by: str) -> list[str]:
+        """Restart the open reviews that count on ``reviewer``, who has left the Mission Group:
+        those they approved, and those that wait on every reviewer they were addressed to. An
+        approval counts only while its reviewer is a member, so the remaining reviewers decide
+        on a fresh review. Returns the new review tasks."""
+        restarted: list[str] = []
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        for fragment_id, ref in list(self.refs.items()):
+            if self.fragments.get(fragment_id) is None or not self.review_open(fragment_id):
+                continue
+            review = getattr(ws.tasks.get(ref["task"]) if ws else None, "review", None)
+            waits = (getattr(review, "rule", None) == "all_approve"
+                     and reviewer in (getattr(review, "requested_to", None) or []))
+            if not (waits or reviewer in self.review_approvals(fragment_id)):
+                continue
+            self.adapter.cancel_task(ref["task"], sender=by,
+                                     reason=f"{reviewer} left the Mission Group")
+            self.proposals.pop(fragment_id, None)
+            restarted.append(self.request_review(
+                fragment_id, by=by, reason=f"restarted because {reviewer} left the Mission Group"))
+        return restarted
+
     def widen_open_reviews(self, reviewers: list[str], *, by: str) -> list[str]:
         """Address every open review to ``reviewers`` as well; return the review tasks.
 
@@ -430,11 +480,15 @@ class Governance:
         widened: list[str] = []
         ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
         for fragment_id, ref in list(self.refs.items()):
-            if self.fragments.get(fragment_id) is None or not self.review_open(fragment_id):
+            frag = self.fragments.get(fragment_id)
+            if frag is None or not self.review_open(fragment_id):
+                continue
+            joining = [r for r in reviewers if not contributed(frag, r)]
+            if not joining:  # a contributor never reviews their own account
                 continue
             task = ws.tasks.get(ref["task"]) if ws else None
             rule = getattr(getattr(task, "review", None), "rule", None) or self.policy.review_rule
-            self.adapter.review_request(sender=by, reviewers=list(reviewers),
+            self.adapter.review_request(sender=by, reviewers=joining,
                                         artefact_id=ref["artefact"], task_id=ref["task"],
                                         rule=rule)
             widened.append(ref["task"])
@@ -663,9 +717,7 @@ class Governance:
 
     @staticmethod
     def _require_contributor(frag: TacitFragment, who: str) -> None:
-        contributors = {frag.provenance.originating_participant, frag.provenance.observed_by,
-                        frag.provenance.human_confirmed_by, frag.attribution.worker_or_group}
-        if who not in contributors - {None}:
+        if not contributed(frag, who):
             raise PermissionError(
                 "Only the worker who contributed this fragment can withdraw consent; "
                 "reviewers retire fragments with revoke().")

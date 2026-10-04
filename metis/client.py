@@ -118,6 +118,13 @@ class ClientCredentials:
                 self._expires = time.monotonic() + float(body.get("expires_in", 300))
             return self._token
 
+    def forget(self, rejected: str | None = None) -> None:
+        """Drop the token the server rejected (rotated keys, a revoked grant), so the next call
+        fetches a new one."""
+        with self._lock:
+            if rejected is None or rejected == self._token:
+                self._token, self._expires = None, 0.0
+
 
 class _Endpoints:
     """The server's API as methods. Each returns whatever ``_call`` returns: a result for the
@@ -286,9 +293,16 @@ class MetisClient(_Endpoints):
 
     def _call(self, method: str, path: str, *, json: Any = None,
               params: dict[str, Any] | None = None) -> Any:
-        response = self._http.request(
-            method, self.base_url + path, json=json, params=params,
-            headers=_auth_header(self._token, self._api_key, self._credentials))
+        for attempt in (1, 2):
+            headers = _auth_header(self._token, self._api_key, self._credentials)
+            response = self._http.request(method, self.base_url + path, json=json,
+                                          params=params, headers=headers)
+            # A 401 means the server processed nothing: with client credentials, fetch a new
+            # token once and send the request again.
+            if response.status_code == 401 and self._credentials is not None and attempt == 1:
+                self._credentials.forget(headers["Authorization"].split(" ", 1)[1])
+                continue
+            break
         _raise_for(response)
         return response.json() if response.content else None
 
@@ -329,12 +343,17 @@ class AsyncMetisClient(_Endpoints):
 
     async def _call(self, method: str, path: str, *, json: Any = None,
                     params: dict[str, Any] | None = None) -> Any:
-        headers = (await asyncio.to_thread(_auth_header, self._token, self._api_key,
-                                           self._credentials)
-                   if self._credentials is not None
-                   else _auth_header(self._token, self._api_key, None))
-        response = await self._http.request(method, self.base_url + path, json=json,
-                                            params=params, headers=headers)
+        for attempt in (1, 2):
+            headers = (await asyncio.to_thread(_auth_header, self._token, self._api_key,
+                                               self._credentials)
+                       if self._credentials is not None
+                       else _auth_header(self._token, self._api_key, None))
+            response = await self._http.request(method, self.base_url + path, json=json,
+                                                params=params, headers=headers)
+            if response.status_code == 401 and self._credentials is not None and attempt == 1:
+                self._credentials.forget(headers["Authorization"].split(" ", 1)[1])
+                continue
+            break
         _raise_for(response)
         return response.json() if response.content else None
 

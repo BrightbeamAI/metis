@@ -34,10 +34,22 @@ from .memory.tacit import TacitMemoryStore
 from .models.model_config import ModelConfig
 from .models.ollama_client import OllamaClient
 from .retrieval.decision import RetrievalDecision
-from .retrieval.escalation import escalation_actions, open_escalation
+from .retrieval.escalation import EscalationBook, escalation_actions
 from .retrieval.gate import RetrievalGate
 from .validation.mission_group import MissionGroup
 from .validation.states import InvalidTransition
+
+# The version of the domain state ``export_state`` writes. ``import_state`` refuses state from a
+# newer Metis, and keeps top-level keys it does not know, so an older engine never drops them.
+STATE_VERSION = 1
+_STATE_KEYS = frozenset({
+    "version", "name", "site", "workspace", "fragments", "memory_objects", "procedural",
+    "semantic", "episodic", "counters", "governance_refs", "review_proposals",
+    "pending_captures", "members", "escalation_assignee", "review_rule", "whisper_deadline_ms"})
+
+
+class StateTooNew(ValueError):
+    """Domain state written by a newer Metis than this one."""
 
 
 class MetisEngine:
@@ -58,6 +70,7 @@ class MetisEngine:
         escalation_assignee: str | None = None,
         review_rule: str | None = None,
         whisper_deadline_ms: int = 60000,
+        escalation_grant_hours: float = 12.0,
     ) -> None:
         self.adapter = CHAPAdapter(workspace_id, name, deterministic=deterministic, mode=mode,
                                    store=chap_store, ledger=ledger)
@@ -82,6 +95,9 @@ class MetisEngine:
         self.agent_uri = "agent:assistant#v1"
         # Who decides when retrieval escalates (out-of-envelope or high-risk situations).
         self.escalation_assignee = escalation_assignee or self.operator_uri
+        # Open escalations are reused, and a person's decision holds for that requester and
+        # situation for escalation_grant_hours.
+        self.escalations = EscalationBook(self.adapter, grant_hours=escalation_grant_hours)
 
         # The workspace's members and their roles. Without a list, the engine has the demo
         # members: one operator, three named reviewers, and one agent.
@@ -105,12 +121,15 @@ class MetisEngine:
             whisper_deadline_ms=whisper_deadline_ms)
         # Captures waiting for a worker's answer, keyed by whisper id.
         self.pending_captures: dict[str, PendingCapture] = {}
+        # Top-level state keys written by a newer Metis, kept and written back unchanged.
+        self._unknown_state: dict[str, Any] = {}
         # The observation ids recorded so far, built from the chain on first use.
         self._observation_ids: set[str] | None = None
         self.broker = MemoryBroker(
             procedural=self.procedural, semantic=self.semantic, episodic=self.episodic,
             fragment_store=self.fragments, tacit_store=self.tacit_store, gate=self.gate,
-            adapter=self.adapter, escalation_assignee=self.escalation_assignee)
+            adapter=self.adapter, escalation_assignee=self.escalation_assignee,
+            escalations=self.escalations)
 
     # ---- members -----------------------------------------------------------------
     @property
@@ -145,8 +164,9 @@ class MetisEngine:
 
         The change is recorded on the CHAP chain as a ``tacit.membership_record``. A new member
         joins the CHAP workspace; a removed member leaves it. A new reviewer is added to every
-        review that is still open, so they can vote on it. Returns the member, or ``None`` once
-        removed.
+        review that is still open, so they can vote on it; the open reviews that count on a
+        reviewer who leaves (their approval, or a rule that waits on them) restart for the
+        remaining reviewers. Returns the member, or ``None`` once removed.
         """
         wanted = check_roles(uri, roles)
         old = self.members.get(uri)
@@ -175,6 +195,8 @@ class MetisEngine:
         self._sync_roles()
         if Role.reviewer in granted:
             self.governance.widen_open_reviews([uri], by=by)
+        if Role.reviewer in revoked:
+            self.governance.restart_reviews_without(uri, by=by)
         return member
 
     # ---- setup -----------------------------------------------------------------
@@ -251,7 +273,8 @@ class MetisEngine:
     @clock.scoped
     def answer_whisper(self, whisper_id: str, *, response: str, answered_by: str,
                        corrected_content: str | None = None, free_text: str | None = None,
-                       consent_granted: bool | None = None) -> CaptureResult:
+                       consent_granted: bool | None = None,
+                       confirmation_draft: Any = None) -> CaptureResult:
         """Record a worker's own answer to a pending whisper (Tier-1 confirmation).
 
         Only the human worker the whisper was addressed to may answer; an agent can never
@@ -271,7 +294,8 @@ class MetisEngine:
                 update={"consent_status": ConsentStatus.granted})
         result = self.capture.complete(pending, response=response, corrected_content=corrected_content,
                                        free_text=free_text, answered_by=answered_by,
-                                       store=consent_granted is not False)
+                                       store=consent_granted is not False,
+                                       confirmation_draft=confirmation_draft)
         del self.pending_captures[whisper_id]
         return result
 
@@ -299,18 +323,48 @@ class MetisEngine:
         agent = requester or self.agent_uri
         ids = {mo.fragment_id: mo.memory_id for mo in self.tacit_store.all()}
         decision = self.gate.retrieve(self.fragments.all(), context, role=role, memory_ids=ids)
+        self._apply_escalation_decisions(decision, agent)
         escalated = [b for b in decision.blocked if b.escalate]
         if emit:
             task_id = self.adapter.create_task("tacit.retrieve", assignee=agent,
                                                delegator=agent, task_input=context.model_dump(mode="json", exclude_none=True))
-            decision.escalation_task_id = open_escalation(
-                self.adapter, requester=agent, assignee=self.escalation_assignee,
+            decision.escalation_task_id = self.escalations.open(
+                requester=agent, assignee=self.escalation_assignee,
                 runtime_context=decision.runtime_context, items=escalated, origin_task=task_id)
         decision.required_human_actions = escalation_actions(escalated, decision.escalation_task_id)
         if emit:
             self.adapter.append_artefact("tacit.retrieval_decision", produced_by=agent,
                 content=decision.model_dump(mode="json"), task=task_id)
         return decision
+
+    def _apply_escalation_decisions(self, decision: RetrievalDecision, requester: str) -> None:
+        """Apply a person's recent decisions on this requester's situation: a fragment they
+        said applies becomes eligible, one they said does not apply stays withheld without
+        asking again."""
+        from .retrieval.decision import EligibleItem
+
+        if not any(b.escalate for b in decision.blocked):
+            return
+        decided = self.escalations.decided(requester, decision.runtime_context, clock.now_dt())
+        granted: dict[str, str] = {}
+        for item in list(decision.blocked):
+            if not item.escalate:
+                continue
+            if item.fragment_id in decided.applies:
+                frag = self.fragments.require(item.fragment_id)
+                decision.blocked.remove(item)
+                decision.eligible.append(EligibleItem(
+                    fragment_id=frag.fragment_id, memory_id=item.memory_id,
+                    authority_layer=frag.authority_layer.value, confidence=frag.confidence,
+                    use_constraints=frag.use_constraints))
+                granted[frag.fragment_id] = decided.applies[frag.fragment_id]
+            elif item.fragment_id in decided.does_not_apply:
+                item.escalate = False
+                item.detail = self.escalations.note(
+                    item.fragment_id, decided.does_not_apply[item.fragment_id], applies=False)
+        if granted:
+            decision.escalation_decisions = granted
+            decision.rationale += f" {len(granted)} applied on a person's decision."
 
     @clock.scoped
     def evaluate(self, fragment, context: TacitContext, *, role: str | None = None):
@@ -436,7 +490,8 @@ class MetisEngine:
     def export_state(self) -> dict[str, Any]:
         """The Metis domain state of this workspace (the CHAP chain lives in its own store)."""
         return {
-            "version": 1,
+            **self._unknown_state,
+            "version": STATE_VERSION,
             "name": self.adapter.name,
             "site": self.site,
             "workspace": self.adapter.descriptor(),
@@ -462,6 +517,11 @@ class MetisEngine:
         from .memory.agent_context import MemoryEntry
         from .memory.tacit import TacitMemoryObject
 
+        version = data.get("version", 1)
+        if not isinstance(version, int) or version > STATE_VERSION:
+            raise StateTooNew(f"This workspace's state is version {version}; this Metis reads up "
+                              f"to {STATE_VERSION}. Upgrade Metis.")
+        self._unknown_state = {k: v for k, v in data.items() if k not in _STATE_KEYS}
         for f in data.get("fragments", []):
             self.fragments.put(TacitFragment.model_validate(f))
         for m in data.get("memory_objects", []):

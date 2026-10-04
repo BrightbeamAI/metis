@@ -164,13 +164,15 @@ def vote(workspace_id: str, fragment_id: str, body: VoteIn, p: Principal = Depen
 
 
 def review_items(engine: Any, p: Principal, *, with_fragment: bool = False) -> list[dict[str, Any]]:
-    """Fragments awaiting a first review, with an open review, held, or past their review date."""
+    """Fragments awaiting a first review, with an open review, held, or past their review date.
+    A fragment the caller contributed is left out: its contributor never reviews it."""
     gov, now = engine.governance, clock.now_dt()
-    need = gov.policy.approvals_required(len(engine.mission_group_members))
     queue = []
     for frag in engine.fragments.all():
-        if frag.revocation_status != RevocationStatus.active:
+        if frag.revocation_status != RevocationStatus.active or contributed(frag, p.uri):
             continue
+        eligible = [r for r in engine.mission_group_members if not contributed(frag, r)]
+        need = gov.policy.approvals_required(max(len(eligible), 1))
         fid = frag.fragment_id
         is_open = gov.review_open(fid)
         awaiting = frag.validation_state == ValidationState.tier1_confirmed

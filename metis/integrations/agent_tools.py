@@ -23,8 +23,9 @@ from typing import Any
 CONTEXT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "description": (
-        "The current work situation. Give every field you know: the gate returns guidance only "
-        "where its recorded conditions match, and an unknown value does not count as a match."),
+        "The current work situation. Give every field you know, and always the risk class: the "
+        "gate returns guidance only where its recorded conditions match, an unknown value does "
+        "not count as a match, and high-risk situations go to a person."),
     "properties": {
         "site": {"type": "string"},
         "area": {"type": "string"},
@@ -38,8 +39,12 @@ CONTEXT_SCHEMA: dict[str, Any] = {
         "role": {"type": "string"},
         "risk_class": {"type": "string", "enum": ["low", "moderate", "high", "critical"]},
         "trigger_context": {"type": "string", "description": "what prompted the question"},
+        "environmental_conditions": {
+            "type": "object", "additionalProperties": {"type": "string"},
+            "description": "other measured conditions, for example {\"ambient_temp\": \"hot\"}"},
     },
-    "additionalProperties": True,
+    "required": ["risk_class"],
+    "additionalProperties": False,
 }
 
 TOOLS: list[dict[str, Any]] = [
@@ -66,7 +71,8 @@ TOOLS: list[dict[str, Any]] = [
         "name": "metis_check_escalation",
         "description": (
             "The state of an escalation Metis opened for you, and the person's decision once made: "
-            "applies, does_not_apply, or refer_to_review. Act on guidance only when it applies."),
+            "applies, does_not_apply, or refer_to_review. After applies, ask for guidance again "
+            "with the same context to receive it; otherwise do not use the withheld guidance."),
         "parameters": {"type": "object", "properties": {
             "task_id": {"type": "string", "description": "escalation_task_id from a retrieval"}},
             "required": ["task_id"]},
@@ -97,12 +103,22 @@ class MetisToolbox:
                  "input_schema": t["parameters"]} for t in TOOLS]
 
     def call(self, name: str, arguments: dict[str, Any] | str | None) -> dict[str, Any]:
-        """Run the tool a model asked for; return a JSON-safe result for the model."""
-        args = json.loads(arguments) if isinstance(arguments, str) else dict(arguments or {})
-        if name == "metis_retrieve_guidance":
-            return self.client.retrieve(self.workspace, args["context"])
-        if name == "metis_agent_memory_context":
-            return self.client.agent_context(self.workspace, args["task"], args["context"])
-        if name == "metis_check_escalation":
-            return self.client.escalation(self.workspace, args["task_id"])
-        raise KeyError(f"Unknown Metis tool: {name}")
+        """Run the tool a model asked for; return a JSON-safe result for the model. A refusal or
+        a bad argument comes back as ``{"error": ..., "status": ...}`` for the model to read,
+        so it ends no agent run."""
+        from ..client import MetisError
+
+        try:
+            args = json.loads(arguments) if isinstance(arguments, str) else dict(arguments or {})
+            if name == "metis_retrieve_guidance":
+                return self.client.retrieve(self.workspace, args["context"])
+            if name == "metis_agent_memory_context":
+                return self.client.agent_context(self.workspace, args["task"], args["context"])
+            if name == "metis_check_escalation":
+                return self.client.escalation(self.workspace, args["task_id"])
+            return {"error": f"Unknown Metis tool: {name}", "status": 400}
+        except MetisError as exc:
+            return {"error": exc.detail, "status": exc.status}
+        except (KeyError, TypeError, ValueError) as exc:
+            missing = exc.args[0] if isinstance(exc, KeyError) and exc.args else exc
+            return {"error": f"Invalid arguments for {name}: {missing}", "status": 400}

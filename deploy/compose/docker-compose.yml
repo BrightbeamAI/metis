@@ -54,6 +54,7 @@ services:
       METIS_OIDC_ROLES_CLAIM: realm_access.roles
       METIS_API_KEYS_FILE: /config/api-keys.yaml
       METIS_LOG_LEVEL: info
+      METIS_API_DOCS: "true"  # the interactive API reference at /docs, for evaluation
       # The web app at http://localhost:8000/app signs people in through Keycloak.
       METIS_UI_CLIENT_ID: metis-cli
       METIS_PUBLIC_URL: http://localhost:8000

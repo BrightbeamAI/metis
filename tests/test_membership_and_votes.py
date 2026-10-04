@@ -177,3 +177,64 @@ def test_a_local_project_keeps_members_and_open_proposals(tmp_path):
     assert done["status"] == "decided"
     assert reopened.fragments.require(fid).use_constraints == ["Advisory only."]
     project.close("wsp_local")
+
+
+def test_a_removed_reviewers_approval_no_longer_counts():
+    eng = _engine()
+    eng.set_member(R3, ["reviewer"], by=ADMIN)
+    fid = _capture(eng)
+    assert eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R1)["status"] == "pending"
+    eng.set_member(R1, [], by=ADMIN)  # R1 leaves after approving: the review starts again
+    assert eng.governance.review_approvals(fid) == {}
+    assert eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R2)["status"] == "pending"
+    decided = eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R3)
+    assert decided["status"] == "decided"
+    frag = eng.fragments.require(fid)
+    assert frag.validation_state == ValidationState.promoted_to_advisory
+    assert any("left the Mission Group" in (step.note or "") for step in frag.lineage)
+
+
+def test_a_review_waiting_on_every_reviewer_stops_waiting_for_one_who_left():
+    eng = MetisEngine(workspace_id="wsp_all", name="All", deterministic=False, members=[],
+                      review_rule="all_approve", escalation_assignee="group:escalation@metis.local")
+    eng.join_system_participants()
+    for uri, roles in ((WORKER, ["worker"]), (R1, ["reviewer"]), (R2, ["reviewer"]),
+                       (R3, ["reviewer"]), (CONNECTOR, ["capture"])):
+        eng.set_member(uri, roles, by=ADMIN)
+    fid = _capture(eng)
+    assert eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R1)["status"] == "pending"
+    eng.set_member(R3, [], by=ADMIN)  # R3 never voted, but the review waited on them
+    eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R1)
+    assert eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R2)["status"] == "decided"
+
+
+def test_a_contributor_does_not_decide_on_their_own_fragment():
+    eng = _engine()
+    eng.set_member(R1, ["reviewer", "worker"], by=ADMIN)
+    pending = eng.begin_capture(
+        {"observation_id": "OBS-OWN", "work_as_done": "Ease back earlier.", "context": PUMP},
+        consent=ConsentRecord(consent_status=ConsentStatus.pending), worker=R1,
+        category="K7_sensory", conditions=PUMP)
+    fid = eng.answer_whisper(pending.whisper_id, response="confirm", answered_by=R1,
+                             consent_granted=True).fragment.fragment_id
+    for outcome in ("promoted_to_advisory", "rejected"):
+        with pytest.raises(PermissionError, match="contributed"):
+            eng.cast_review_vote(fid, outcome, reviewer=R1)
+    assert eng.governance.review_approvals(fid) == {}
+
+
+def test_a_review_that_waits_on_everyone_leaves_the_contributor_out():
+    eng = MetisEngine(workspace_id="wsp_own", name="Own", deterministic=False, members=[],
+                      review_rule="all_approve", escalation_assignee="group:escalation@metis.local")
+    eng.join_system_participants()
+    for uri, roles in ((R1, ["reviewer", "worker"]), (R2, ["reviewer"]), (R3, ["reviewer"])):
+        eng.set_member(uri, roles, by=ADMIN)
+    pending = eng.begin_capture(
+        {"observation_id": "OBS-R1", "work_as_done": "Ease back earlier.", "context": PUMP},
+        consent=ConsentRecord(consent_status=ConsentStatus.pending), worker=R1,
+        category="K7_sensory", conditions=PUMP)
+    fid = eng.answer_whisper(pending.whisper_id, response="confirm", answered_by=R1,
+                             consent_granted=True).fragment.fragment_id
+    first = eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R2)
+    assert first["status"] == "pending" and first["required"] == 2
+    assert eng.cast_review_vote(fid, "promoted_to_advisory", reviewer=R3)["status"] == "decided"

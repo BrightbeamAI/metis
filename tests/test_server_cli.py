@@ -9,7 +9,7 @@ runner = CliRunner()
 def test_workspaces_members_and_api_keys(tmp_path, monkeypatch):
     monkeypatch.setenv("METIS_DATABASE_URL", f"sqlite:///{tmp_path / 'server.db'}")
     monkeypatch.setenv("METIS_API_KEYS_FILE", str(tmp_path / "keys.yaml"))
-    assert "schema version 3" in runner.invoke(app, ["server", "migrate"]).output
+    assert "schema version 4" in runner.invoke(app, ["server", "migrate"]).output
     created = runner.invoke(app, ["server", "workspace", "create", "--id", "wsp_plant_a",
                                   "--name", "Plant A", "--admin", "human:ana@example.com"])
     assert created.exit_code == 0, created.output

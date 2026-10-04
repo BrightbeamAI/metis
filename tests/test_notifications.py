@@ -3,6 +3,7 @@ import datetime as dt
 import hashlib
 import hmac
 import json
+import time
 from dataclasses import dataclass, field
 
 import pytest
@@ -169,8 +170,8 @@ def test_failed_deliveries_are_retried_then_marked_failed(setup):
     now = dt.datetime.now(dt.timezone.utc)
     # Two deliveries: the group channel's, and Rosa's on the per-person channel, which this
     # dispatcher does not have configured.
-    assert retrying.run_once(now) == {"delivered": 0, "retrying": 2, "failed": 0}
-    assert retrying.run_once(now) == {"delivered": 0, "retrying": 0, "failed": 0}  # backing off
+    assert retrying.run_once(now) == {"delivered": 0, "retrying": 2, "failed": 0, "superseded": 0}
+    assert retrying.run_once(now) == {"delivered": 0, "retrying": 0, "failed": 0, "superseded": 0}  # backing off
     assert retrying.run_once(now + dt.timedelta(minutes=1))["retrying"] == 2
     assert retrying.run_once(now + dt.timedelta(hours=2))["failed"] == 2
     failed = {row["channel"]: row for row in repo.outbox(status="failed")}
@@ -196,12 +197,59 @@ def test_webhooks_are_signed(monkeypatch):
                              public_url="https://metis.example.com")
     channel.deliver(_note(), None, 7)
     url, kw = calls[0]
-    body = kw["content"]
-    expected = "sha256=" + hmac.new(b"s3cret", body, hashlib.sha256).hexdigest()
+    body, timestamp = kw["content"], kw["headers"]["X-Metis-Timestamp"]
+    signed = timestamp.encode() + b"." + body  # a timestamp in the signature stops replays
+    expected = "sha256=" + hmac.new(b"s3cret", signed, hashlib.sha256).hexdigest()
     assert kw["headers"]["X-Metis-Signature"] == expected
+    assert abs(int(timestamp) - time.time()) < 60
     payload = json.loads(body)
     assert payload["id"] == 7 and payload["event"] == "review.requested"
     assert payload["link"] == "https://metis.example.com/app"
+    assert "recipients" not in payload  # who was told is personal; off by default
+
+
+def test_webhooks_carry_personal_events_only_when_configured(tmp_path):
+    whisper = _note("whisper.asked", question="What cue made you pause?")
+    assert not WebhookChannel(name="h", url="https://h.example.com").accepts(whisper)
+    personal = WebhookChannel(name="h", url="https://h.example.com", include_personal=True)
+    assert personal.accepts(whisper)
+    assert json.loads(personal.body(whisper, 1))["recipients"] == [R1, AGENT]
+    config = tmp_path / "n.yaml"
+    config.write_text("channels:\n  - {name: h, type: webhook, url: https://h.example.com,"
+                      " events: [whisper.asked]}\n")
+    with pytest.raises(ValueError, match="include_personal"):
+        load_channels({"METIS_NOTIFICATIONS_FILE": str(config)})
+
+
+def test_delivery_errors_never_carry_the_url(monkeypatch):
+    import httpx
+
+    from metis.notify import redact
+
+    def refuse(url, **kw):
+        request = httpx.Request("POST", url)
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError(f"Client error for url '{url}'", request=request,
+                                    response=response)
+    monkeypatch.setattr("httpx.post", refuse)
+    slack = SlackChannel(name="s", webhook_url="https://hooks.slack.com/services/T1/B2/SECRET")
+    with pytest.raises(Exception) as caught:
+        slack.deliver(_note(), None, 1)
+    assert "SECRET" not in str(caught.value) and "hooks.slack.com" in str(caught.value)
+    assert redact("failed for url 'https://u:pw@h.example.com/a/b?sig=xyz'") == \
+        "failed for url 'https://h.example.com/[redacted]'"
+
+
+def test_text_from_records_cannot_format_group_messages():
+    hostile = _note(title="<!channel> <https://evil.example|Open Metis> [log in](https://evil)")
+    slack = SlackChannel(name="s", webhook_url="https://hooks.slack.com/x").message(hostile)
+    assert "<!channel>" not in slack["text"] and "&lt;!channel&gt;" in slack["text"]
+    card = TeamsChannel(name="t", webhook_url="https://t.example.com/x").message(hostile)
+    run = card["attachments"][0]["content"]["body"][1]
+    assert run["type"] == "RichTextBlock" and run["inlines"][0]["type"] == "TextRun"
+    email = EmailChannel(name="e", host="smtp.example.com").message(
+        _note("review.requested", title="line one\r\nBcc: everyone@example.com"), R1)
+    assert "\n" not in email["Subject"] and "\r" not in email["Subject"]
 
 
 def test_group_channels_show_no_personal_content():
@@ -271,3 +319,59 @@ def test_channels_from_the_environment_and_a_file(tmp_path):
     with pytest.raises(ValueError):
         load_channels({"METIS_NOTIFICATIONS_FILE": str(config)})  # the secrets are missing
     assert load_channels({}) == ([], None)
+
+
+def test_a_lapsed_lease_is_taken_over_and_each_row_is_delivered_once(setup):
+    repo, dispatcher, group, people = setup
+    slow, fast = Dispatcher(repo, [group, people]), Dispatcher(repo, [group, people])
+    now = dt.datetime.now(dt.timezone.utc)
+    claimed = slow._claim(now)  # the slow dispatcher claims, then stalls past its lease
+    assert claimed
+    later = now + dt.timedelta(seconds=121)
+    taken = fast.run_once(later)
+    assert taken["delivered"] == len(claimed)
+    row, token = claimed[0]
+    assert slow._finish(row, token, None, later) == "superseded"  # its late result is ignored
+    assert all(r["status"] == "delivered" for r in repo.outbox(limit=1000))
+
+
+def test_a_row_that_keeps_crashing_its_dispatcher_ends_failed(setup):
+    repo, dispatcher, group, people = setup
+    crashing = Dispatcher(repo, [group, people], max_attempts=2)
+    now = dt.datetime.now(dt.timezone.utc)
+    for i in range(2):  # claimed, then the process dies before recording an outcome
+        crashing._claim(now + dt.timedelta(minutes=5 * i))
+    result = crashing.run_once(now + dt.timedelta(minutes=15))
+    assert result["failed"] > 0 and result["delivered"] == 0
+    assert all("Gave up after 2 attempts" in r["last_error"] for r in repo.outbox(status="failed"))
+
+
+def test_failed_rows_can_be_sent_again_and_old_rows_are_cleared(setup):
+    from metis.notify import prune, retry_failed
+
+    repo, dispatcher, group, people = setup
+    Dispatcher(repo, [], max_attempts=1).run_once()  # no channel configured: every row fails
+    failed = repo.outbox(status="failed")
+    assert failed and retry_failed(repo) == len(failed)
+    assert dispatcher.run_once()["delivered"] == len(failed)
+    pending = repo.write(WS, _ask)
+    repo.write(WS, lambda e: e.answer_whisper(pending.whisper_id, response="confirm",
+                                              answered_by=WORKER, consent_granted=True))
+    dispatcher.run_once()
+    far = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=31)
+    assert prune(repo, retention_days=30, now=far) > 0
+    assert all(r["payload"] == "{}" for r in repo.outbox(limit=1000))  # kept rows hold no content
+
+
+def test_settings_are_parsed_strictly(tmp_path):
+    config = tmp_path / "n.yaml"
+    config.write_text('channels:\n  - {name: h, type: webhook, url: "https://h.example.com",'
+                      ' include_personal: "false"}\n')
+    [channel], _ = load_channels({"METIS_NOTIFICATIONS_FILE": str(config)})
+    assert channel.include_personal is False
+    config.write_text('channels:\n  - {name: h, type: webhook, url: "https://h.example.com",'
+                      ' include_personal: "maybe"}\n')
+    with pytest.raises(ValueError, match="true or false"):
+        load_channels({"METIS_NOTIFICATIONS_FILE": str(config)})
+    from metis.notify import redact
+    assert redact("see https://h.example?token=abc") == "see https://h.example/[redacted]"

@@ -20,8 +20,10 @@ call() {
        "$API$path" "$@"
 }
 
-printf 'Waiting for the Metis server'
-until curl -sf "$API/readyz" >/dev/null 2>&1; do printf '.'; sleep 2; done
+printf 'Waiting for the Metis server and Keycloak'
+until curl -sf "$API/readyz" >/dev/null 2>&1 \
+      && curl -sf http://localhost:8080/realms/metis/.well-known/openid-configuration >/dev/null 2>&1
+do printf '.'; sleep 2; done
 echo
 
 ANA=$(person ana); WENDY=$(person wendy); RHEA=$(person rhea); RAJ=$(person raj)

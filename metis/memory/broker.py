@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as _dt
 
+from .. import clock
 from ..conditions.context import TacitContext
 from ..fragment.store import FragmentStore
 from ..retrieval.decision import BlockedItem, EligibleItem, RetrievalDecision
@@ -43,8 +44,12 @@ class MemoryBroker:
         gate: RetrievalGate | None = None,
         adapter=None,
         escalation_assignee: str | None = None,
+        escalations=None,
     ) -> None:
         self.escalation_assignee = escalation_assignee
+        # A metis.retrieval.escalation.EscalationBook: reuses open escalations and applies a
+        # person's recent decisions on the same situation.
+        self.escalations = escalations
         self.procedural = procedural
         self.semantic = semantic
         self.episodic = episodic
@@ -73,6 +78,8 @@ class MemoryBroker:
         ctx.episodic_memory = self.episodic.query(context)
 
         required_actions: list[str] = []
+        decided = None
+        granted: dict[str, str] = {}
         for mo in self.tacit_store.all():
             fragment = self.fragment_store.get(mo.fragment_id)
             if fragment is None:
@@ -81,7 +88,17 @@ class MemoryBroker:
                                        reason="revoked_or_superseded", detail="source fragment not found"))
                 continue
             el = self.gate.evaluate(fragment, context, role=role, now=now)
-            if el.ok:
+            refused = None
+            if not el.ok and el.escalate and self.escalations is not None and requester:
+                if decided is None:
+                    decided = self.escalations.decided(requester, ctx.runtime_context,
+                                                       now or clock.now_dt())
+                if mo.fragment_id in decided.applies:
+                    granted[mo.fragment_id] = decided.applies[mo.fragment_id]
+                    ctx.governance_notes.append(self.escalations.note(
+                        mo.fragment_id, granted[mo.fragment_id], applies=True))
+                refused = decided.does_not_apply.get(mo.fragment_id)
+            if el.ok or mo.fragment_id in granted:
                 citations = [f"evidence:{s}" for s in mo.linked_chap_evidence_refs]
                 citations += fragment.provenance.source_artefacts
                 ctx.tacit_memory.append(TacitMemoryEntry(
@@ -101,13 +118,17 @@ class MemoryBroker:
             else:
                 ctx.blocked_tacit_memory.append(BlockedTacitMemory(
                     memory_id=mo.memory_id, fragment_id=mo.fragment_id,
-                    reason=el.reason.value if el.reason else "unknown", detail=el.detail,
-                    escalate=el.escalate))
+                    reason=el.reason.value if el.reason else "unknown",
+                    detail=(self.escalations.note(mo.fragment_id, refused, applies=False)
+                            if refused else el.detail),
+                    escalate=el.escalate and not refused))
 
         escalated = [b for b in ctx.blocked_tacit_memory if b.escalate]
         if emit and self.adapter is not None and self.escalation_assignee and escalated:
-            ctx.escalation_task_id = open_escalation(
-                self.adapter, requester=requester or self.adapter.coordinator,
+            opener = self.escalations.open if self.escalations is not None else (
+                lambda **kw: open_escalation(self.adapter, **kw))
+            ctx.escalation_task_id = opener(
+                requester=requester or self.adapter.coordinator,
                 assignee=self.escalation_assignee, runtime_context=ctx.runtime_context,
                 items=escalated, origin_task=task_id)
         required_actions.extend(escalation_actions(escalated, ctx.escalation_task_id))
@@ -120,10 +141,11 @@ class MemoryBroker:
                 ctx.required_human_actions.append(a)
 
         if emit and self.adapter is not None:
-            self._record_decision(task_id, ctx, requester or self.adapter.coordinator)
+            self._record_decision(task_id, ctx, requester or self.adapter.coordinator, granted)
         return ctx
 
-    def _record_decision(self, task_id: str, ctx: AgentMemoryContext, requester: str) -> None:
+    def _record_decision(self, task_id: str, ctx: AgentMemoryContext, requester: str,
+                         granted: dict[str, str] | None = None) -> None:
         decision = RetrievalDecision(
             requested_role=None,
             runtime_context=ctx.runtime_context,
@@ -134,6 +156,7 @@ class MemoryBroker:
                                  reason=b.reason, detail=b.detail, escalate=b.escalate)
                      for b in ctx.blocked_tacit_memory],
             escalation_task_id=ctx.escalation_task_id,
+            escalation_decisions=granted or None,
             required_human_actions=escalation_actions(
                 [b for b in ctx.blocked_tacit_memory if b.escalate], ctx.escalation_task_id),
             rationale="MemoryBroker condition-aware retrieval.",

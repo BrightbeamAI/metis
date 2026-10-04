@@ -34,7 +34,8 @@ def metis_tools(client: Any, workspace: str) -> list[Any]:
             return toolbox.call(name, kwargs)
 
         return StructuredTool.from_function(func=run, name=name, description=spec["description"],
-                                            args_schema=spec["parameters"])
+                                            args_schema=spec["parameters"],
+                                            handle_tool_error=True)
 
     return [make(spec) for spec in TOOLS]
 

@@ -50,7 +50,8 @@ def import_records(
     server: str = typer.Option(None, help="A Metis server URL; records go to its ingest endpoint."),
     api_key: str = typer.Option(None, envvar="METIS_API_KEY", help="The capture source's API key."),
     as_: str = typer.Option(None, "--as", help="Without --server: the capture source to act as."),
-    mappings: str = typer.Option(None, help="Without --server: the mappings file."),
+    mappings: str = typer.Option(None, help="The mappings file (needed without --server, and "
+                                           "to split a file's records into batches)."),
     batch: int = typer.Option(200, help="Records per request."),
 ) -> None:
     """Capture observations from a file of records. The same records can be imported again:
@@ -78,9 +79,10 @@ def import_records(
         mapping, repo = _mapping(source, mappings), _repository()
         principal = Principal(uri=as_, subject="cli", method="cli")
         send = lambda chunk: ops.ingest(repo, principal, workspace, mapping, chunk)  # noqa: E731
-    if server and not isinstance(payload, list):
+    local = mappings or os.environ.get("METIS_CONNECTORS_FILE")
+    if server and not isinstance(payload, list) and not local:
         chunks: list = [payload]  # the server finds the records with the source's mapping
-    else:
+    else:  # split into requests of --batch records
         records = payload if isinstance(payload, list) else _mapping(source, mappings).records_in(payload)
         chunks = [records[i:i + max(1, batch)] for i in range(0, len(records), max(1, batch))]
     for chunk in chunks:

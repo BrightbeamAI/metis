@@ -90,6 +90,48 @@ class CaptureResult:
     superseded: str | None = None  # the re-elicited fragment this capture replaced
 
 
+@dataclass
+class CaptureDrafts:
+    """What the local model drafts for one capture: the candidate's category and the whisper.
+    A server drafts before it locks the workspace, so the model's latency holds no writer."""
+
+    observation: Observation
+    candidate: InferenceCandidate
+    infer_assist: dict[str, Any] | None
+    whisper: WhisperPrompt
+    whisper_assist: dict[str, Any] | None
+
+
+def draft_capture(observation_input: dict[str, Any] | Observation, *, model_client: Any,
+                  category: str | None = None) -> CaptureDrafts:
+    """The model's drafts for a capture, made from the observation alone."""
+    observation = (observation_input if isinstance(observation_input, Observation)
+                   else build_observation(**observation_input))
+    candidate, infer_assist = infer_candidate(observation, candidate_id="IC-DRAFT",
+                                              model_client=model_client, category=category)
+    whisper, whisper_assist = build_whisper(candidate.category, observation,
+                                            model_client=model_client)
+    return CaptureDrafts(observation, candidate, infer_assist, whisper, whisper_assist)
+
+
+@dataclass
+class ConfirmationDraft:
+    """The model's one-sentence summary of a worker's answer, drafted before the write."""
+
+    summary: str | None
+    assist: dict[str, Any] | None
+
+
+def draft_confirmation(whisper: WhisperPrompt, response: OperatorResponse | str, *,
+                       model_client: Any, corrected_content: str | None = None,
+                       free_text: str | None = None,
+                       confirmed_text: str | None = None) -> ConfirmationDraft:
+    result, assist = operator_confirm(whisper, response, corrected_content=corrected_content,
+                                      free_text=free_text, confirmed_text=confirmed_text,
+                                      model_client=model_client)
+    return ConfirmationDraft(result.summary, assist)
+
+
 class CaptureLoop:
     def __init__(
         self,
@@ -175,12 +217,15 @@ class CaptureLoop:
         worker: str | None = None,
         supersedes: str | None = None,
         submitted_by: str | None = None,
+        drafts: CaptureDrafts | None = None,
     ) -> PendingCapture:
         """Observe, infer, and ask the worker one whisper. The worker answers later.
 
         ``supersedes`` names a fragment the Mission Group sent back for re-elicitation; the
         fragment this capture stores replaces it. ``submitted_by`` names who reported the
         observation when it is not the worker; the observation is recorded as theirs.
+        ``drafts`` are the model's drafts for this observation, made beforehand with
+        ``draft_capture``; without them the model is asked here.
         """
         if category is not None:
             Category(category)  # reject an unknown category before anything is recorded
@@ -192,7 +237,9 @@ class CaptureLoop:
         assists: list[ModelAssistRecord] = []
 
         # 1. Observe
-        if isinstance(observation_input, Observation):
+        if drafts is not None:
+            observation = drafts.observation
+        elif isinstance(observation_input, Observation):
             observation = observation_input
         else:
             observation = build_observation(**observation_input)
@@ -206,8 +253,12 @@ class CaptureLoop:
         # 2. Infer (candidate only)
         self._frag_seq += 1
         candidate_id = f"IC-{self._frag_seq:04d}"
-        candidate, infer_assist = infer_candidate(observation, candidate_id=candidate_id,
-                                                  model_client=mc, category=category)
+        if drafts is not None:
+            candidate = drafts.candidate.model_copy(update={"candidate_id": candidate_id})
+            infer_assist = drafts.infer_assist
+        else:
+            candidate, infer_assist = infer_candidate(observation, candidate_id=candidate_id,
+                                                      model_client=mc, category=category)
         cand_art = self.adapter.append_artefact(
             "tacit.inference_candidate", produced_by=self.whisperer_uri,
             content=candidate.model_dump(mode="json"), task=task_id, based_on=obs_art)
@@ -239,7 +290,10 @@ class CaptureLoop:
                 pending.deferred_reason = "worker_prompt_budget"
                 return pending
 
-        whisper, whisper_assist = build_whisper(candidate.category, observation, model_client=mc)
+        if drafts is not None:
+            whisper, whisper_assist = drafts.whisper, drafts.whisper_assist
+        else:
+            whisper, whisper_assist = build_whisper(candidate.category, observation, model_client=mc)
         prompt_art = self.adapter.whisper_ask(
             sender=self.whisperer_uri, to=worker, task_id=task_id,
             question=whisper.question, options=whisper.options,
@@ -263,10 +317,12 @@ class CaptureLoop:
         use_model: bool = True,
         answered_by: str | None = None,
         store: bool = True,
+        confirmation_draft: ConfirmationDraft | None = None,
     ) -> CaptureResult:
         """Record the worker's own answer (Tier-1) and store a confirmed fragment.
 
         ``store=False`` records the answer but stores nothing (the worker declined consent).
+        ``confirmation_draft`` is the model's summary, drafted beforehand.
         """
         if pending.deferred or pending.whisper is None or pending.whisper_id is None:
             raise ValueError("This capture was deferred; no whisper was asked.")
@@ -281,7 +337,11 @@ class CaptureLoop:
         # 4. Confirm (Tier-1, descriptive fidelity)
         confirmation, confirm_assist = operator_confirm(
             pending.whisper, response, corrected_content=corrected_content, free_text=free_text,
-            confirmed_text=pending.candidate.hypothesis, model_client=mc)
+            confirmed_text=pending.candidate.hypothesis,
+            model_client=None if confirmation_draft is not None else mc)
+        if confirmation_draft is not None:
+            confirmation = confirmation.model_copy(update={"summary": confirmation_draft.summary})
+            confirm_assist = confirmation_draft.assist
         self.adapter.whisper_answer(
             sender=worker, to=self.whisperer_uri, task_id=pending.task_id,
             prompt_artefact=prompt_art, response_type=confirmation.response.value,

@@ -11,12 +11,23 @@ The endpoint is stateless and answers with JSON, so any replica can serve any re
 from __future__ import annotations
 
 import json
+import logging
 from contextvars import ContextVar
-from typing import Any
+from typing import Annotated, Any
 
-from ..identity import AuthenticationError, Principal
+from pydantic import Field
+
+from ..identity import AuthenticationError, IdentityProviderUnavailable, Principal
+from ..limits import MAX_ID, MAX_NAME, MAX_NOTE, MAX_TEXT, MAX_URI
+from ..storage.repository import WorkspaceBusy, WorkspaceConflict
 from ..taxonomy.categories import CATEGORY_META
 from . import operations as ops
+from .access import ScopedRepository
+
+log = logging.getLogger("metis.server")
+
+Workspace = Annotated[str, Field(min_length=1, max_length=MAX_NAME)]
+Id = Annotated[str, Field(min_length=1, max_length=MAX_ID)]
 
 current_principal: ContextVar[Principal | None] = ContextVar("metis_principal", default=None)
 
@@ -59,17 +70,29 @@ def _tool_error() -> type[Exception]:
 
 
 async def _call(fn: Any, repo: Any, *args: Any, **kwargs: Any) -> Any:
-    """Run a blocking repository operation off the event loop, as the signed-in caller. A
-    refusal (missing role, unknown fragment, invalid input, a conflicting state) reaches the
-    agent as a tool error with its reason."""
+    """Run a blocking repository operation off the event loop, as the signed-in caller, over
+    only the workspaces they belong to. A refusal (missing role, unknown workspace or fragment,
+    invalid input, a conflicting state) reaches the agent as a tool error with its reason; any
+    other failure as a generic error, logged with its details."""
     import anyio
 
     principal = _caller()
+    scoped = ScopedRepository(repo, principal)
     try:
-        return await anyio.to_thread.run_sync(lambda: fn(repo, principal, *args, **kwargs))
-    except (PermissionError, LookupError, ValueError) as exc:
+        return await anyio.to_thread.run_sync(lambda: fn(scoped, principal, *args, **kwargs))
+    except PermissionError as exc:
+        if exc.errno is None:  # a refused action, not an operating-system error
+            raise _tool_error()(str(exc)) from exc
+        log.error("MCP tool %s failed: %s", getattr(fn, "__name__", fn), exc)
+        raise _tool_error()("The server could not complete the request.") from None
+    except (LookupError, ValueError) as exc:
         message = exc.args[0] if isinstance(exc, KeyError) and exc.args else str(exc)
         raise _tool_error()(message) from exc
+    except (WorkspaceBusy, WorkspaceConflict):
+        raise _tool_error()("The workspace is busy; try again shortly.") from None
+    except Exception as exc:
+        log.error("MCP tool %s failed", getattr(fn, "__name__", fn), exc_info=exc)
+        raise _tool_error()("The server could not complete the request.") from None
 
 
 def build_server(repo: Any) -> Any:
@@ -92,36 +115,44 @@ def build_server(repo: Any) -> Any:
     @server.tool(name="describe_workspace", annotations=annotations(True),
                  description="Describe a workspace: its review rule, reviewers, visible memory, "
                              "evidence-chain status, and your roles.")
-    async def describe_workspace(workspace: str) -> dict[str, Any]:
+    async def describe_workspace(workspace: Workspace) -> dict[str, Any]:
         return await _call(ops.describe, repo, workspace)
 
     @server.tool(name="retrieve_guidance", annotations=annotations(False),
                  description="Ask for governed tacit guidance for the current work situation. "
                              "Returns only guidance whose recorded conditions match `context`, "
-                             "with its use constraints, plus anything a person must decide. The "
-                             "decision is recorded under your identity. Needs the agent role.")
-    async def retrieve_guidance(workspace: str, context: dict[str, Any],
-                                role: str | None = None) -> dict[str, Any]:
+                             "with its use constraints, plus anything a person must decide. "
+                             "`context` must include `risk_class` (low, moderate, high, or "
+                             "critical). The decision is recorded under your identity. Needs "
+                             "the agent role.")
+    async def retrieve_guidance(workspace: Workspace, context: dict[str, Any],
+                                role: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
+                                ) -> dict[str, Any]:
         return await _call(ops.retrieve, repo, workspace, context, role)
 
     @server.tool(name="agent_memory_context", annotations=annotations(False),
                  description="Assemble procedural, semantic, episodic, and gated tacit memory for a "
-                             "task in the given context, with required human actions. Needs the "
-                             "agent role.")
-    async def agent_memory_context(workspace: str, task: str, context: dict[str, Any],
-                                   role: str | None = None) -> dict[str, Any]:
+                             "task in the given context (including `risk_class`), with required "
+                             "human actions. Needs the agent role.")
+    async def agent_memory_context(workspace: Workspace,
+                                   task: Annotated[str, Field(max_length=MAX_NOTE)],
+                                   context: dict[str, Any],
+                                   role: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
+                                   ) -> dict[str, Any]:
         return await _call(ops.agent_context, repo, workspace, task, context, role)
 
     @server.tool(name="list_tacit_memory", annotations=annotations(True),
                  description="List agent-visible tacit memory (identifiers, categories, conditions, "
                              "review dates). Content arrives only through retrieve_guidance.")
-    async def list_tacit_memory(workspace: str) -> list[dict[str, Any]]:
+    async def list_tacit_memory(workspace: Workspace) -> list[dict[str, Any]]:
         return await _call(ops.memory, repo, workspace)
 
     @server.tool(name="check_escalation", annotations=annotations(True),
                  description="The state of an escalation you raised, and the person's decision "
-                             "once it is made: applies, does_not_apply, or refer_to_review.")
-    async def check_escalation(workspace: str, task_id: str) -> dict[str, Any]:
+                             "once it is made: applies, does_not_apply, or refer_to_review. After "
+                             "applies, call retrieve_guidance again with the same context to "
+                             "receive the guidance.")
+    async def check_escalation(workspace: Workspace, task_id: Id) -> dict[str, Any]:
         return await _call(ops.escalation, repo, workspace, task_id)
 
     @server.tool(name="submit_observation", annotations=annotations(False),
@@ -129,10 +160,13 @@ def build_server(repo: Any) -> Any:
                              "infers a candidate (a hypothesis only) and asks the worker one short "
                              "question in their inbox. Nothing is stored until the worker answers. "
                              "Needs the capture role.")
-    async def submit_observation(workspace: str, observation_id: str, work_as_done: str,
-                                 context: dict[str, Any], worker: str,
-                                 work_as_imagined: str | None = None, category: str | None = None,
-                                 title: str | None = None) -> dict[str, Any]:
+    async def submit_observation(
+            workspace: Workspace, observation_id: Id,
+            work_as_done: Annotated[str, Field(min_length=1, max_length=MAX_TEXT)],
+            context: dict[str, Any], worker: Annotated[str, Field(max_length=MAX_URI)],
+            work_as_imagined: Annotated[str, Field(max_length=MAX_TEXT)] | None = None,
+            category: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
+            title: Annotated[str, Field(max_length=MAX_NAME)] | None = None) -> dict[str, Any]:
         return await _call(ops.submit_observation, repo, workspace,
                            observation_id=observation_id, work_as_done=work_as_done,
                            context=context, worker=worker, work_as_imagined=work_as_imagined,
@@ -181,19 +215,29 @@ class SignedIn:
         self.app = app
         self.authenticator = authenticator
 
+    @staticmethod
+    async def _reply(send: Any, status: int, detail: str,
+                     headers: list[tuple[bytes, bytes]]) -> None:
+        body = json.dumps({"detail": detail}).encode("utf-8")
+        await send({"type": "http.response.start", "status": status,
+                    "headers": [(b"content-type", b"application/json"), *headers]})
+        await send({"type": "http.response.body", "body": body})
+
     async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
-        headers = {k.decode("latin-1"): v.decode("latin-1") for k, v in scope.get("headers", [])}
-        try:
-            principal = self.authenticator.authenticate(headers)
+        import anyio
+        from starlette.datastructures import Headers
+
+        try:  # signing in may fetch the provider's keys: keep it off the event loop
+            principal = await anyio.to_thread.run_sync(self.authenticator.authenticate,
+                                                       Headers(scope=scope))
         except AuthenticationError as exc:
-            body = json.dumps({"detail": str(exc)}).encode("utf-8")
-            await send({"type": "http.response.start", "status": 401,
-                        "headers": [(b"content-type", b"application/json"),
-                                    (b"www-authenticate", b"Bearer")]})
-            await send({"type": "http.response.body", "body": body})
+            await self._reply(send, 401, str(exc), [(b"www-authenticate", b"Bearer")])
+            return
+        except IdentityProviderUnavailable as exc:
+            await self._reply(send, 503, str(exc), [(b"retry-after", b"5")])
             return
         token = current_principal.set(principal)
         try:

@@ -12,7 +12,12 @@ from .authenticators import (
     OIDCAuthenticator,
     TrustedHeaderAuthenticator,
 )
-from .principal import GLOBAL_ROLES, AuthenticationError, Principal
+from .principal import (
+    GLOBAL_ROLES,
+    AuthenticationError,
+    IdentityProviderUnavailable,
+    Principal,
+)
 
 __all__ = [
     "GLOBAL_ROLES",
@@ -21,6 +26,7 @@ __all__ = [
     "AuthenticationError",
     "Authenticator",
     "AuthenticatorChain",
+    "IdentityProviderUnavailable",
     "OIDCAuthenticator",
     "Principal",
     "TrustedHeaderAuthenticator",

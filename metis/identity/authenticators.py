@@ -16,7 +16,12 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
+import os
 import secrets
+import tempfile
+import threading
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -24,7 +29,14 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from ..integrations.chap.participants import URI_RE
-from .principal import AuthenticationError, Principal
+from .principal import (
+    AuthenticationError,
+    IdentityProviderUnavailable,
+    Principal,
+    global_roles_allowed,
+)
+
+log = logging.getLogger("metis.identity")
 
 API_KEY_PREFIX = "metis_"
 _PARTICIPANT_TYPES = ("human", "agent", "service")
@@ -90,6 +102,10 @@ class ApiKeyEntry:
         digest = self.sha256.lower()
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
             raise ValueError(f"API key {self.id}: sha256 must be 64 hexadecimal characters")
+        try:
+            global_roles_allowed(self.uri, self.global_roles)
+        except ValueError as exc:
+            raise ValueError(f"API key {self.id}: {exc}") from None
 
     def as_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {"id": self.id, "sha256": self.sha256.lower(), "uri": self.uri}
@@ -104,13 +120,17 @@ class ApiKeyAuthenticator:
     """API keys, sent as ``Authorization: Bearer metis_...`` or ``X-API-Key: metis_...``.
 
     Built ``from_file``, the authenticator rereads the file when it changes, so keys issued or
-    revoked with ``metis server api-key`` take effect without a restart.
+    revoked with ``metis server api-key`` take effect without a restart. A deleted file means no
+    keys; a file that cannot be parsed keeps the keys loaded before, and is logged.
     """
+
+    _MISSING = "missing"
 
     def __init__(self, entries: Iterable[ApiKeyEntry], *, path: str | Path | None = None) -> None:
         self._set(list(entries))
         self.path = Path(path) if path else None
         self._digest = self._file_digest()
+        self._reload_lock = threading.Lock()
 
     def _set(self, entries: list[ApiKeyEntry]) -> None:
         ids = [e.id for e in entries]
@@ -118,19 +138,41 @@ class ApiKeyAuthenticator:
             raise ValueError("API key ids must be unique")
         self.entries = entries
 
+    _UNREADABLE = "unreadable"
+
     def _file_digest(self) -> str | None:
-        try:
-            return hashlib.sha256(self.path.read_bytes()).hexdigest() if self.path else None
-        except OSError:  # missing, or being replaced: keep the keys already loaded
+        if self.path is None:
             return None
+        try:
+            return hashlib.sha256(self.path.read_bytes()).hexdigest()
+        except FileNotFoundError:
+            return self._MISSING
+        except OSError:
+            return self._UNREADABLE
 
     def _reload_if_changed(self) -> None:
         """Reread the keys file when its contents change (it is small; the check is cheap)."""
         if self.path is None:
             return
         digest = self._file_digest()
-        if digest is not None and digest != self._digest:
-            self._set(self.read_file(self.path))
+        if digest is None or digest == self._digest:
+            return
+        with self._reload_lock:
+            if digest == self._digest:
+                return
+            if digest in (self._MISSING, self._UNREADABLE):  # fail closed: a revoked key stays out
+                log.error("API keys file %s is %s; no API key is accepted until it can be read",
+                          self.path, "missing" if digest == self._MISSING else "unreadable")
+                self._set([])
+                self._digest = digest
+                return
+            try:
+                entries = self.read_file(self.path)
+                self._set(entries)
+            except Exception as exc:  # keep the keys loaded before; try again on the next request
+                log.error("API keys file %s cannot be read (%s); keeping the keys loaded before",
+                          self.path, exc)
+                return
             self._digest = digest
 
     @staticmethod
@@ -163,15 +205,38 @@ class ApiKeyAuthenticator:
 
     @staticmethod
     def write_file(path: str | Path, entries: Iterable[ApiKeyEntry]) -> None:
+        """Write the keys file in one step (a temporary file renamed over it), so a running
+        server never reads half a file. A new file is readable only by its owner; a rewritten
+        one keeps its permissions and owner."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"keys": [e.as_dict() for e in entries]}
         if path.suffix.lower() == ".json":
-            path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            text = json.dumps(payload, indent=2) + "\n"
         else:
             import yaml
 
-            path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+            text = yaml.safe_dump(payload, sort_keys=False)
+        try:  # the new file keeps the old one's permissions and owner, so the server reads it
+            st = path.stat()
+            mode, owner = st.st_mode & 0o777, (st.st_uid, st.st_gid)
+        except FileNotFoundError:
+            mode, owner = 0o600, None
+        fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(text)
+            os.chmod(tmp, mode)
+            if owner is not None and hasattr(os, "chown") and owner != (os.getuid(), os.getgid()):
+                try:
+                    os.chown(tmp, *owner)
+                except PermissionError:
+                    log.warning("could not keep the owner of %s; check the server can read it",
+                                path)
+            os.replace(tmp, path)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
 
     @classmethod
     def from_file(cls, path: str | Path) -> ApiKeyAuthenticator:
@@ -198,29 +263,55 @@ class ApiKeyAuthenticator:
 
 
 # ---- OIDC ----------------------------------------------------------------------------------
+_CLIENT_CLAIMS = ("azp", "client_id", "cid", "appid")
+
+
+def _client_id(claims: Mapping[str, Any]) -> str | None:
+    return next((str(claims[k]) for k in _CLIENT_CLAIMS if claims.get(k)), None)
+
+
 def _is_client_token(claims: Mapping[str, Any]) -> bool:
     """True for a token a client obtained for itself (client credentials), as identity
-    providers mark it: Entra ID's ``idtyp``, Keycloak's service-account user, Auth0's grant
-    type and ``@clients`` subject, or a subject equal to the client id (Okta and others)."""
+    providers mark it: Entra ID's ``idtyp`` (or an app-only token: no ``scp``, and ``oid``
+    equal to ``sub``), Keycloak's service-account user for that client, Auth0's grant type and
+    ``@clients`` subject, or a subject equal to the client id (Okta and others)."""
     if claims.get("idtyp") == "app" or claims.get("gty") == "client-credentials":
         return True
-    if str(claims.get("preferred_username", "")).startswith("service-account-"):
+    client = _client_id(claims)
+    username = str(claims.get("preferred_username", "")).lower()
+    if client and username == f"service-account-{client.lower()}":  # Keycloak lowercases it
         return True
     sub = str(claims.get("sub", ""))
     if sub.endswith("@clients"):
         return True
-    clients = {claims.get(k) for k in ("azp", "client_id", "cid", "appid")} - {None}
-    return bool(sub) and sub in {str(c) for c in clients}
+    if (client and "scp" not in claims and claims.get("oid") and claims.get("oid") == sub
+            and claims.get("tid")):
+        return True
+    clients = {str(claims[k]) for k in _CLIENT_CLAIMS if claims.get(k)}
+    return bool(sub) and sub in clients
+
+
+def _email_verified(value: Any) -> bool | None:
+    """``email_verified`` as a boolean, or ``None`` when the token does not say."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() == "true"
 
 
 class OIDCAuthenticator:
     """Verify JWT access tokens issued by an OpenID Connect provider.
 
     The token must be signed by one of the provider's keys, carry the configured issuer and
-    audience, and be unexpired. People sign in as ``human:<email>``; a client signing in with
-    its own credentials becomes ``agent:<client id>``. An identity provider may set the
-    participant URI explicitly in the ``participant_claim`` claim. Roles in ``roles_claim``
-    (a dotted path such as ``realm_access.roles``) grant the global admin and auditor roles.
+    audience, and be unexpired. People sign in as ``human:<email>`` when the token's email is
+    not marked unverified (with ``require_email_verified``, only when it is marked verified);
+    otherwise as ``human:<subject>@<issuer host>``. A client signing in with its own credentials
+    becomes ``agent:<client id>``. When ``participant_claim`` names a claim, an identity
+    provider may set the participant URI there, of the same kind (person or client) as the
+    token. Roles in ``roles_claim`` (a dotted path such as ``realm_access.roles``) grant the
+    global admin and auditor roles. Keys removed from the provider's key set stop being
+    accepted within ``key_cache_seconds``.
     """
 
     def __init__(
@@ -235,11 +326,13 @@ class OIDCAuthenticator:
         email_claim: str = "email",
         name_claim: str = "name",
         roles_claim: str = "roles",
-        participant_claim: str = "metis_participant",
+        participant_claim: str | None = None,
         admin_role: str = "metis-admin",
         auditor_role: str = "metis-auditor",
         key_resolver: Callable[[str], Any] | None = None,
         http_timeout: float = 5.0,
+        require_email_verified: bool = False,
+        key_cache_seconds: int = 300,
     ) -> None:
         if not issuer:
             raise ValueError("OIDC needs an issuer")
@@ -258,7 +351,12 @@ class OIDCAuthenticator:
         self.admin_role = admin_role
         self.auditor_role = auditor_role
         self.http_timeout = http_timeout
+        self.require_email_verified = require_email_verified
+        self.key_cache_seconds = key_cache_seconds
         self._key_resolver = key_resolver
+        self._unavailable_until = 0.0
+        self._resolver_lock = threading.Lock()
+        self._jwk_client: Any = None
 
     # -- signing keys --
     def _discover_jwks_url(self) -> str:
@@ -274,22 +372,61 @@ class OIDCAuthenticator:
             return self._key_resolver
         import jwt
 
-        if self.jwks is not None:
-            keyset = jwt.PyJWKSet.from_dict(dict(self.jwks))
+        with self._resolver_lock:
+            if self._key_resolver is not None:
+                return self._key_resolver
+            if self.jwks is not None:
+                keyset = jwt.PyJWKSet.from_dict(dict(self.jwks))
 
-            def from_set(token: str) -> Any:
-                kid = jwt.get_unverified_header(token).get("kid")
-                for key in keyset.keys:
-                    if kid is None or key.key_id == kid:
-                        return key.key
-                raise AuthenticationError(f"No signing key {kid!r} in the configured JWKS.")
+                def from_set(token: str) -> Any:
+                    kid = jwt.get_unverified_header(token).get("kid")
+                    for key in keyset.keys:
+                        if kid is None or key.key_id == kid:
+                            return key.key
+                    raise AuthenticationError(f"No signing key {kid!r} in the configured JWKS.")
 
-            self._key_resolver = from_set
-        else:
-            client = jwt.PyJWKClient(self.jwks_url or self._discover_jwks_url(),
-                                     cache_keys=True, lifespan=300, timeout=int(self.http_timeout))
-            self._key_resolver = lambda token: client.get_signing_key_from_jwt(token).key
-        return self._key_resolver
+                self._key_resolver = from_set
+            else:
+                # The key set is cached for key_cache_seconds and refetched after, so a key the
+                # provider removes stops being accepted; individual keys are not cached longer.
+                client = jwt.PyJWKClient(self.jwks_url or self._discover_jwks_url(),
+                                         cache_keys=False, cache_jwk_set=True,
+                                         lifespan=self.key_cache_seconds,
+                                         timeout=self.http_timeout)
+                self._jwk_client = client
+                self._key_resolver = lambda token: client.get_signing_key_from_jwt(token).key
+            return self._key_resolver
+
+    def _key_for(self, token: str) -> Any:
+        """The token's signing key. A provider that cannot be reached is reported as
+        unavailable (not as a bad token) and is not asked again for a few seconds."""
+        import jwt
+
+        if time.monotonic() < self._unavailable_until:
+            raise IdentityProviderUnavailable("The identity provider is unreachable; try again "
+                                              "shortly.")
+        try:
+            return self._resolver()(token)
+        except (AuthenticationError, jwt.InvalidTokenError):
+            raise
+        except jwt.PyJWKClientConnectionError as exc:
+            cache = getattr(self._jwk_client, "jwk_set_cache", None)
+            if cache is not None and cache.get() is not None:
+                # The cached keys are current and hold no key for this token: refetching failed,
+                # but the keys every valid token uses are at hand.
+                raise AuthenticationError("The access token was signed with an unknown key.") \
+                    from None
+            self._unavailable_until = time.monotonic() + 5
+            log.warning("identity provider keys unreachable: %s", exc)
+            raise IdentityProviderUnavailable("The identity provider is unreachable; try "
+                                              "again shortly.") from None
+        except jwt.PyJWTError as exc:  # no key for this token in the provider's key set
+            raise AuthenticationError(f"Invalid access token: {exc}") from None
+        except Exception as exc:  # discovery failed: the provider is down or misconfigured
+            self._unavailable_until = time.monotonic() + 5
+            log.warning("identity provider discovery failed: %s", exc)
+            raise IdentityProviderUnavailable("The identity provider is unreachable; try again "
+                                              "shortly.") from None
 
     # -- authentication --
     def authenticate(self, headers: Mapping[str, str]) -> Principal | None:
@@ -299,29 +436,36 @@ class OIDCAuthenticator:
         import jwt
 
         try:
-            key = self._resolver()(token)
+            key = self._key_for(token)
             claims = jwt.decode(token, key=key, algorithms=self.algorithms,
                                 audience=self.audience, issuer=self.issuer, leeway=self.leeway,
                                 options={"require": ["exp", "iss", "sub"]})
-        except AuthenticationError:
+        except (AuthenticationError, IdentityProviderUnavailable):
             raise
         except jwt.PyJWTError as exc:
             raise AuthenticationError(f"Invalid access token: {exc}") from None
-        except Exception as exc:  # key lookup or provider discovery failed
-            raise AuthenticationError(f"Could not verify the access token: {exc}") from None
         return self.principal_from_claims(claims)
 
     def participant_uri(self, claims: Mapping[str, Any]) -> str:
-        explicit = claims.get(self.participant_claim)
-        if (isinstance(explicit, str) and URI_RE.match(explicit)
-                and explicit.split(":", 1)[0] in _PARTICIPANT_TYPES):
+        client = _is_client_token(claims)
+        explicit = claims.get(self.participant_claim) if self.participant_claim else None
+        if explicit is not None:
+            kind = str(explicit).split(":", 1)[0]
+            if not (isinstance(explicit, str) and URI_RE.match(explicit)
+                    and kind in _PARTICIPANT_TYPES):
+                raise AuthenticationError(f"The token's {self.participant_claim} claim is not a "
+                                          "participant URI.")
+            if (kind == "human") == client:
+                raise AuthenticationError(f"The token's {self.participant_claim} claim names a "
+                                          f"{kind} participant, but the token was issued to a "
+                                          f"{'client' if client else 'person'}.")
             return explicit
-        if _is_client_token(claims):
-            client = next((claims[k] for k in ("azp", "client_id", "cid", "appid") if claims.get(k)),
-                          claims["sub"])
-            return f"agent:{str(client).removesuffix('@clients')}"
+        if client:
+            return f"agent:{(_client_id(claims) or str(claims['sub'])).removesuffix('@clients')}"
         email = claims.get(self.email_claim)
-        if isinstance(email, str) and "@" in email and claims.get("email_verified", True) is not False:
+        verified = _email_verified(claims.get("email_verified"))
+        trusted = verified is True or (verified is None and not self.require_email_verified)
+        if isinstance(email, str) and "@" in email and trusted:
             return f"human:{email.strip().lower()}"
         host = urlparse(self.issuer).hostname or "idp"
         return f"human:{claims['sub']}@{host}"
@@ -371,6 +515,8 @@ class TrustedHeaderAuthenticator:
         self.secret_header = secret_header
         self.admin_group = admin_group
         self.auditor_group = auditor_group
+        self.sensitive_headers = tuple(h.lower() for h in (email_header, name_header,
+                                                            groups_header, secret_header))
 
     def authenticate(self, headers: Mapping[str, str]) -> Principal | None:
         email = _header(headers, self.email_header)
@@ -406,8 +552,18 @@ class AuthenticatorChain:
         self.admins = frozenset(admins)
         if not self.authenticators:
             raise ValueError("Configure at least one way to sign in")
+        for uri in self.admins:
+            global_roles_allowed(uri, {"admin"})
+        self.sensitive_headers = {"authorization", "x-api-key"}
+        for authenticator in self.authenticators:
+            self.sensitive_headers.update(getattr(authenticator, "sensitive_headers", ()))
 
     def authenticate(self, headers: Mapping[str, str]) -> Principal:
+        getlist = getattr(headers, "getlist", None)
+        if getlist is not None:  # a credential sent twice is ambiguous: refuse it
+            for name in sorted(self.sensitive_headers):
+                if len(getlist(name)) > 1:
+                    raise AuthenticationError(f"The request carries more than one {name} header.")
         for authenticator in self.authenticators:
             principal = authenticator.authenticate(headers)
             if principal is not None:

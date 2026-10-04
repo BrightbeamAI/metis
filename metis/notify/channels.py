@@ -3,7 +3,13 @@
 A channel accepts some events (and optionally some workspaces). Email sends one message per
 person and may carry that person's own content, such as the question a whisper asks them.
 Slack and Teams post to a shared channel, so they show only events that carry no one's personal
-content. Webhooks receive every accepted event as signed JSON, for your own integrations.
+content. Webhooks receive accepted events as signed JSON, for your own integrations: events
+about people (a whisper asked or lapsed, a member's roles) and the recipients of each event only
+when the webhook is configured with ``include_personal``.
+
+Text that comes from records or people is escaped for each channel, so it cannot add links,
+mentions, or formatting, and a delivery error names the host it failed to reach, never the full
+URL (webhook URLs carry secrets).
 """
 from __future__ import annotations
 
@@ -12,14 +18,46 @@ import hmac
 import json
 import logging
 import smtplib
+import time
 from collections.abc import Iterable
 from dataclasses import dataclass
 from email.message import EmailMessage
 from typing import Any
+from urllib.parse import urlparse
 
 from .events import GROUP_SAFE, Notification, summary
 
 log = logging.getLogger("metis.notify")
+
+
+class DeliveryError(RuntimeError):
+    """A delivery failed; the message names the host, never the URL."""
+
+
+def post_json(url: str, *, timeout: float, **kwargs: Any) -> None:
+    """POST to ``url``; failures raise ``DeliveryError`` naming only the status and host."""
+    import httpx
+
+    host = urlparse(url).hostname or "the receiver"
+    try:
+        httpx.post(url, timeout=timeout, **kwargs).raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise DeliveryError(f"HTTP {exc.response.status_code} from {host}") from None
+    except httpx.HTTPError as exc:
+        raise DeliveryError(f"{exc.__class__.__name__} reaching {host}") from None
+
+
+def slack_text(text: Any, limit: int = 2900) -> str:
+    """Text for Slack's mrkdwn: ``&``, ``<``, and ``>`` escaped, then cut to ``limit``
+    characters without splitting an escape."""
+    value = str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    if len(value) <= limit:
+        return value
+    cut = value[:limit - 1]
+    amp = cut.rfind("&")
+    if amp != -1 and ";" not in cut[amp:]:
+        cut = cut[:amp]
+    return cut + "\u2026"
 
 
 def email_of(uri: str) -> str | None:
@@ -61,28 +99,41 @@ class LogChannel(Channel):
                  summary(n, personal=False))
 
 
+def webhook_signature(secret: str, timestamp: str, body: bytes) -> str:
+    """``X-Metis-Signature``: ``sha256=`` HMAC-SHA256 of ``<timestamp>.<body>``. A receiver
+    recomputes it, refuses timestamps more than a few minutes old, and ignores a delivery id it
+    has seen (delivery is at least once)."""
+    mac = hmac.new(secret.encode("utf-8"), timestamp.encode("ascii") + b"." + body, hashlib.sha256)
+    return f"sha256={mac.hexdigest()}"
+
+
 @dataclass
 class WebhookChannel(Channel):
     url: str = ""
     secret: str | None = None
     timeout: float = 10.0
+    include_personal: bool = False
+
+    def accepts(self, n: Notification) -> bool:
+        return (self.include_personal or n.event in GROUP_SAFE) and super().accepts(n)
 
     def body(self, n: Notification, delivery_id: int) -> bytes:
-        payload = {"id": delivery_id, **n.as_dict(), "summary": summary(n, personal=False)}
+        data = n.as_dict()
+        if not self.include_personal:
+            data.pop("recipients", None)
+        payload = {"id": delivery_id, **data, "summary": summary(n, personal=False)}
         if self.link():
             payload["link"] = self.link()
         return json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
 
     def deliver(self, n: Notification, recipient: str | None, delivery_id: int) -> None:
-        import httpx
-
         body = self.body(n, delivery_id)
+        timestamp = str(int(time.time()))
         headers = {"Content-Type": "application/json", "X-Metis-Event": n.event,
-                   "X-Metis-Delivery": str(delivery_id)}
+                   "X-Metis-Delivery": str(delivery_id), "X-Metis-Timestamp": timestamp}
         if self.secret:
-            digest = hmac.new(self.secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
-            headers["X-Metis-Signature"] = f"sha256={digest}"
-        httpx.post(self.url, content=body, headers=headers, timeout=self.timeout).raise_for_status()
+            headers["X-Metis-Signature"] = webhook_signature(self.secret, timestamp, body)
+        post_json(self.url, content=body, headers=headers, timeout=self.timeout)
 
 
 @dataclass
@@ -96,15 +147,13 @@ class SlackChannel(Channel):
         return n.event in GROUP_SAFE and super().accepts(n)
 
     def message(self, n: Notification) -> dict[str, Any]:
-        text = summary(n, personal=False)
+        text = slack_text(summary(n, personal=False))
         if self.link():
             text += f" <{self.link()}|Open Metis>"
         return {"text": text}
 
     def deliver(self, n: Notification, recipient: str | None, delivery_id: int) -> None:
-        import httpx
-
-        httpx.post(self.webhook_url, json=self.message(n), timeout=self.timeout).raise_for_status()
+        post_json(self.webhook_url, json=self.message(n), timeout=self.timeout)
 
 
 @dataclass
@@ -122,7 +171,9 @@ class TeamsChannel(Channel):
             "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
             "type": "AdaptiveCard", "version": "1.4",
             "body": [{"type": "TextBlock", "text": "Metis", "weight": "Bolder"},
-                     {"type": "TextBlock", "text": summary(n, personal=False), "wrap": True}],
+                     # a plain text run: Teams renders no markdown or links in it
+                     {"type": "RichTextBlock", "inlines": [
+                         {"type": "TextRun", "text": summary(n, personal=False)[:2000]}]}],
         }
         if self.link():
             card["actions"] = [{"type": "Action.OpenUrl", "title": "Open Metis", "url": self.link()}]
@@ -130,9 +181,7 @@ class TeamsChannel(Channel):
             {"contentType": "application/vnd.microsoft.card.adaptive", "content": card}]}
 
     def deliver(self, n: Notification, recipient: str | None, delivery_id: int) -> None:
-        import httpx
-
-        httpx.post(self.webhook_url, json=self.message(n), timeout=self.timeout).raise_for_status()
+        post_json(self.webhook_url, json=self.message(n), timeout=self.timeout)
 
 
 @dataclass
@@ -156,8 +205,9 @@ class EmailChannel(Channel):
 
     def message(self, n: Notification, recipient: str) -> EmailMessage:
         text = summary(n, personal=True)
+        line = " ".join("".join(c if c.isprintable() else " " for c in text).split())
         msg = EmailMessage()
-        msg["Subject"] = f"[Metis] {text if len(text) <= 120 else text[:117] + '...'}"
+        msg["Subject"] = f"[Metis] {line if len(line) <= 120 else line[:117] + '...'}"
         msg["From"] = self.sender
         msg["To"] = email_of(recipient)
         body = text + (f"\n\nOpen Metis: {self.link()}" if self.link() else "")

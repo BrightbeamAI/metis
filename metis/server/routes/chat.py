@@ -34,6 +34,9 @@ async def teams_messages(request: Request) -> Response:
     handler = getattr(request.app.state, "teams", None)
     if handler is None:
         return Response(status_code=404)
-    activity = await request.json()
+    try:
+        activity = await request.json()
+    except ValueError:
+        return _reply(400, {"error": "The activity is not valid JSON."})
     status, payload = await run_in_threadpool(handler.handle, dict(request.headers), activity)
     return _reply(status, payload)

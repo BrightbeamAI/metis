@@ -42,6 +42,10 @@ def overdue(fragment: Any, now: _dt.datetime) -> bool:
 
 
 def context_from(data: dict[str, Any]) -> TacitContext:
+    """A caller's context, within the size limits, as a ``TacitContext``."""
+    from .limits import check_context
+
+    check_context(data)
     return TacitContext.model_validate({k: v for k, v in data.items() if v is not None})
 
 

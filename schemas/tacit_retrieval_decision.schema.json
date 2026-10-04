@@ -152,6 +152,21 @@
       "default": null,
       "title": "Escalation Task Id"
     },
+    "escalation_decisions": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Escalation Decisions"
+    },
     "required_human_actions": {
       "items": {
         "type": "string"

@@ -188,9 +188,13 @@ def _bot_token(key, **claims):
 class FakeConnector:
     def __init__(self):
         self.sent, self.updated = [], []
-        self.members = {"29:wendy": {"email": "Wendy@Example.com"}, "29:walt": {"email": "walt@example.com"}}
+        self.members = {"29:wendy": {"email": "Wendy@Example.com", "aadObjectId": "aad-wendy"},
+                        "29:walt": {"email": "walt@example.com", "aadObjectId": "aad-walt"},
+                        "29:impostor": {"email": "wendy@example.com", "aadObjectId": "aad-evil"}}
+        self.lookups = []
 
     def member(self, service_url, conversation_id, member_id):
+        self.lookups.append(member_id)
         return self.members[member_id]
 
     def send(self, service_url, conversation_id, activity):
@@ -202,29 +206,41 @@ class FakeConnector:
         return {}
 
 
-def _activity(kind, sender="29:wendy", **extra):
-    return {"type": kind, "serviceUrl": SERVICE, "from": {"id": sender},
+def _activity(kind, sender="29:wendy", tenant="t1", **extra):
+    return {"type": kind, "channelId": "msteams", "serviceUrl": SERVICE, "from": {"id": sender},
             "recipient": {"id": "28:bot"},
-            "conversation": {"id": f"a:{sender}", "conversationType": "personal", "tenantId": "t1"},
+            "conversation": {"id": f"a:{sender}", "conversationType": "personal",
+                             "tenantId": tenant},
             **extra}
 
 
+def _bot(repo, bot_key, connector):
+    auth = TeamsBotAuth(APP_ID, key_resolver=lambda t: (bot_key.public_key(), ["msteams"]))
+    return TeamsBot(repo, auth, connector, tenants=["t1"])
+
+
 def test_teams_tokens_are_verified(bot_key):
-    auth = TeamsBotAuth(APP_ID, key_resolver=lambda token: bot_key.public_key())
-    assert auth.verify(_bot_token(bot_key), SERVICE)["aud"] == APP_ID
+    auth = TeamsBotAuth(APP_ID, key_resolver=lambda token: (bot_key.public_key(), ["msteams"]))
+    assert auth.verify(_bot_token(bot_key), SERVICE, channel_id="msteams")["aud"] == APP_ID
     from metis.identity import AuthenticationError
 
+    no_service_url = "Bearer " + jwt.encode(
+        {"iss": ISSUER, "aud": APP_ID, "exp": int(time.time()) + 300}, bot_key, algorithm="RS256")
+    no_expiry = "Bearer " + jwt.encode(
+        {"iss": ISSUER, "aud": APP_ID, "serviceurl": SERVICE}, bot_key, algorithm="RS256")
     for bad in (_bot_token(bot_key, aud="someone-else"), _bot_token(bot_key, iss="https://evil"),
-                _bot_token(bot_key, serviceurl="https://elsewhere/")):
+                _bot_token(bot_key, serviceurl="https://elsewhere/"), no_service_url, no_expiry):
         with pytest.raises(AuthenticationError):
-            auth.verify(bad, SERVICE)
+            auth.verify(bad, SERVICE, channel_id="msteams")
     with pytest.raises(AuthenticationError):
         auth.verify(None, SERVICE)
+    with pytest.raises(AuthenticationError, match="not endorsed"):
+        auth.verify(_bot_token(bot_key), SERVICE, channel_id="skype")
 
 
 def test_a_whisper_reaches_the_worker_in_teams_and_the_answer_is_recorded(repo, bot_key):
     connector = FakeConnector()
-    bot = TeamsBot(repo, TeamsBotAuth(APP_ID, key_resolver=lambda t: bot_key.public_key()), connector)
+    bot = _bot(repo, bot_key, connector)
     headers = {"Authorization": _bot_token(bot_key)}
     install = _activity("conversationUpdate", membersAdded=[{"id": "29:wendy"}, {"id": "28:bot"}])
     assert bot.handle(headers, install) == (200, None)
@@ -242,7 +258,8 @@ def test_a_whisper_reaches_the_worker_in_teams_and_the_answer_is_recorded(repo, 
 
     declined = _activity("message", value={**submit["data"], "consent": "declined"}, replyToId="act-1")
     bot.handle(headers, declined)
-    assert "consent" in connector.sent[-1][1]["attachments"][0]["content"]["body"][0]["text"]
+    notice = connector.sent[-1][1]["attachments"][0]["content"]["body"][0]
+    assert "consent" in notice["inlines"][0]["text"]
     assert _stored(repo, whisper)[0] is True
     answered = _activity("message", value={**submit["data"], "consent": "granted"}, replyToId="act-1")
     bot.handle(headers, answered)
@@ -265,3 +282,59 @@ def test_the_bot_connector_uses_its_own_token():
     assert connector.send(SERVICE, "a:29:wendy", {"type": "message"}) == {"id": "act-9"}
     assert seen[0][1] == "https://login.microsoftonline.com/t1/oauth2/v2.0/token"
     assert seen[1] == ("POST", SERVICE + "v3/conversations/a:29:wendy/activities", "Bearer bot-token")
+
+
+def test_teams_refuses_other_tenants_channels_and_services(repo, bot_key):
+    connector = FakeConnector()
+    bot = _bot(repo, bot_key, connector)
+    headers = {"Authorization": _bot_token(bot_key)}
+    install = _activity("conversationUpdate", tenant="evil-tenant",
+                        membersAdded=[{"id": "29:wendy"}])
+    assert bot.handle(headers, install)[0] == 403 and connector.lookups == []
+    assert bot.handle(headers, {**_activity("message"), "channelId": "skype"})[0] in (401, 403)
+    assert bot.handle(headers, ["not", "an", "activity"])[0] == 400
+    elsewhere = {**_activity("message"), "serviceUrl": "https://evil.example/"}
+    token = {"Authorization": _bot_token(bot_key, serviceurl="https://evil.example/")}
+    assert bot.handle(token, elsewhere)[0] == 403 and connector.lookups == []
+    with pytest.raises(ValueError, match="not a Bot Framework service host"):
+        BotConnector(APP_ID, "secret", tenant_id="t1").send("https://evil.example/", "c", {})
+    with pytest.raises(ValueError, match="tenants"):
+        TeamsBot(repo, TeamsBotAuth(APP_ID), connector, tenants=[])
+
+
+def test_a_teams_identity_is_bound_to_one_account(repo, bot_key):
+    connector = FakeConnector()
+    bot = _bot(repo, bot_key, connector)
+    headers = {"Authorization": _bot_token(bot_key)}
+    bot.handle(headers, _activity("conversationUpdate", membersAdded=[{"id": "29:wendy"}]))
+    assert repo.chat_identity("teams", WENDY)["external_id"] == "29:wendy"
+    impostor = _activity("conversationUpdate", sender="29:impostor",
+                         membersAdded=[{"id": "29:impostor"}])
+    bot.handle(headers, impostor)  # same email, another Entra account: not rebound
+    assert repo.chat_identity("teams", WENDY)["external_id"] == "29:wendy"
+    removed = _activity("installationUpdate", action="remove")
+    bot.handle(headers, removed)
+    assert repo.chat_identity("teams", WENDY) is None
+
+
+def test_slack_text_is_escaped_and_bad_requests_are_refused(repo):
+    from metis.connectors.slack import whisper_blocks
+
+    hostile = Notification(event="whisper.asked", workspace_id=WS, workspace_name="Plant A",
+                           recipients=[WENDY], subject={
+                               "whisper_id": "w1", "question": "<!channel> please",
+                               "observation": "<https://evil.example|Open Metis>"})
+    blocks = whisper_blocks(hostile)
+    rendered = json.dumps(blocks)
+    assert "<!channel>" not in rendered and "<https://evil" not in rendered
+    option = blocks[-2]["elements"][0]["options"][0]
+    assert len(option["text"]["text"]) <= 75  # Slack's limit for a checkbox label
+    bot = SlackInteractions(repo, FakeSlack(), SECRET)
+    headers, _ = _signed({"type": "x"})
+    body = urlencode({"payload": "{not json"}).encode()
+    ts = headers["X-Slack-Request-Timestamp"]
+    sig = "v0=" + hmac.new(SECRET.encode(), b"v0:" + ts.encode() + b":" + body,
+                           hashlib.sha256).hexdigest()
+    assert bot.handle({"X-Slack-Request-Timestamp": ts, "X-Slack-Signature": sig}, body)[0] == 400
+    assert bot.handle({"X-Slack-Request-Timestamp": ts, "X-Slack-Signature": "v0=\u00e9"},
+                      body)[0] == 401

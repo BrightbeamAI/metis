@@ -28,6 +28,7 @@ PEOPLE = {"admin": "human:admin@example.com", "wendy": "human:wendy@example.com"
           "agent": "agent:shift-assistant", "cmms": "agent:cmms-connector",
           "stranger": "agent:other-assistant"}
 PUMP = {"equipment_family": "centrifugal_pump", "operating_mode": "high_load"}
+ASK = {**PUMP, "risk_class": "moderate"}  # an agent names its situation's risk class
 MCP_HEADERS = {"Accept": "application/json, text/event-stream", "Content-Type": "application/json"}
 
 
@@ -90,14 +91,16 @@ def test_remote_mcp_serves_agents_under_their_own_identity(server):
     fid = _promoted(clients)
     failed, workspaces = _tool(http, keys["agent"], "list_workspaces")
     assert not failed and workspaces[0]["your_roles"] == ["agent"]
-    failed, guidance = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS, context=PUMP)
+    failed, guidance = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS, context=ASK)
     assert not failed and [g["fragment_id"] for g in guidance["guidance"]] == [fid]
     assert guidance["guidance"][0]["use_constraints"] == ["Advisory only."]
 
-    failed, message = _tool(http, keys["stranger"], "retrieve_guidance", workspace=WS, context=PUMP)
+    failed, message = _tool(http, keys["stranger"], "retrieve_guidance", workspace=WS, context=ASK)
+    assert failed and "No workspace" in str(message)  # not a member: the workspace is unseen
+    failed, message = _tool(http, keys["wendy"], "retrieve_guidance", workspace=WS, context=ASK)
     assert failed and "needs the agent role" in str(message)
-    failed, _ = _tool(http, keys["wendy"], "retrieve_guidance", workspace=WS, context=PUMP)
-    assert failed
+    failed, message = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS, context=PUMP)
+    assert failed and "risk_class" in str(message)
 
     failed, risky = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS,
                           context={**PUMP, "risk_class": "high"})
@@ -150,8 +153,8 @@ def test_the_async_client(server):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as raw:
             client = AsyncMetisClient("http://testserver", api_key=keys["agent"], http=raw)
-            result = await client.retrieve(WS, PUMP)
-            context = await client.agent_context(WS, "tsk_shift", PUMP)
+            result = await client.retrieve(WS, ASK)
+            context = await client.agent_context(WS, "tsk_shift", ASK)
             return result, context
 
     result, context = asyncio.run(run())
@@ -173,6 +176,24 @@ def test_client_credentials_are_fetched_once_and_renewed():
     assert calls[0]["grant_type"] == "client_credentials" and calls[0]["audience"] == "metis-api"
     creds._expires = 0  # expired
     assert creds.token() == "token-2"
+
+
+def test_a_rejected_token_is_replaced_once():
+    tokens, seen = iter(["old", "new"]), []
+
+    def handler(request):
+        if request.url.path == "/token":
+            return httpx.Response(200, json={"access_token": next(tokens), "expires_in": 3600})
+        seen.append(request.headers["authorization"])
+        ok = request.headers["authorization"] == "Bearer new"
+        return httpx.Response(200 if ok else 401, json={"uri": "agent:a"} if ok else {
+            "detail": "Invalid access token"})
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    creds = ClientCredentials("https://idp.example.com/token", "a", "s", http=http)
+    client = MetisClient("https://metis.example.com", credentials=creds, http=http)
+    assert client.me() == {"uri": "agent:a"}
+    assert seen == ["Bearer old", "Bearer new"]
 
 
 class FakeClient:
@@ -200,11 +221,20 @@ def test_tool_specs_for_openai_and_anthropic():
     assert [t["function"]["name"] for t in openai] == [t["name"] for t in anthropic]
     assert anthropic[0]["input_schema"]["required"] == ["context"]
     assert toolbox.openai_responses_tools()[0]["type"] == "function"
-    result = toolbox.call("metis_retrieve_guidance", json.dumps({"context": PUMP}))
+    result = toolbox.call("metis_retrieve_guidance", json.dumps({"context": ASK}))
     assert result["guidance"][0]["fragment_id"] == "TF-1"
     assert toolbox.call("metis_check_escalation", {"task_id": "tsk_1"})["task_id"] == "tsk_1"
-    with pytest.raises(KeyError):
-        toolbox.call("metis_promote", {})
+    # Refusals and bad arguments come back for the model to read; they end no agent run.
+    assert toolbox.call("metis_promote", {})["status"] == 400
+    assert "task_id" in toolbox.call("metis_check_escalation", {})["error"]
+
+    class Refusing(FakeClient):
+        def retrieve(self, workspace, context, role=None):
+            from metis.client import Invalid
+            raise Invalid(422, "Give the situation's risk_class in the context.")
+    refused = MetisToolbox(Refusing(), "w").call("metis_retrieve_guidance", {"context": {}})
+    assert refused == {"error": "Give the situation's risk_class in the context.", "status": 422}
+    assert anthropic[0]["input_schema"]["properties"]["context"]["required"] == ["risk_class"]
 
 
 def test_langchain_tools_and_retriever():
@@ -214,7 +244,7 @@ def test_langchain_tools_and_retriever():
     fake = FakeClient()
     tools = metis_tools(fake, "wsp_plant_a")
     assert [t.name for t in tools][0] == "metis_retrieve_guidance"
-    out = tools[0].invoke({"context": PUMP})
+    out = tools[0].invoke({"context": ASK})
     assert out["guidance"][0]["guidance"] == "Ease back."
     retriever = MetisRetriever(client=fake, workspace="wsp_plant_a", context_provider=lambda: PUMP)
     [doc] = retriever.invoke("how should I run the pump?")
@@ -228,3 +258,14 @@ def test_langchain_tools_and_retriever():
     [held] = MetisRetriever(client=Escalating(), workspace="w", context=PUMP).invoke("q")
     assert held.metadata["type"] == "required_human_action"
     assert held.metadata["escalation_task_id"] == "tsk_9"
+
+
+def test_the_mcp_endpoint_takes_only_signed_posts(server):
+    http, clients, keys, app = server
+    auth = {"Authorization": f"Bearer {keys['agent']}"}
+    assert http.get("/mcp", headers={**MCP_HEADERS, **auth}).status_code == 405
+    twice = [("authorization", f"Bearer {keys['agent']}"), ("authorization", f"Bearer {keys['wendy']}"),
+             *MCP_HEADERS.items()]
+    response = http.post("/mcp", headers=twice,
+                         json={"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
+    assert response.status_code == 401 and "more than one" in response.json()["detail"]

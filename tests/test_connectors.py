@@ -155,3 +155,20 @@ def test_the_import_command_checks_and_imports(server, monkeypatch):
                                   "--source", "cmms", "--file", str(lines),
                                   "--as", "agent:shift-assistant"])
     assert refused.exit_code != 0
+
+
+def test_workers_are_matched_without_case():
+    mapping = SourceMapping(name="x", id="$.id", worker="$.w", work_as_done="$.d",
+                            worker_map={"T-9": "Human:Walt@Example.com"})
+    assert mapping.worker_uri("human:Wendy@Example.COM") == "human:wendy@example.com"
+    assert mapping.worker_uri("T-9") == "human:walt@example.com"
+    assert mapping.worker_uri("agent:robot") == "agent:robot"
+
+
+def test_oversized_records_are_refused_one_by_one(server):
+    client, as_, repo, tmp_path = server
+    big = _record(30, "wendy@example.com", action="x" * 5000)
+    result = client.post("/v1/workspaces/wsp_plant_a/ingest/cmms", headers=as_("cmms"),
+                         json={"items": [big, _record(31, "wendy@example.com")]}).json()
+    assert [a["observation_id"] for a in result["accepted"]] == ["cmms:31"]
+    assert "limit" in result["failed"][0]["error"]

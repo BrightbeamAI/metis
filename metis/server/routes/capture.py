@@ -52,6 +52,11 @@ def answer_whisper(workspace_id: str, whisper_id: str, body: WhisperAnswerIn,
                    p: Principal = Depends(principal), repo: Any = Depends(repository)) -> dict[str, Any]:
     """The worker confirms, corrects, dismisses, or defers the account in their own words, and
     grants or declines consent. A fragment is stored only on confirm or correct with consent."""
+    from ..operations import answer_draft
+
+    draft = answer_draft(repo, workspace_id, whisper_id, p.uri, body.response,
+                         body.corrected_text, body.free_text)
+
     def answer(engine: Any) -> dict[str, Any]:
         pending = engine.pending_captures.get(whisper_id)
         if pending is None:
@@ -62,7 +67,7 @@ def answer_whisper(workspace_id: str, whisper_id: str, body: WhisperAnswerIn,
         result = engine.answer_whisper(
             whisper_id, response=body.response, answered_by=p.uri,
             corrected_content=body.corrected_text, free_text=body.free_text,
-            consent_granted=body.consent == "granted")
+            consent_granted=body.consent == "granted", confirmation_draft=draft)
         if result.fragment is None:
             return {"stored": False, "note": "Your answer is recorded; no fragment was stored."}
         return {"stored": True, "fragment": fragment_view(result.fragment),

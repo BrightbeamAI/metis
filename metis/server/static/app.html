@@ -75,7 +75,9 @@
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
 "use strict";
-const state = { config: null, token: null, apiKey: null, me: null, inbox: null, tab: null };
+// The access token lives in this tab's session storage until it expires; an API key only in
+// memory, so it is never stored.
+const state = { config: null, token: null, tokenExpires: 0, apiKey: null, me: null, inbox: null, tab: null };
 const main = document.getElementById("main");
 
 // ---- small DOM helpers: every piece of data goes in as text, never as markup ----
@@ -144,11 +146,16 @@ async function finishProviderSignIn(params) {
   if (!response.ok) throw new Error("The identity provider refused the sign-in.");
   const tokens = await response.json();
   state.token = tokens.access_token;
+  state.tokenExpires = Date.now() + 1000 * Number(tokens.expires_in || 300);
   sessionStorage.setItem("metis.token", state.token);
+  sessionStorage.setItem("metis.token_expires", String(state.tokenExpires));
+}
+function forgetSession() {
+  sessionStorage.removeItem("metis.token"); sessionStorage.removeItem("metis.token_expires");
+  state.token = state.apiKey = null; state.tokenExpires = 0;
 }
 async function signOut() {
-  sessionStorage.removeItem("metis.token"); sessionStorage.removeItem("metis.key");
-  state.token = state.apiKey = null;
+  forgetSession();
   let end = null;
   try { end = state.config && state.config.oidc && (await discover()).end_session_endpoint; } catch (x) { end = null; }
   if (end && state.config.oidc.client_id) {
@@ -160,12 +167,18 @@ async function signOut() {
 }
 
 // ---- API -------------------------------------------------------------------------
+class SessionEnded extends Error {}
 async function api(path, options = {}) {
+  if (state.token && state.tokenExpires && Date.now() > state.tokenExpires) {
+    forgetSession(); renderSignIn("Your session ended; sign in again."); throw new SessionEnded("Sign in again.");
+  }
   const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
   if (state.token) headers.Authorization = "Bearer " + state.token;
   else if (state.apiKey) headers.Authorization = "Bearer " + state.apiKey;
   const response = await fetch(path, Object.assign({}, options, { headers, credentials: "same-origin" }));
-  if (response.status === 401) { const error = new Error("Sign in again."); error.status = 401; throw error; }
+  if (response.status === 401) {
+    forgetSession(); renderSignIn("Your session ended; sign in again."); throw new SessionEnded("Sign in again.");
+  }
   const body = response.headers.get("content-type")?.includes("json") ? await response.json() : null;
   if (!response.ok) throw new Error((body && body.detail) || ("The server answered " + response.status));
   return body;
@@ -189,7 +202,7 @@ function renderSignIn(message) {
       el("summary", {}, "Sign in with an API key"),
       el("label", { for: "key" }, "API key"), input,
       el("div", { class: "actions" }, el("button", { class: "secondary", onclick: async () => {
-        state.apiKey = input.value.trim(); sessionStorage.setItem("metis.key", state.apiKey);
+        state.apiKey = input.value.trim();
         await start();
       } }, "Continue"))));
   }
@@ -371,7 +384,7 @@ async function start() {
   try {
     state.me = await api("/v1/me");
   } catch (error) {
-    if (error.status === 401) { state.token = state.apiKey = null; sessionStorage.removeItem("metis.token"); sessionStorage.removeItem("metis.key"); return renderSignIn(); }
+    if (error instanceof SessionEnded) return;  // the sign-in screen is showing
     return renderSignIn(error.message);
   }
   document.getElementById("who").replaceChildren(
@@ -384,9 +397,15 @@ async function start() {
   try {
     state.config = await (await fetch("/app/config")).json();
     const params = new URLSearchParams(location.search);
+    if (params.get("error")) {  // the identity provider refused or the person cancelled
+      history.replaceState(null, "", location.pathname);
+      return renderSignIn(params.get("error_description") || "The identity provider did not sign you in.");
+    }
     if (params.get("code") && state.config.oidc) await finishProviderSignIn(params);
     state.token = state.token || sessionStorage.getItem("metis.token");
-    state.apiKey = sessionStorage.getItem("metis.key");
+    state.tokenExpires = state.tokenExpires || Number(sessionStorage.getItem("metis.token_expires") || 0);
+    sessionStorage.removeItem("metis.key");  // stored by earlier versions; keys stay in memory now
+    if (!state.token && !state.apiKey && !state.config.trusted_proxy) return renderSignIn();
     await start();
   } catch (error) {
     renderSignIn(error.message);

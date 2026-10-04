@@ -27,6 +27,7 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 | [server.md](server.md) | The multi-user server: sign-in, workspace roles, per-reviewer votes, the API, and storage. |
 | [agent_integrations.md](agent_integrations.md) | Connecting agents to the server: remote MCP, the Python client, function tools, and LangChain. |
 | [connectors.md](connectors.md) | Capture from workplace systems, and whispers answered in Slack or Microsoft Teams. |
+| [operations.md](operations.md) | Running the server in production: upgrades, backups, rotation, monitoring, incidents, retention, and capacity. |
 | [../deploy/README.md](../deploy/README.md) | Running the server: Docker Compose with PostgreSQL and Keycloak, production settings, and Kubernetes. |
 
 ## Reference
