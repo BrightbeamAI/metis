@@ -162,8 +162,8 @@ Every setting is an environment variable. The server reads them at start.
 ## Kubernetes
 
 ```bash
-docker build -t registry.example.com/metis-server:0.1.4 .
-docker push registry.example.com/metis-server:0.1.4
+docker build -t registry.example.com/metis-server:0.1.5 .
+docker push registry.example.com/metis-server:0.1.5
 
 kubectl create secret generic metis-database \
   --from-literal=database-url='postgresql://metis:password@postgres:5432/metis'

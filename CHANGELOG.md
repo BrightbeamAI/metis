@@ -3,7 +3,7 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
-## [Unreleased]
+## [0.1.5]
 
 ### Added
 - The Metis server (`metis server run`, extras `server` and `postgres`): a multi-user HTTP API in
