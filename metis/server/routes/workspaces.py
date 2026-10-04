@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, status
 from ...governance.membership import Member, Role
 from ...identity import Principal
 from ...storage.repository import WorkspaceSettings
-from ..access import Forbidden, require, require_member, roles_in
+from .. import operations as ops
+from ..access import Forbidden, require, roles_in
 from ..deps import principal, repository, settings
 from ..schemas import MemberUpdate, WorkspaceCreate
 
@@ -36,10 +37,7 @@ def me(p: Principal = Depends(principal), repo: Any = Depends(repository)) -> di
 @router.get("/v1/workspaces", summary="Workspaces the caller can see")
 def list_workspaces(p: Principal = Depends(principal),
                     repo: Any = Depends(repository)) -> list[dict[str, Any]]:
-    mine = repo.memberships(p.uri)
-    return [{"id": w.id, "name": w.name, "site": w.site, "created_at": w.created_at,
-             "updated_at": w.updated_at, "your_roles": mine.get(w.id, [])}
-            for w in repo.list() if p.is_auditor or w.id in mine]
+    return ops.workspaces(repo, p)
 
 
 @router.post("/v1/workspaces", status_code=status.HTTP_201_CREATED,
@@ -60,17 +58,7 @@ def create_workspace(body: WorkspaceCreate, p: Principal = Depends(principal),
 @router.get("/v1/workspaces/{workspace_id}", summary="Describe a workspace")
 def describe_workspace(workspace_id: str, p: Principal = Depends(principal),
                        repo: Any = Depends(repository)) -> dict[str, Any]:
-    def view(engine: Any) -> dict[str, Any]:
-        roles = require_member(engine, p)
-        chain = engine.verify()
-        return {**engine.adapter.descriptor(),
-                "review_rule": engine.governance.policy.review_rule,
-                "reviewers": len(engine.mission_group_members),
-                "escalation_assignee": engine.escalation_assignee,
-                "whisper_deadline_ms": engine.capture.whisper_deadline_ms,
-                "evidence_verified": chain.ok,
-                "your_roles": sorted(r.value for r in roles)}
-    return repo.read(workspace_id, view)
+    return ops.describe(repo, p, workspace_id)
 
 
 @router.get("/v1/workspaces/{workspace_id}/members", summary="List members and their roles")

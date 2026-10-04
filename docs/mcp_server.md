@@ -6,6 +6,10 @@ the situation in front of it, assemble a memory context for a task, report where
 diverged from procedure, and relay a worker's own answers. It cannot review, promote, or
 authorise anything: those decisions stay with named people.
 
+This page covers the local server, for one client on the machine that holds the project. For
+agents anywhere, with sign-in and workspace roles, the Metis server answers MCP over HTTP at
+`/mcp`; see [agent_integrations.md](agent_integrations.md).
+
 ## Install and run
 
 ```bash

@@ -226,6 +226,7 @@ channels:
 | `GET /v1/workspaces/{id}/escalations/{task}` | escalation, reviewer, auditor, admin; the agent that asked |
 | `POST /v1/workspaces/{id}/escalations/{task}/decision` | escalation |
 | `GET /v1/workspaces/{id}/audit`, `.../audit/verify`, `.../audit/export` | auditor, admin |
+| `/mcp` | MCP over streamable HTTP, for agents and capture sources; see [agent_integrations.md](agent_integrations.md) |
 
 Responses use standard status codes: 401 without valid credentials, 403 when the caller's roles
 do not allow the action, 404 for something that does not exist (or that the caller may not
@@ -247,6 +248,13 @@ from the committed state. A read records nothing.
 
 Each write stores the workspace's full CHAP snapshot, so its cost grows with the chain. Give
 each site, line, or team its own workspace.
+
+## Agents
+
+Agents connect through the remote MCP endpoint at `/mcp`, the Python client
+(`metis.client.MetisClient`), function tools for model APIs, or LangChain. The
+[agent integrations guide](agent_integrations.md) covers each. Remote MCP is on whenever the MCP
+SDK is installed (it is in the `server` extra); `METIS_REMOTE_MCP=false` turns it off.
 
 ## Building on the parts
 

@@ -25,6 +25,7 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 | [agent_memory_use.md](agent_memory_use.md) | How an AI agent should consume Metis output and respect use constraints. |
 | [mcp_server.md](mcp_server.md) | Connect an agent (Claude Desktop, Claude Code, any MCP client) to governed tacit memory. |
 | [server.md](server.md) | The multi-user server: sign-in, workspace roles, per-reviewer votes, the API, and storage. |
+| [agent_integrations.md](agent_integrations.md) | Connecting agents to the server: remote MCP, the Python client, function tools, and LangChain. |
 | [../deploy/README.md](../deploy/README.md) | Running the server: Docker Compose with PostgreSQL and Keycloak, production settings, and Kubernetes. |
 
 ## Reference

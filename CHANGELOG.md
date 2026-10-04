@@ -29,6 +29,13 @@ All notable changes to Metis are recorded here. The format follows
   `whisper_lapsed` validation event), swept by the server or `metis server sweep`.
 - Notifications by email, Slack, Microsoft Teams, and signed webhooks, planned inside each
   write's transaction, kept in an outbox, and delivered with retries.
+- Remote MCP at `/mcp`: stateless streamable HTTP, signed in per request, with tools for agents
+  and capture sources under their workspace roles.
+- `metis.client`: `MetisClient` and `AsyncMetisClient` for the server API, with API keys, access
+  tokens, or OAuth client credentials, and `wait_for_escalation`.
+- Agent framework adapters: function tools for the OpenAI and Anthropic APIs
+  (`metis.integrations.agent_tools`), and LangChain tools and a retriever
+  (`metis.integrations.langchain`). See docs/agent_integrations.md.
 
 ### Changed
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader

@@ -94,6 +94,10 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
                authenticator: Any = None) -> FastAPI:
     """Build the app. Without arguments, everything is configured from ``METIS_*`` variables."""
     settings = settings or ServerSettings.from_env()
+    if not logging.getLogger().handlers:  # the process has no logging set up yet
+        logging.basicConfig(level=settings.log_level.upper(),
+                            format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logging.getLogger("mcp").setLevel(logging.WARNING)
     auth = authenticator or settings.authenticator()
     if repository is None:
         from ..notify import Notifier, load_channels
@@ -111,6 +115,7 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
     notifier = getattr(repository, "notifier", None)
     dispatcher = Dispatcher(repository, notifier.channels) if notifier is not None else None
     sweeper = Sweeper(repository)
+    mcp_server = _remote_mcp(repository) if settings.remote_mcp else None
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> Any:
@@ -118,7 +123,11 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
             dispatcher.start(settings.dispatch_interval_seconds)
         sweeper.start(settings.sweep_interval_seconds)
         try:
-            yield
+            if mcp_server is not None:
+                async with mcp_server[0].session_manager.run():
+                    yield
+            else:
+                yield
         finally:
             sweeper.stop()
             if dispatcher is not None:
@@ -149,8 +158,8 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
         response.headers.setdefault("Cache-Control", "no-store")
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        log.info("%s %s %s %.1fms request_id=%s", request.method, request.url.path,
-                 response.status_code, (time.perf_counter() - started) * 1000, request_id)
+        log.info("%s %s %d %.1fms request_id=%s", request.method, request.url.path,
+                 int(response.status_code), (time.perf_counter() - started) * 1000, request_id)
         return response
 
     _install_error_handlers(app)
@@ -170,4 +179,24 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
 
     for router in ROUTERS:
         app.include_router(router)
+    if mcp_server is not None:
+        from starlette.routing import Route
+
+        from .mcp_remote import SignedIn
+
+        app.router.routes.append(Route("/mcp", endpoint=SignedIn(mcp_server[1], auth),
+                                       methods=["GET", "POST", "DELETE"]))
     return app
+
+
+def _remote_mcp(repository: Any) -> tuple[Any, Any] | None:
+    """The remote MCP server and its HTTP endpoint, when the MCP SDK is installed."""
+    import importlib.util
+
+    if importlib.util.find_spec("mcp") is None:
+        log.info("remote MCP is off: install the mcp extra to serve /mcp")
+        return None
+    from .mcp_remote import build_server, http_endpoint
+
+    server = build_server(repository)
+    return server, http_endpoint(server)

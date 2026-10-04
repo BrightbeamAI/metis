@@ -126,6 +126,7 @@ Every setting is an environment variable.
 | `METIS_NOTIFY_WEBHOOK_URL`, `METIS_NOTIFY_WEBHOOK_SECRET` | | A signed webhook channel |
 | `METIS_SWEEP_INTERVAL_SECONDS` | `300` | How often whisper deadlines and review dates are checked; `0` turns it off |
 | `METIS_DISPATCH_INTERVAL_SECONDS` | `5` | How often queued notifications are delivered; `0` turns it off |
+| `METIS_REMOTE_MCP` | `true` | Serve MCP for agents at `/mcp` |
 | `METIS_LOG_LEVEL` | `info` | Server log level |
 
 ## Kubernetes

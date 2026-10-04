@@ -62,6 +62,7 @@ class ServerSettings(BaseModel):
     dispatch_interval_seconds: int = 5
     ui_client_id: str | None = None
     ui_scopes: str = "openid profile email"
+    remote_mcp: bool = True
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> ServerSettings:
@@ -93,6 +94,8 @@ class ServerSettings(BaseModel):
             "dispatch_interval_seconds": env.get("METIS_DISPATCH_INTERVAL_SECONDS"),
             "ui_client_id": env.get("METIS_UI_CLIENT_ID"),
             "ui_scopes": env.get("METIS_UI_SCOPES"),
+            "remote_mcp": (env.get("METIS_REMOTE_MCP") or "true").strip().lower()
+            not in ("0", "false", "no", "off"),
         }
         return cls(**{k: v for k, v in values.items() if v not in (None, "")})
 
