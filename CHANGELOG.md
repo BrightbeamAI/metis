@@ -5,11 +5,32 @@ All notable changes to Metis are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The Metis server (`metis server run`, extras `server` and `postgres`): a multi-user HTTP API in
+  which every identity comes from sign-in (OIDC access tokens, hashed API keys, or a trusted
+  proxy), workspace roles decide each action, and each request commits its domain state, CHAP
+  chain, and evidence ledger together. See docs/server.md.
+- Workspace membership: members hold the worker, reviewer, agent, capture, escalation, auditor,
+  and admin roles, recorded on the chain as `tacit.membership_record`. The Mission Group is the
+  set of reviewer members, and a new reviewer joins the reviews already open.
+- Per-reviewer votes (`MetisEngine.cast_review_vote`): each reviewer records their own decision,
+  the first approval proposes the promotion and its use constraints, and the promotion is
+  applied when the approvals meet the review rule.
+- The SQL workspace repository for PostgreSQL and SQLite, with one writer per workspace, one
+  CHAP snapshot per transaction, and an append-only ledger table.
+- `metis server` administration commands for workspaces, members, and API keys.
+- A container image, a Docker Compose stack with PostgreSQL and Keycloak, and a Helm chart. See
+  deploy/README.md.
+
 ### Changed
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader
   needs. The PyPI description gives each figure's alt text in its place.
 - Paper links, including the PyPI project link and the citation file's URL, point to the PDF on
   metis.brightbeam.works.
+- `retrieve` and `agent_context` record the asking agent (`requester`), `begin_capture` records
+  who reported an observation (`submitted_by`), and the whisper deadline is configurable.
+- A promotion with no use constraints gives the fragment the memory object's default
+  constraints, so the gate and the memory object agree.
 
 ## [0.1.4]
 

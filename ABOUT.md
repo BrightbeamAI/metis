@@ -39,7 +39,8 @@ See [docs/memory_architecture.md](docs/memory_architecture.md) for the full mode
 
 | Path | What is there |
 |------|----------------|
-| `metis/` | the toolkit: `fragment/`, `taxonomy/`, `conditions/`, `consent/`, `capture/`, `validation/`, `governance/`, `retrieval/`, `memory/`, `models/`, `audit/`, `storage/`, `cli/`, `api/`, `mcp/` (the MCP server), `integrations/chap/`, plus `engine.py`, `project.py` (local projects), `clock.py`, and `scenarios.py` |
+| `metis/` | the toolkit: `fragment/`, `taxonomy/`, `conditions/`, `consent/`, `capture/`, `validation/`, `governance/` (including workspace membership and roles), `retrieval/`, `memory/`, `models/`, `audit/`, `storage/` (local stores and the SQL repository), `identity/` (sign-in), `server/` (the multi-user server), `cli/`, `api/`, `mcp/` (the MCP server), `integrations/chap/`, plus `engine.py`, `project.py` (local projects), `guidance.py` (what agents are shown), `clock.py`, and `scenarios.py` |
+| `deploy/` | the Docker Compose stack, the Helm chart, and the deployment guide ([guide](deploy/README.md)); the image builds from the top-level `Dockerfile` |
 | `examples/` | three runnable synthetic examples with inputs, contexts, and expected outputs ([index](examples/README.md)) |
 | `docs/` | concept and reference docs, the MCP server guide, the visual `explainer.html`, and the interactive `demo.html` ([index](docs/README.md)) |
 | `schemas/` | JSON Schemas for the core `tacit.*` objects, generated from the models |
@@ -52,8 +53,10 @@ See [docs/memory_architecture.md](docs/memory_architecture.md) for the full mode
 ## Local projects
 
 The CLI and the MCP server keep their state in a local project (`./.metis`, or `$METIS_HOME`).
-The optional FastAPI server, built for local exploration, runs one in-memory engine seeded with the
-pump scenario and writes audit exports to the project's `exports/` directory.
+The optional single-user API (`metis.api`), built for local exploration, runs one in-memory engine
+seeded with the pump scenario and writes audit exports to the project's `exports/` directory. The
+multi-user server keeps its workspaces in PostgreSQL or SQLite instead; see
+[docs/server.md](docs/server.md).
 
 | Path | Holds |
 |------|-------|
@@ -83,11 +86,11 @@ CHAP is meant to be extended.
 | Metis concept | CHAP concept |
 |-------------------|--------------|
 | Capture Cell | a workspace, created by the coordinator service, with human, agent, and group participants |
-| Operator, Whisperer, Mission Group, reviewers | human, agent, and group participants; each reviewer joins as a named human |
+| Operator, Whisperer, Mission Group, reviewers | human, agent, and group participants; each reviewer joins as a named human, and role changes are `tacit.membership_record` artefacts |
 | Tacit fragment, memory object, agent context | artefacts of kind `tacit.*` with a schema reference |
 | Whisper, operator confirmation | `whisper.ask` / `whisper.answer` |
 | Mission Group review | `review.request` under a `quorum:2` rule; approvals as `decide.approve`, a hold as `abstain.declare`, re-elicitation as `escalate.raise` |
-| Escalation to a person | a `tacit.escalation` task assigned to the operator |
+| Escalation to a person | a `tacit.escalation` task assigned to the operator in a demo, or to the workspace's escalation group on the server |
 | Re-review of a fragment in use | `review.request` on a fresh `tacit.validate.tier2` task; the fragment stays in use until the decision |
 | Contest by a worker or reviewer | a `tacit.validation_event` artefact, then a Mission Group review the reviewers decide |
 | Revocation, supersession | `control.*` events plus records |
@@ -135,9 +138,11 @@ checks them with twine), then `make publish` with a PyPI token. The distribution
 
 ## Scope
 
-Metis is a reference toolkit for research and practitioner pilots. It captures, governs, and serves
-tacit fragments, and leaves authentication, multi-tenant deployment, and production quality
-management to the systems around it. Capture is consented and visible to the worker: Metis records
+Metis captures, governs, and serves tacit fragments. The Metis server adds what a multi-user
+deployment needs: sign-in through OIDC, API keys, or a trusted proxy; roles in each workspace;
+transactional storage in PostgreSQL; and packaging for Docker and Kubernetes. Worker consultation,
+domain validation of fragments, and the organisation's own governance stay with the organisation
+that deploys it. Capture is consented and visible to the worker: Metis records
 no audio, video, biometrics, screenshots, or keystrokes. Retrieval decides from recorded
 conditions, consent, and authority. See [ETHICAL_USE.md](ETHICAL_USE.md).
 

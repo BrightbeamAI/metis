@@ -1,0 +1,107 @@
+{
+  "realm": "metis",
+  "displayName": "Metis (development)",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      {"name": "metis-admin", "description": "Creates Metis workspaces and manages their members"},
+      {"name": "metis-auditor", "description": "Reads the evidence of every Metis workspace"}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "metis-api",
+      "name": "Metis API",
+      "description": "The audience of access tokens for the Metis server",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "metis-api-unused-dev-only",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "metis-cli",
+      "name": "Metis sign-in for people (development only)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:*"],
+      "webOrigins": ["+"],
+      "protocolMappers": [
+        {
+          "name": "metis-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "metis-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "shift-assistant",
+      "name": "Shift assistant, an agent that signs in with its own credentials",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "shift-assistant-dev-only",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "metis-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "metis-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "ana", "email": "ana@example.com", "emailVerified": true, "enabled": true,
+      "firstName": "Ana", "lastName": "Admin",
+      "credentials": [{"type": "password", "value": "ana-dev-only", "temporary": false}],
+      "realmRoles": ["metis-admin"]
+    },
+    {
+      "username": "wendy", "email": "wendy@example.com", "emailVerified": true, "enabled": true,
+      "firstName": "Wendy", "lastName": "Operator",
+      "credentials": [{"type": "password", "value": "wendy-dev-only", "temporary": false}]
+    },
+    {
+      "username": "rhea", "email": "rhea@example.com", "emailVerified": true, "enabled": true,
+      "firstName": "Rhea", "lastName": "Quality",
+      "credentials": [{"type": "password", "value": "rhea-dev-only", "temporary": false}]
+    },
+    {
+      "username": "raj", "email": "raj@example.com", "emailVerified": true, "enabled": true,
+      "firstName": "Raj", "lastName": "Process",
+      "credentials": [{"type": "password", "value": "raj-dev-only", "temporary": false}]
+    },
+    {
+      "username": "audrey", "email": "audrey@example.com", "emailVerified": true, "enabled": true,
+      "firstName": "Audrey", "lastName": "Auditor",
+      "credentials": [{"type": "password", "value": "audrey-dev-only", "temporary": false}],
+      "realmRoles": ["metis-auditor"]
+    },
+    {
+      "username": "service-account-shift-assistant",
+      "enabled": true,
+      "serviceAccountClientId": "shift-assistant"
+    }
+  ]
+}

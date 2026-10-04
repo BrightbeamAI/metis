@@ -11,19 +11,16 @@ Every method returns plain JSON-safe data. This module does not depend on the MC
 """
 from __future__ import annotations
 
-import datetime as _dt
 import threading
 from typing import Any
 
-from .. import clock
-from ..conditions.context import TacitContext
+from .. import guidance as views
 from ..consent.contestability import ContestAction
 from ..consent.model import ConsentRecord, ConsentStatus
 from ..engine import MetisEngine
 from ..integrations.chap.participants import type_of
 from ..project import Project
-from ..retrieval.blocked_reasons import HUMAN_READABLE, BlockedReason
-from ..taxonomy.categories import CATEGORY_META, AuthorityLayer
+from ..taxonomy.categories import CATEGORY_META
 
 INSTRUCTIONS = (
     "Metis serves governed tacit memory: reviewed fragments of expert practice that apply only "
@@ -34,28 +31,7 @@ INSTRUCTIONS = (
     "words, under the worker's own identity."
 )
 
-# Blocked reasons that concern authorisation. For these an agent learns only how many
-# fragments were withheld; their identities stay hidden.
-_NOT_AUTHORISED = {
-    BlockedReason.evidence_layer_not_authorised.value,
-    BlockedReason.tier2_validation_missing.value,
-    BlockedReason.endogenous_fragment_requires_review.value,
-}
 _RESPONSES = ("confirm", "correct", "dismiss", "defer")
-
-
-def _explain(reason: str) -> str:
-    try:
-        return HUMAN_READABLE[BlockedReason(reason)]
-    except ValueError:
-        return reason
-
-
-def _overdue(fragment: Any, now: _dt.datetime) -> bool:
-    if not fragment.review_due_at:
-        return False
-    due = _dt.datetime.fromisoformat(fragment.review_due_at.replace("Z", "+00:00"))
-    return now > (due if due.tzinfo else due.replace(tzinfo=_dt.timezone.utc))
 
 
 def _require_human(uri: str, what: str) -> None:
@@ -63,8 +39,7 @@ def _require_human(uri: str, what: str) -> None:
         raise PermissionError(f"{what} must be a human participant URI (human:...), got {uri!r}.")
 
 
-def _context(data: dict[str, Any]) -> TacitContext:
-    return TacitContext.model_validate({k: v for k, v in data.items() if v is not None})
+_context = views.context_from
 
 
 class MetisTools:
@@ -84,22 +59,7 @@ class MetisTools:
         self.project.save(self.engine)
 
     def _withheld(self, blocked: list[Any]) -> tuple[list[dict[str, Any]], int]:
-        """Blocked items an agent may see, and a count of those it may not.
-
-        A fragment that never reached an operational layer (Evidence, or not yet promoted) is
-        only counted, whichever check blocked it first.
-        """
-        shown, hidden = [], 0
-        for item in blocked:
-            frag = self.engine.fragments.get(item.fragment_id) if item.fragment_id else None
-            unreviewed = frag is not None and frag.authority_layer == AuthorityLayer.evidence
-            if item.reason in _NOT_AUTHORISED or unreviewed:
-                hidden += 1
-                continue
-            shown.append({"fragment_id": item.fragment_id, "reason": item.reason,
-                          "explanation": _explain(item.reason), "detail": item.detail,
-                          "a_person_decides": item.escalate})
-        return shown, hidden
+        return views.withheld(self.engine, blocked)
 
     # ---- read ----------------------------------------------------------------------
     def describe_workspace(self) -> dict[str, Any]:
@@ -121,27 +81,12 @@ class MetisTools:
             }
 
     def _visible_memory(self) -> list[Any]:
-        """Memory whose fragment is in use now: promoted, active, consented, and inside its
-        review date. A held, rejected, re-eliciting, or overdue fragment drops out until the
-        reviewers reinstate or renew it."""
-        eng = self.engine
-        now = clock.now_dt()
-        out = []
-        for mo in eng.tacit_store.all():
-            frag = eng.fragments.get(mo.fragment_id)
-            if (frag is not None and frag.is_operationally_usable()
-                    and frag.consent.permits_retrieval() and not _overdue(frag, now)):
-                out.append(mo)
-        return out
+        return views.visible_memory(self.engine)
 
     def list_tacit_memory(self) -> list[dict[str, Any]]:
         """Metadata of agent-visible tacit memory. Content comes only through retrieval."""
         with self._lock:
-            return [{"memory_id": mo.memory_id, "fragment_id": mo.fragment_id, "title": mo.title,
-                     "category": mo.category.value, "authority_layer": mo.authority_layer.value,
-                     "conditions": {k: v for k, v in mo.conditions.items() if v not in (None, [], {})},
-                     "review_due_at": mo.review_due_at}
-                    for mo in self._visible_memory()]
+            return views.memory_listing(self.engine)
 
     def list_pending_whispers(self, worker: str | None = None) -> list[dict[str, Any]]:
         with self._lock:
@@ -161,51 +106,16 @@ class MetisTools:
     # ---- governed retrieval ----------------------------------------------------------
     def retrieve_guidance(self, context: dict[str, Any], role: str | None = None) -> dict[str, Any]:
         with self._lock:
-            eng = self.engine
-            decision = eng.retrieve(_context(context), role=role)
+            decision = self.engine.retrieve(_context(context), role=role)
             self._save()
-            guidance = []
-            for item in decision.eligible:
-                mo = eng.tacit_store.get(item.memory_id) if item.memory_id else None
-                frag = eng.fragments.get(item.fragment_id)
-                guidance.append({
-                    "fragment_id": item.fragment_id, "memory_id": item.memory_id,
-                    "authority_layer": item.authority_layer,
-                    "guidance": mo.content if mo else (frag.content if frag else ""),
-                    "use_constraints": item.use_constraints, "confidence": item.confidence,
-                })
-            withheld, hidden = self._withheld(decision.blocked)
-            return {
-                "guidance": guidance,
-                "withheld": withheld,
-                "not_yet_authorised": hidden,
-                "required_human_actions": decision.required_human_actions,
-                "escalation_task_id": decision.escalation_task_id,
-                "recorded_at_seq": eng.adapter.chain.count - 1,
-                "note": "Situated, advisory guidance. Honour every use constraint; when "
-                        "required_human_actions lists anything, a person decides.",
-            }
+            return views.guidance_view(self.engine, decision)
 
     def agent_memory_context(self, task: str, context: dict[str, Any],
                              role: str | None = None) -> dict[str, Any]:
         with self._lock:
             amc = self.engine.agent_context(task, _context(context), role=role)
             self._save()
-            withheld, hidden = self._withheld(amc.blocked_tacit_memory)
-            return {
-                "task": amc.task_id,
-                "procedural": [{"source": e.source, "content": e.content} for e in amc.procedural_memory],
-                "semantic": [{"source": e.source, "content": e.content} for e in amc.semantic_memory],
-                "episodic": [{"source": e.source, "content": e.content} for e in amc.episodic_memory],
-                "tacit": [{"memory_id": t.memory_id, "fragment_id": t.fragment_id,
-                           "authority_layer": t.authority_layer, "guidance": t.content,
-                           "use_constraints": t.use_constraints} for t in amc.tacit_memory],
-                "withheld": withheld,
-                "not_yet_authorised": hidden,
-                "required_human_actions": amc.required_human_actions,
-                "escalation_task_id": amc.escalation_task_id,
-                "governance_notes": amc.governance_notes,
-            }
+            return views.agent_context_view(self.engine, amc)
 
     # ---- capture (the worker answers) ------------------------------------------------
     def submit_observation(self, observation_id: str, work_as_done: str, context: dict[str, Any],

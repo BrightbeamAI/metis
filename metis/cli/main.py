@@ -9,6 +9,7 @@
     metis retrieve --context <file>
     metis audit read | verify | export --out evidence.jsonl
     metis mcp
+    metis server run | migrate | workspace create | member set | api-key create
     metis model check | pull gemma4 | run --prompt "..."
     metis config set model.provider ollama
 """
@@ -26,6 +27,7 @@ from .commands.mcp import mcp
 from .commands.memory import memory_app
 from .commands.model import model_app
 from .commands.retrieve import retrieve
+from .commands.server import server_app
 from .commands.workspace import workspace_app
 
 app = typer.Typer(
@@ -45,6 +47,7 @@ app.add_typer(memory_app, name="memory")
 app.add_typer(audit_app, name="audit")
 app.add_typer(model_app, name="model")
 app.add_typer(config_app, name="config")
+app.add_typer(server_app, name="server")
 
 
 def main() -> None:

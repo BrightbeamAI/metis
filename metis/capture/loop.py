@@ -67,6 +67,7 @@ class PendingCapture(BaseModel):
     source_pathway: SourcePathway = SourcePathway.exogenous
     fragment_id: str | None = None
     supersedes: str | None = None  # a fragment awaiting re-elicitation that this capture replaces
+    submitted_by: str | None = None  # who reported the observation, when not the worker
     artefacts: dict[str, str] = Field(default_factory=dict)
     assist_records: list[ModelAssistRecord] = Field(default_factory=list)
     deferred: bool = False
@@ -102,9 +103,11 @@ class CaptureLoop:
         capture_cell: str | None = None,
         governance=None,
         whisper_budget: WhisperBudget | None = None,
+        whisper_deadline_ms: int = 60000,
     ) -> None:
         self.adapter = adapter
         self.whisper_budget = whisper_budget
+        self.whisper_deadline_ms = whisper_deadline_ms
         self.fragments = fragment_store
         self.operator_uri = operator_uri
         self.whisperer_uri = whisperer_uri
@@ -171,17 +174,20 @@ class CaptureLoop:
         fragment_id: str | None = None,
         worker: str | None = None,
         supersedes: str | None = None,
+        submitted_by: str | None = None,
     ) -> PendingCapture:
         """Observe, infer, and ask the worker one whisper. The worker answers later.
 
         ``supersedes`` names a fragment the Mission Group sent back for re-elicitation; the
-        fragment this capture stores replaces it.
+        fragment this capture stores replaces it. ``submitted_by`` names who reported the
+        observation when it is not the worker; the observation is recorded as theirs.
         """
         if category is not None:
             Category(category)  # reject an unknown category before anything is recorded
         if supersedes is not None and self.governance is not None:
             self.governance.require_re_elicitation(supersedes)  # also before anything is recorded
         worker = worker or self.operator_uri
+        reporter = submitted_by or worker
         mc = self.model_client if use_model else None
         assists: list[ModelAssistRecord] = []
 
@@ -191,10 +197,10 @@ class CaptureLoop:
         else:
             observation = build_observation(**observation_input)
         task_id = self.adapter.create_task(
-            "tacit.capture", assignee=self.whisperer_uri, delegator=worker,
+            "tacit.capture", assignee=self.whisperer_uri, delegator=reporter,
             task_input={"observation_id": observation.observation_id})
         obs_art = self.adapter.append_artefact(
-            "tacit.capture_observation", produced_by=worker,
+            "tacit.capture_observation", produced_by=reporter,
             content=observation.model_dump(mode="json"), task=task_id)
 
         # 2. Infer (candidate only)
@@ -214,6 +220,7 @@ class CaptureLoop:
             consent=consent, category=category, conditions=conditions, attribution=attribution,
             evidence=evidence, title=title, source_pathway=source_pathway,
             fragment_id=fragment_id or f"TF-{self._frag_seq:05d}", supersedes=supersedes,
+            submitted_by=submitted_by,
             artefacts={"observation": obs_art, "candidate": cand_art}, assist_records=assists)
 
         # 3. Whisper (CHAP whisper capability), within the worker's prompt budget
@@ -235,7 +242,8 @@ class CaptureLoop:
         whisper, whisper_assist = build_whisper(candidate.category, observation, model_client=mc)
         prompt_art = self.adapter.whisper_ask(
             sender=self.whisperer_uri, to=worker, task_id=task_id,
-            question=whisper.question, options=whisper.options, deadline_ms=60000,
+            question=whisper.question, options=whisper.options,
+            deadline_ms=self.whisper_deadline_ms,
             default_if_lapsed="defer", urgency="low", category=candidate.category)
         if whisper_assist:
             assists.append(self._record_assist(whisper_assist, task_id=task_id,

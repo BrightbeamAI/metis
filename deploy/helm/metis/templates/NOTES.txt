@@ -1,0 +1,14 @@
+Metis is starting as {{ include "metis.fullname" . }}.
+
+Check it:
+  kubectl port-forward svc/{{ include "metis.fullname" . }} 8000:{{ .Values.service.port }}
+  curl http://localhost:8000/readyz
+
+The API reference is at http://localhost:8000/docs. A global admin
+{{- if .Values.admins }} ({{ join ", " .Values.admins }}){{ end }} creates workspaces with
+POST /v1/workspaces and names their members and roles.
+{{- if not (include "metis.usesPostgres" .) }}
+
+This release stores workspaces in SQLite on a volume, with one replica. For more replicas, set
+database.url or database.existingSecret to a PostgreSQL database.
+{{- end }}

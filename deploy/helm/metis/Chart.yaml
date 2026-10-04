@@ -1,0 +1,14 @@
+apiVersion: v2
+name: metis
+description: The Metis server, governed tacit memory for AI agents, with sign-in, workspace roles, and a hash-linked CHAP evidence chain.
+type: application
+version: 0.1.0
+appVersion: "0.1.4"
+home: https://metis.brightbeam.works
+sources:
+  - https://github.com/BrightbeamAI/metis
+keywords:
+  - metis
+  - tacit-knowledge
+  - agent-memory
+  - chap

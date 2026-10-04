@@ -1,0 +1,157 @@
+{{- $postgres := include "metis.usesPostgres" . -}}
+{{- if and (gt (int .Values.replicaCount) 1) (not $postgres) }}
+{{- fail "replicaCount > 1 needs PostgreSQL: set database.url or database.existingSecret" }}
+{{- end }}
+{{- if not (or .Values.oidc.issuer .Values.apiKeys.existingSecret .Values.trustedProxy.existingSecret) }}
+{{- fail "Configure sign-in: oidc.issuer, apiKeys.existingSecret, or trustedProxy.existingSecret" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metis.fullname" . }}
+  labels:
+    {{- include "metis.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  {{- if not $postgres }}
+  strategy:
+    type: Recreate
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "metis.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "metis.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "metis.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: metis
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["run", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            {{- if $postgres }}
+            - name: METIS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "metis.databaseSecret" . }}
+                  key: {{ .Values.database.existingSecretKey }}
+            {{- else }}
+            - name: METIS_DATABASE_URL
+              value: sqlite:////data/metis.db
+            {{- end }}
+            {{- if .Values.oidc.issuer }}
+            - name: METIS_OIDC_ISSUER
+              value: {{ .Values.oidc.issuer | quote }}
+            - name: METIS_OIDC_AUDIENCE
+              value: {{ .Values.oidc.audience | quote }}
+            - name: METIS_OIDC_ROLES_CLAIM
+              value: {{ .Values.oidc.rolesClaim | quote }}
+            - name: METIS_OIDC_EMAIL_CLAIM
+              value: {{ .Values.oidc.emailClaim | quote }}
+            - name: METIS_OIDC_NAME_CLAIM
+              value: {{ .Values.oidc.nameClaim | quote }}
+            - name: METIS_OIDC_ADMIN_ROLE
+              value: {{ .Values.oidc.adminRole | quote }}
+            - name: METIS_OIDC_AUDITOR_ROLE
+              value: {{ .Values.oidc.auditorRole | quote }}
+            {{- with .Values.oidc.jwksUrl }}
+            - name: METIS_OIDC_JWKS_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.apiKeys.existingSecret }}
+            - name: METIS_API_KEYS_FILE
+              value: /config/api-keys/{{ .Values.apiKeys.existingSecretKey }}
+            {{- end }}
+            {{- if .Values.trustedProxy.existingSecret }}
+            - name: METIS_TRUSTED_PROXY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.trustedProxy.existingSecret }}
+                  key: {{ .Values.trustedProxy.existingSecretKey }}
+            {{- end }}
+            {{- with .Values.admins }}
+            - name: METIS_ADMINS
+              value: {{ join "," . | quote }}
+            {{- end }}
+            {{- with .Values.corsOrigins }}
+            - name: METIS_CORS_ORIGINS
+              value: {{ join "," . | quote }}
+            {{- end }}
+            - name: METIS_WHISPER_DEADLINE_HOURS
+              value: {{ .Values.whisperDeadlineHours | quote }}
+            - name: METIS_USE_LIVE_MODEL
+              value: {{ .Values.useLiveModel | quote }}
+            - name: METIS_LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+            {{- if .Values.apiKeys.existingSecret }}
+            - name: api-keys
+              mountPath: /config/api-keys
+              readOnly: true
+            {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          {{- if and (not $postgres) .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "metis.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.apiKeys.existingSecret }}
+        - name: api-keys
+          secret:
+            secretName: {{ .Values.apiKeys.existingSecret }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

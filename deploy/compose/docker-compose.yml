@@ -1,0 +1,65 @@
+# Metis with PostgreSQL and a Keycloak identity provider, for development and evaluation.
+# The passwords and client secrets here are for local use only. See deploy/README.md.
+#
+#   docker compose -f deploy/compose/docker-compose.yml up -d --build
+#   sh deploy/compose/try-it.sh
+
+name: metis
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: metis
+      POSTGRES_USER: metis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-metis-dev-only}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metis -d metis"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-dev-only}
+      # Tokens carry this issuer whether they are requested from the host or the network.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    volumes:
+      - ./keycloak/metis-realm.json:/opt/keycloak/data/import/metis-realm.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  metis:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    environment:
+      METIS_DATABASE_URL: postgresql://metis:${POSTGRES_PASSWORD:-metis-dev-only}@db:5432/metis
+      METIS_OIDC_ISSUER: http://localhost:8080/realms/metis
+      METIS_OIDC_JWKS_URL: http://keycloak:8080/realms/metis/protocol/openid-connect/certs
+      METIS_OIDC_AUDIENCE: metis-api
+      METIS_OIDC_ROLES_CLAIM: realm_access.roles
+      METIS_API_KEYS_FILE: /config/api-keys.yaml
+      METIS_LOG_LEVEL: info
+    volumes:
+      - config:/config
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+volumes:
+  db: {}
+  config: {}

@@ -30,8 +30,18 @@ same quorum as the first promotion.
 
 Every decision names its reviewers in `decided_by`. Live engines (a local project, the API, and
 the MCP server) refuse a decision that names none. A deterministic engine, used for demos and
-tests, fills in the configured members in order. A deployment passes authenticated reviewer
-identities.
+tests, fills in the configured members in order.
+
+When reviewers decide at different times, each records their own vote
+(`MetisEngine.cast_review_vote`); the Metis server takes the reviewer's identity from sign-in.
+The first approval proposes the promotion: its outcome, the use constraints that travel with the
+fragment, and change control for Controlled. Each later approval approves that proposal as it
+stands, each reviewer approves once, and the promotion is applied when the approvals meet the
+review rule. A single hold, rejection, or re-elicitation decides the review at once.
+
+The Mission Group is the set of workspace members with the reviewer role. Adding a reviewer
+records a `tacit.membership_record` and addresses the reviews already open to them as well;
+removing one ends their part in later decisions.
 
 ## Confidence, review dates, and expiry
 

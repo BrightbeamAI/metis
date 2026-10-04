@@ -1,0 +1,103 @@
+# Values for the Metis server chart. See deploy/README.md.
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  # Build the image from the repository's Dockerfile and push it to your registry.
+  repository: metis-server
+  tag: ""          # defaults to the chart's appVersion
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+# More than one replica needs PostgreSQL: workspaces then serialise their writers through
+# PostgreSQL advisory locks. With SQLite, run one replica with persistence enabled.
+replicaCount: 1
+
+database:
+  # A PostgreSQL URL, for example postgresql://metis:password@postgres:5432/metis.
+  # Prefer existingSecret; a URL given here is stored in a Secret the chart creates.
+  url: ""
+  existingSecret: ""
+  existingSecretKey: database-url
+
+# Sign-in. Configure OIDC, API keys, a trusted proxy, or a combination.
+oidc:
+  issuer: ""                   # for example https://login.example.com/realms/metis
+  audience: metis-api
+  jwksUrl: ""                  # discovered from the issuer when empty
+  rolesClaim: roles            # Keycloak: realm_access.roles
+  emailClaim: email
+  nameClaim: name
+  adminRole: metis-admin
+  auditorRole: metis-auditor
+
+apiKeys:
+  # A Secret holding the API keys file, created with `metis server api-key create --file`.
+  # Keys added to the Secret take effect when Kubernetes refreshes the mounted file.
+  existingSecret: ""
+  existingSecretKey: api-keys.yaml
+
+trustedProxy:
+  # A Secret holding the shared secret that your authenticating proxy sends.
+  existingSecret: ""
+  existingSecretKey: proxy-secret
+
+# Participant URIs that hold the global admin role, for example human:ana@example.com.
+admins: []
+corsOrigins: []
+whisperDeadlineHours: 168
+useLiveModel: false
+logLevel: info
+extraEnv: []
+
+# Storage for SQLite, when no database URL is given.
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+  accessModes: [ReadWriteOnce]
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: metis.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+serviceAccount:
+  create: true
+  name: ""
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

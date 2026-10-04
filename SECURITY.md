@@ -1,7 +1,7 @@
 # Security
 
-Metis is a local-first reference toolkit. It runs entirely on the local machine, and by default
-it contacts no cloud service or external model API.
+Metis runs on infrastructure you control: a laptop for the toolkit, or your own servers and
+database for the multi-user server. By default it contacts no cloud service or external model API.
 
 ## Reporting a vulnerability
 
@@ -34,9 +34,16 @@ public.
 
 ## Threat model boundaries
 
-Metis governs how tacit fragments are captured, validated, and retrieved. Authentication,
-authorisation, and transport security for a multi-tenant deployment belong to the surrounding
-CHAP Coordinator and host environment.
+Metis governs how tacit fragments are captured, validated, and retrieved.
+
+- **The Metis server** (`metis server run`) is the multi-user deployment. Every request acts as
+  the identity its credentials prove: an OIDC access token verified against the provider's keys,
+  an API key stored only as a SHA-256 hash, or a trusted proxy's headers accompanied by a shared
+  secret. Roles in each workspace decide what a caller may do, and every role change is recorded
+  on the workspace's chain. Requests run in database transactions with one writer per workspace,
+  and the evidence ledger table refuses updates and deletes. Serve it over HTTPS through an
+  ingress or reverse proxy, and keep the database, the API keys file, and the identity
+  provider's configuration in your secret store.
 
 - **The FastAPI server** (`metis.api`) is a single-user reference server. It has no
   authentication and records the identities callers supply, so run it on localhost only. Every

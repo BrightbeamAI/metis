@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS pending_captures (
     whisper_id TEXT PRIMARY KEY, worker TEXT, json TEXT NOT NULL);
 """
 
-_META_KEYS = ("version", "name", "site", "workspace", "counters", "governance_refs")
+_META_KEYS = ("version", "name", "site", "workspace", "counters", "governance_refs",
+              "members", "escalation_assignee", "review_rule", "whisper_deadline_ms",
+              "review_proposals")
 _STORES = ("procedural", "semantic", "episodic")
 
 

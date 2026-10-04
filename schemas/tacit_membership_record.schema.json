@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "Role": {
+      "enum": [
+        "worker",
+        "reviewer",
+        "agent",
+        "capture",
+        "escalation",
+        "auditor",
+        "admin"
+      ],
+      "title": "Role",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The content of a ``tacit.membership_record``: one change to a member's roles.",
+  "properties": {
+    "participant": {
+      "title": "Participant",
+      "type": "string"
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/Role"
+      },
+      "title": "Roles",
+      "type": "array"
+    },
+    "granted": {
+      "items": {
+        "$ref": "#/$defs/Role"
+      },
+      "title": "Granted",
+      "type": "array"
+    },
+    "revoked": {
+      "items": {
+        "$ref": "#/$defs/Role"
+      },
+      "title": "Revoked",
+      "type": "array"
+    },
+    "actioned_by": {
+      "title": "Actioned By",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "participant",
+    "roles",
+    "actioned_by"
+  ],
+  "title": "MembershipRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metis.dev/schemas/0.1/tacit_membership_record.schema.json"
+}

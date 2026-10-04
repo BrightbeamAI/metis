@@ -24,6 +24,8 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 | [taxonomy_k1_k17.md](taxonomy_k1_k17.md) | The K1 to K17 tacit categories, the six domains, and the source pathways. |
 | [agent_memory_use.md](agent_memory_use.md) | How an AI agent should consume Metis output and respect use constraints. |
 | [mcp_server.md](mcp_server.md) | Connect an agent (Claude Desktop, Claude Code, any MCP client) to governed tacit memory. |
+| [server.md](server.md) | The multi-user server: sign-in, workspace roles, per-reviewer votes, the API, and storage. |
+| [../deploy/README.md](../deploy/README.md) | Running the server: Docker Compose with PostgreSQL and Keycloak, production settings, and Kubernetes. |
 
 ## Reference
 

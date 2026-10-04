@@ -63,6 +63,9 @@ class Governance:
         # fragment_id -> the CHAP task and fragment artefact its current review runs on, plus
         # "review": "open" while a re-review of a fragment in use awaits its decision.
         self.refs: dict[str, dict[str, str]] = {}
+        # fragment_id -> the promotion an open review is gathering approvals for: its outcome,
+        # use constraints, and change control, as the first approving reviewer proposed them.
+        self.proposals: dict[str, dict[str, Any]] = {}
         self._mem_seq = 0
 
     # ---- CHAP references -------------------------------------------------------
@@ -99,6 +102,7 @@ class Governance:
         ref = self.refs.get(fragment_id)
         if ref is not None:
             ref.pop("review", None)
+        self.proposals.pop(fragment_id, None)
 
     def _ev(self, artefact_id: str) -> int | None:
         return self.adapter.artefact_evidence.get(artefact_id)
@@ -236,6 +240,7 @@ class Governance:
         linked_procedural_refs: list[str] | None = None,
         linked_semantic_refs: list[str] | None = None,
         linked_episodic_refs: list[str] | None = None,
+        use_constraints: list[str] | None = None,
     ) -> dict[str, Any]:
         """Record the Mission Group's decision on a fragment, opening its review if needed.
 
@@ -248,29 +253,11 @@ class Governance:
         frag = self.fragments.require(fragment_id)
         by = by or self.mission_group.uri
         deciders = self._deciders(outcome, decided_by)
-        self._require_active(frag)
-
-        new_state = state_for_outcome(outcome)
-        reviewing = (VS.tier2_pending if frag.validation_state in (VS.tier1_confirmed, VS.held)
-                     else frag.validation_state)
-        assert_transition(reviewing, new_state)
-        target = None
-        if outcome in _PROMOTIONS:
-            target = layer_for_outcome(outcome)
-            ok, why = self.policy.can_promote(frag, target, change_control=change_control,
-                                              mission_group_reviewed=True)
-            if not ok:
-                raise PermissionError(f"Promotion blocked by policy: {why}")
-
-        if not self.review_open(fragment_id):
-            self.request_review(fragment_id, by=by, reason=summary)
-            frag = self.fragments.require(fragment_id)
-        ref = self._ensure_refs(frag)
-        in_use = frag.validation_state in _IN_USE
+        frag, ref, target, in_use = self._open_for_decision(
+            frag, outcome, by=by, summary=summary, change_control=change_control)
 
         # Confidence follows the evidence as it stands at review.
         frag.confidence = evidence_confidence(frag.evidence)
-
         review = self.mission_group.review(
             fragment_id, outcome, reviewers=reviewers or deciders,
             dimension_assessments=dimension_assessments, summary=summary,
@@ -291,6 +278,189 @@ class Governance:
                 f"The Mission Group review did not complete under {self.policy.review_rule}.")
         if not reviewers and decided != deciders:
             review = review.model_copy(update={"reviewers": decided})
+        return self._finalize_decision(
+            frag, ref, outcome, target=target, in_use=in_use, by=by, decided=decided,
+            review=review, summary=summary, change_control=change_control,
+            use_constraints=use_constraints,
+            linked_procedural_refs=linked_procedural_refs,
+            linked_semantic_refs=linked_semantic_refs,
+            linked_episodic_refs=linked_episodic_refs)
+
+    def _open_for_decision(self, frag: TacitFragment, outcome: str, *, by: str, summary: str,
+                           change_control: dict[str, Any] | None):
+        """Check that ``outcome`` may be decided on ``frag`` and that its review is open.
+
+        Returns the fragment, its review references, the target layer of a promotion (or
+        ``None``), and whether the fragment is in use. Nothing is recorded unless the checks
+        pass; a review that is not open yet is opened.
+        """
+        self._require_active(frag)
+        new_state = state_for_outcome(outcome)
+        reviewing = (VS.tier2_pending if frag.validation_state in (VS.tier1_confirmed, VS.held)
+                     else frag.validation_state)
+        assert_transition(reviewing, new_state)
+        target = None
+        if outcome in _PROMOTIONS:
+            target = layer_for_outcome(outcome)
+            ok, why = self.policy.can_promote(frag, target, change_control=change_control,
+                                              mission_group_reviewed=True)
+            if not ok:
+                raise PermissionError(f"Promotion blocked by policy: {why}")
+        if not self.review_open(frag.fragment_id):
+            self.request_review(frag.fragment_id, by=by, reason=summary)
+            frag = self.fragments.require(frag.fragment_id)
+        ref = self._ensure_refs(frag)
+        return frag, ref, target, frag.validation_state in _IN_USE
+
+    def review_approvals(self, fragment_id: str) -> dict[str, str | None]:
+        """The approvals recorded so far on the fragment's open review: reviewer -> outcome."""
+        if not self.review_open(fragment_id):
+            return {}
+        task_id = self.refs[fragment_id]["task"]
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        task = ws.tasks.get(task_id) if ws else None
+        review = getattr(task, "review", None)
+        approvals: dict[str, str | None] = {}
+        for decision in getattr(review, "decisions", None) or []:
+            if decision.get("kind") == "approve":
+                tags = decision.get("tags") or []
+                approvals[decision["reviewer"]] = tags[0] if tags else None
+        return approvals
+
+    @clock.scoped
+    def cast_review_vote(
+        self,
+        fragment_id: str,
+        outcome: str,
+        *,
+        reviewer: str,
+        by: str | None = None,
+        summary: str = "",
+        change_control: dict[str, Any] | None = None,
+        dimension_assessments: dict[str, str] | None = None,
+        model_assist_ref: str | None = None,
+        linked_procedural_refs: list[str] | None = None,
+        linked_semantic_refs: list[str] | None = None,
+        linked_episodic_refs: list[str] | None = None,
+        use_constraints: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Record one reviewer's decision on a fragment's review.
+
+        Holding, rejecting, or sending a fragment back for re-elicitation takes one reviewer
+        and decides the review at once. An approval to promote (or renew, or move between
+        layers) is recorded on the open review, and the promotion is applied when the
+        approvals meet the review rule. The first approval proposes the promotion: its
+        outcome, the use constraints that travel with the fragment, and change control for
+        Controlled. Later approvals approve that proposal as it stands, and each reviewer
+        approves once. The result's ``status`` is ``decided`` or ``pending``.
+        """
+        if outcome not in chap_review.OUTCOME_TO_METHOD:
+            raise ValueError(f"Unknown outcome: {outcome}")
+        if reviewer not in self.mission_group.members:
+            raise PermissionError(f"Not a Mission Group reviewer: {reviewer}")
+        if outcome not in _PROMOTIONS:
+            return {"status": "decided", **self.tier2_review(
+                fragment_id, outcome, decided_by=[reviewer], by=by, summary=summary,
+                dimension_assessments=dimension_assessments, model_assist_ref=model_assist_ref)}
+
+        frag = self.fragments.require(fragment_id)
+        by = by or self.mission_group.uri
+        proposal = self.proposals.get(fragment_id) if self.review_open(fragment_id) else None
+        if proposal is not None:
+            if outcome != proposal["outcome"]:
+                raise InvalidTransition(
+                    f"This review is gathering approvals for {proposal['outcome']}. Approve that "
+                    "outcome, or hold, reject, or send the fragment back for re-elicitation.")
+            for name, given in (("use constraints", use_constraints),
+                                ("change control", change_control)):
+                key = name.replace(" ", "_")
+                if given is not None and given != proposal.get(key):
+                    raise InvalidTransition(
+                        f"The proposal under review has other {name}; approve it as proposed, "
+                        "or hold, reject, or send the fragment back for re-elicitation.")
+            use_constraints = proposal.get("use_constraints")
+            change_control = proposal.get("change_control")
+        frag, ref, target, in_use = self._open_for_decision(
+            frag, outcome, by=by, summary=summary, change_control=change_control)
+        approvals = self.review_approvals(fragment_id)
+        if reviewer in approvals:
+            raise InvalidTransition(f"{reviewer} has already approved this review.")
+        proposed = {o for o in approvals.values() if o}
+        if proposed and outcome not in proposed:
+            raise InvalidTransition(
+                f"This review is gathering approvals for {', '.join(sorted(proposed))}. Approve "
+                "that outcome, or hold, reject, or send the fragment back for re-elicitation.")
+        state = self.adapter.decide(chap_review.DECIDE_APPROVE, sender=reviewer,
+                                    based_on=ref["artefact"], task_id=ref["task"],
+                                    content={"outcome": outcome, "summary": summary}).get("state")
+        decided = [*approvals, reviewer]
+        need = self.policy.approvals_required(len(self.mission_group.members))
+        if state != "completed":
+            self.proposals[fragment_id] = {
+                "outcome": outcome, "proposed_by": decided[0],
+                "use_constraints": list(use_constraints) if use_constraints is not None else None,
+                "change_control": change_control}
+            frag.add_lineage(state=frag.validation_state.value, by=reviewer,
+                             note=f"approved {outcome} ({len(decided)} of {need} approvals "
+                                  f"under {self.policy.review_rule})",
+                             chap_evidence_seq=self.adapter.chain.count - 1)
+            self.fragments.put(frag)
+            return {"status": "pending", "outcome": outcome, "approvals": decided,
+                    "required": need, "review_task": ref["task"],
+                    "proposal": self.proposals[fragment_id]}
+        frag.confidence = evidence_confidence(frag.evidence)
+        review = self.mission_group.review(
+            fragment_id, outcome, reviewers=decided, dimension_assessments=dimension_assessments,
+            summary=summary, model_assist_ref=model_assist_ref)
+        return {"status": "decided",
+                **self._finalize_decision(
+                    frag, ref, outcome, target=target, in_use=in_use, by=by, decided=decided,
+                    review=review, summary=summary, change_control=change_control,
+                    use_constraints=use_constraints,
+                    linked_procedural_refs=linked_procedural_refs,
+                    linked_semantic_refs=linked_semantic_refs,
+                    linked_episodic_refs=linked_episodic_refs)}
+
+    def widen_open_reviews(self, reviewers: list[str], *, by: str) -> list[str]:
+        """Address every open review to ``reviewers`` as well; return the review tasks.
+
+        CHAP keeps the decisions already cast and the review's rule, so a reviewer who joins
+        the Mission Group can vote on reviews that opened before they joined.
+        """
+        widened: list[str] = []
+        ws = self.adapter.coord.get_workspace(self.adapter.workspace_id)
+        for fragment_id, ref in list(self.refs.items()):
+            if self.fragments.get(fragment_id) is None or not self.review_open(fragment_id):
+                continue
+            task = ws.tasks.get(ref["task"]) if ws else None
+            rule = getattr(getattr(task, "review", None), "rule", None) or self.policy.review_rule
+            self.adapter.review_request(sender=by, reviewers=list(reviewers),
+                                        artefact_id=ref["artefact"], task_id=ref["task"],
+                                        rule=rule)
+            widened.append(ref["task"])
+        return widened
+
+    def _finalize_decision(
+        self,
+        frag: TacitFragment,
+        ref: dict[str, str],
+        outcome: str,
+        *,
+        target: AuthorityLayer | None,
+        in_use: bool,
+        by: str,
+        decided: list[str],
+        review: Any,
+        summary: str,
+        change_control: dict[str, Any] | None,
+        use_constraints: list[str] | None = None,
+        linked_procedural_refs: list[str] | None,
+        linked_semantic_refs: list[str] | None,
+        linked_episodic_refs: list[str] | None,
+    ) -> dict[str, Any]:
+        """Apply a decided review to the fragment and record its decision artefacts."""
+        fragment_id = frag.fragment_id
+        new_state = state_for_outcome(outcome)
         review_art = self.adapter.append_artefact(
             "tacit.review_decision", produced_by=by, content=review.model_dump(mode="json"),
             task=ref["task"], based_on=ref["artefact"])
@@ -324,11 +494,16 @@ class Governance:
                              chap_evidence_seq=self._ev(pr_art), chap_artefact_ref=pr_art)
             self._sync_review_status(frag)
             self.fragments.put(frag)
+            if use_constraints is not None:  # the constraints the reviewers approved
+                frag.use_constraints = list(use_constraints)
             mem = self._upsert_memory_object(
                 frag, change_control=change_control, review_art=review_art,
                 linked_procedural_refs=linked_procedural_refs,
                 linked_semantic_refs=linked_semantic_refs,
                 linked_episodic_refs=linked_episodic_refs)
+            if not frag.use_constraints:  # the memory object's defaults, so both agree
+                frag.use_constraints = list(mem.use_constraints)
+                self.fragments.put(frag)
             result.update({"promotion_record": pr_art, "memory": mem})
             return result
 

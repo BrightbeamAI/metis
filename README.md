@@ -135,7 +135,9 @@ print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 | Records | Local persistence and CHAP evidence | Storage, retention, and access policy |
 
 `metis mcp` serves the same governed memory to MCP clients such as Claude Desktop and Claude Code.
-See the [MCP server guide](docs/mcp_server.md).
+See the [MCP server guide](docs/mcp_server.md). To run Metis for a team, the
+[server guide](docs/server.md) covers sign-in, workspace roles, and PostgreSQL, and
+[deploy/](deploy/README.md) runs it with Docker or Kubernetes.
 
 ## Learn more
 

@@ -131,6 +131,7 @@ class CHAPAdapter:
         self.artefacts: dict[str, dict[str, Any]] = {}
         self.artefact_evidence: dict[str, int] = {}
         self.chain = ChainView(self.coord, self.workspace_id)
+        self.store = store
         self.ledger = ledger  # metis.audit.ledger.EvidenceLedger, or None
 
         restored = self.coord.workspaces.get(self.workspace_id)
@@ -175,6 +176,17 @@ class CHAPAdapter:
             self.ledger.check(self)
             if not self.ledger.read_only:
                 self.ledger.sync(self)
+
+    def detach_store(self) -> Any:
+        """Stop the coordinator saving a snapshot after every dispatch, and return the store.
+
+        The caller then persists the workspace itself, for example once per transaction, as
+        the SQL repository does. The store has already restored the workspace.
+        """
+        import dataclasses
+
+        self.coord.options = dataclasses.replace(self.coord.options, store=None)
+        return self.store
 
     # ---- time ------------------------------------------------------------------
     def now_iso(self) -> str:
@@ -226,6 +238,15 @@ class CHAPAdapter:
         self.participants[uri] = desc
         self.members.append({"uri": uri, "role": role})
         return desc
+
+    def leave(self, uri: str) -> None:
+        """Remove ``uri`` from the CHAP workspace (``participant.leave``), recorded on the chain."""
+        ws = self.coord.workspaces.get(self.workspace_id)
+        if ws is None or uri not in ws.members:
+            return
+        self._dispatch("participant.leave", **{"from": uri})
+        self.participants.pop(uri, None)
+        self.members = [m for m in self.members if m.get("uri") != uri]
 
     # ---- tasks -----------------------------------------------------------------
     def create_task(self, kind: str, *, assignee: str, delegator: str,

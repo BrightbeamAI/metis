@@ -30,7 +30,9 @@ dependencies = [
 [project.optional-dependencies]
 api = ["fastapi>=0.110", "uvicorn>=0.23"]
 mcp = ["mcp>=1.10,<3"]
-dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.23", "build>=1", "twine>=5", "mcp>=1.10,<3"]
+server = ["fastapi>=0.110", "uvicorn[standard]>=0.23", "sqlalchemy>=2.0", "PyJWT[crypto]>=2.8"]
+postgres = ["psycopg[binary]>=3.1"]
+dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.23", "build>=1", "twine>=5", "mcp>=1.10,<3", "sqlalchemy>=2.0", "PyJWT[crypto]>=2.8"]
 
 [project.scripts]
 metis = "metis.cli.main:main"

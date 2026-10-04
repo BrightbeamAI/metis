@@ -58,13 +58,20 @@ tacit.whisper_response      tacit.operator_confirmation tacit.validation_event
 tacit.review_decision       tacit.promotion_record      tacit.rejection_record
 tacit.re_elicitation_request tacit.retrieval_decision   tacit.revocation_record
 tacit.supersession_record   tacit.consent_record        tacit.model_assist_record
+tacit.membership_record
 ```
 
 JSON Schemas for the core kinds are published in [../schemas/](../schemas/): `tacit.fragment`,
 `tacit.memory_object`, `tacit.agent_memory_context`, `tacit.retrieval_decision`,
 `tacit.review_decision`, `tacit.promotion_record`, `tacit.revocation_record`,
-`tacit.consent_record`, `tacit.validation_event`, and `tacit.model_assist_record`, plus
-`tacit_context` for the conditions and runtime context they embed.
+`tacit.consent_record`, `tacit.validation_event`, `tacit.model_assist_record`, and
+`tacit.membership_record`, plus `tacit_context` for the conditions and runtime context they embed.
+
+A `tacit.membership_record` records one change to a workspace member's Metis roles: the
+participant, the roles they hold afterwards, the roles granted and revoked, and who made the
+change. Roles are `worker`, `reviewer`, `agent`, `capture`, `escalation`, `auditor`, and `admin`;
+the Mission Group is the set of members with the `reviewer` role. Only people hold the worker,
+reviewer, escalation, and admin roles, and only agents hold the agent role.
 
 A `tacit.validation_event` names its `event`: `whisper_deferred` (the worker's prompt budget was
 reached), `consent_declined` (the worker answered and withheld consent, so nothing was stored), or

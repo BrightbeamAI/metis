@@ -20,6 +20,7 @@ from metis.conditions.context import TacitContext
 from metis.consent.model import ConsentRecord
 from metis.consent.revocation import RevocationRecord
 from metis.fragment.model import TacitFragment
+from metis.governance.membership import MembershipRecord
 from metis.memory.agent_context import AgentMemoryContext
 from metis.memory.tacit import TacitMemoryObject
 from metis.models.structured_outputs import ModelAssistRecord
@@ -34,6 +35,7 @@ SCHEMAS = {
     "tacit_consent_record": ConsentRecord,
     "tacit_context": TacitContext,
     "tacit_fragment": TacitFragment,
+    "tacit_membership_record": MembershipRecord,
     "tacit_memory_object": TacitMemoryObject,
     "tacit_model_assist_record": ModelAssistRecord,
     "tacit_promotion_record": PromotionRecord,

@@ -128,7 +128,9 @@ print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 | Records | Local persistence and CHAP evidence | Storage, retention, and access policy |
 
 `metis mcp` serves the same governed memory to MCP clients such as Claude Desktop and Claude Code.
-See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/mcp_server.md).
+See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/mcp_server.md). To run Metis for a team, the
+[server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/server.md) covers sign-in, workspace roles, and PostgreSQL, and
+[deploy/](https://github.com/BrightbeamAI/metis/blob/main/deploy/README.md) runs it with Docker or Kubernetes.
 
 ## Learn more
 
