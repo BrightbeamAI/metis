@@ -1,13 +1,11 @@
 <!-- Generated from README.md by scripts/build_pypi_readme.py; do not edit. -->
-# Metis
-
-**Amplify your experts’ judgement.** Open-source tacit memory for AI agents, from Brightbeam Applied Research.
-
-*The illustrated version of this page is on [GitHub](https://github.com/BrightbeamAI/metis), and the interactive walkthrough is at [metis.brightbeam.works](https://metis.brightbeam.works).*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-banner.svg" alt="Metis by Brightbeam Applied Research. Amplify your experts’ judgement. Open-source tacit memory for AI agents." width="100%">
+</p>
 
 <p align="center">
   <a href="https://metis.brightbeam.works"><b>Website</b></a> ·
-  <a href="https://github.com/BrightbeamAI/metis/blob/main/docs/README.md"><b>Documentation</b></a> ·
+  <a href="https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/README.md"><b>Documentation</b></a> ·
   <a href="https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf"><b>Paper</b></a> ·
   <a href="https://pypi.org/project/metis-memory/"><b>PyPI</b></a> ·
   <a href="https://github.com/BrightbeamAI/chap"><b>CHAP</b></a>
@@ -29,18 +27,24 @@ A **tacit fragment** records what an expert noticed, how they responded, and the
 that response. After human review, it sits alongside procedures, facts, and past events in the
 agent's memory.
 
-*Four layers of agent memory: procedural, what should happen; semantic, what is known; episodic, what happened; and tacit, what experience adds. The tacit layer comes from people.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-memory-layers.svg" alt="Four layers of agent memory: procedural, what should happen; semantic, what is known; episodic, what happened; and tacit, what experience adds. The tacit layer comes from people." width="100%">
+</p>
 
 ## The gap between procedure and practice
 
 Procedures describe what should happen, and logs record what happened. The cue behind an expert's
 decision, and the reason for it, often go unrecorded.
 
-*Work as imagined, from SOP-17: reduce load only when the alarm threshold is crossed. Work as done, by an experienced operator on the night shift: ease back earlier, when high load meets a dull sound. Metis records what the expert noticed, the context, and the response, for people to review.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-work-as-done.svg" alt="Work as imagined, from SOP-17: reduce load only when the alarm threshold is crossed. Work as done, by an experienced operator on the night shift: ease back earlier, when high load meets a dull sound. Metis records what the expert noticed, the context, and the response, for people to review." width="100%">
+</p>
 
 ## How a fragment reaches an agent
 
-*Three steps. Capture: the worker confirms the account in their own words. Human review: two named reviewers decide what the fragment may do. Use in context: the agent receives it when its conditions match. Three permission levels: Evidence, for reviewers only; Advisory, conditional support; Controlled, formal instruction.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-how-it-works.svg" alt="Three steps. Capture: the worker confirms the account in their own words. Human review: two named reviewers decide what the fragment may do. Use in context: the agent receives it when its conditions match. Three permission levels: Evidence, for reviewers only; Advisory, conditional support; Controlled, formal instruction." width="100%">
+</p>
 
 Every capture, confirmation, review decision, and retrieval is recorded through the
 [CHAP](https://github.com/BrightbeamAI/chap) reference coordinator,
@@ -51,7 +55,9 @@ Every capture, confirmation, review decision, and retrieval is recorded through 
 When a recorded action differs from the procedure, a capture agent asks the expert one short
 question, a *whisper*, and the expert confirms the account in their own words.
 
-*The capture loop around the worker and the capture agent: observe, infer, whisper, confirm, store.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-capture-loop.svg" alt="The capture loop around the worker and the capture agent: observe, infer, whisper, confirm, store." width="420">
+</p>
 
 ## Seventeen kinds of know-how
 
@@ -59,7 +65,9 @@ Each fragment carries one of the paper's seventeen categories of tacit knowledge
 [atlas on the website](https://metis.brightbeam.works/#gap) gives an example of each and a way to
 capture it.
 
-*Seventeen kinds of know-how, K1 to K17, in six domains: procedural and embodied; material and equipment; perceptual; inferential; meta-cognitive; social and normative.*
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BrightbeamAI/metis/v0.1.5/docs/assets/metis-atlas.svg" alt="Seventeen kinds of know-how, K1 to K17, in six domains: procedural and embodied; material and equipment; perceptual; inferential; meta-cognitive; social and normative." width="460">
+</p>
 
 ## Quickstart: run the pump example
 
@@ -128,19 +136,19 @@ print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 | Records | Local persistence and CHAP evidence | Storage, retention, and access policy |
 
 `metis mcp` serves the same governed memory to MCP clients such as Claude Desktop and Claude Code.
-See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/mcp_server.md). To run Metis for a team, the
-[server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/server.md) covers sign-in, workspace roles, the web app, and PostgreSQL;
-[deploy/](https://github.com/BrightbeamAI/metis/blob/main/deploy/README.md) runs it with Docker or Kubernetes; and the
-[agent integrations guide](https://github.com/BrightbeamAI/metis/blob/main/docs/agent_integrations.md) connects agents through remote MCP, a
-Python client, or LangChain. [Connectors](https://github.com/BrightbeamAI/metis/blob/main/docs/connectors.md) capture from workplace systems
-and put whispers in Slack or Teams, and the [operations guide](https://github.com/BrightbeamAI/metis/blob/main/docs/operations.md) covers running
+See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/mcp_server.md). To run Metis for a team, the
+[server guide](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/server.md) covers sign-in, workspace roles, the web app, and PostgreSQL;
+[deploy/](https://github.com/BrightbeamAI/metis/blob/v0.1.5/deploy/README.md) runs it with Docker or Kubernetes; and the
+[agent integrations guide](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/agent_integrations.md) connects agents through remote MCP, a
+Python client, or LangChain. [Connectors](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/connectors.md) capture from workplace systems
+and put whispers in Slack or Teams, and the [operations guide](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/operations.md) covers running
 it in production.
 
 ## Learn more
 
 - [Website](https://metis.brightbeam.works): the interactive walkthrough, the atlas, and common questions.
-- [Documentation](https://github.com/BrightbeamAI/metis/blob/main/docs/README.md): architecture, governance, retrieval, and agent use.
-- [ABOUT.md](https://github.com/BrightbeamAI/metis/blob/main/ABOUT.md): the repository map and how to develop.
+- [Documentation](https://github.com/BrightbeamAI/metis/blob/v0.1.5/docs/README.md): architecture, governance, retrieval, and agent use.
+- [ABOUT.md](https://github.com/BrightbeamAI/metis/blob/v0.1.5/ABOUT.md): the repository map and how to develop.
 - [CHAP](https://github.com/BrightbeamAI/chap): the Collaborative Human-Agent Protocol.
 - `docs/demo.html` and `docs/explainer.html`: an interactive demo and an illustrated explainer that open in any browser.
 
@@ -149,11 +157,11 @@ it in production.
 Metis captures fragments of human work with the worker's knowledge and consent. Do not use it for
 covert monitoring. It records no audio, video, biometrics, screenshots, or keystrokes. Production
 use needs worker consultation, legal review, and domain validation; read
-[ETHICAL_USE.md](https://github.com/BrightbeamAI/metis/blob/main/ETHICAL_USE.md) first.
+[ETHICAL_USE.md](https://github.com/BrightbeamAI/metis/blob/v0.1.5/ETHICAL_USE.md) first.
 
 ## License
 
-Apache-2.0. See [LICENSE](https://github.com/BrightbeamAI/metis/blob/main/LICENSE).
+Apache-2.0. See [LICENSE](https://github.com/BrightbeamAI/metis/blob/v0.1.5/LICENSE).
 
 ## Citation
 

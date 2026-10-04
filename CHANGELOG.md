@@ -3,6 +3,12 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [0.1.5.post1]
+
+### Changed
+- The PyPI description shows the README's figures, and its links open the documents of the
+  release on GitHub. The code is the same as 0.1.5.
+
 ## [0.1.5]
 
 ### Added
