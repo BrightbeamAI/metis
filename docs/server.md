@@ -15,6 +15,8 @@ engine as the toolkit, with these additions around it:
 - **People's workflows.** An inbox and web app for workers, reviewers, and escalation handlers;
   decisions on escalated retrievals; whisper deadlines; and notifications by email, Slack,
   Teams, or webhook.
+- **Connectors.** Records from workplace systems become observations, and workers can answer
+  whispers in Slack or Microsoft Teams. See [connectors.md](connectors.md).
 - **Deployment.** PostgreSQL or SQLite storage, a container image, Docker Compose, and a Helm
   chart. See [deploy/README.md](../deploy/README.md).
 
@@ -227,6 +229,9 @@ channels:
 | `POST /v1/workspaces/{id}/escalations/{task}/decision` | escalation |
 | `GET /v1/workspaces/{id}/audit`, `.../audit/verify`, `.../audit/export` | auditor, admin |
 | `/mcp` | MCP over streamable HTTP, for agents and capture sources; see [agent_integrations.md](agent_integrations.md) |
+| `GET /v1/connectors` | anyone signed in: the configured sources |
+| `POST /v1/workspaces/{id}/ingest/{source}` | capture; see [connectors.md](connectors.md) |
+| `POST /integrations/slack/interactions`, `POST /integrations/teams/messages` | Slack and the Bot Framework, which sign their requests |
 
 Responses use standard status codes: 401 without valid credentials, 403 when the caller's roles
 do not allow the action, 404 for something that does not exist (or that the caller may not
@@ -235,10 +240,11 @@ for invalid input.
 
 ## Storage and consistency
 
-The SQL repository keeps five tables: `metis_workspaces` (each workspace's domain state and a
+The SQL repository keeps these tables: `metis_workspaces` (each workspace's domain state and a
 version counter), `chap_workspaces` (the CHAP snapshot, in CHAP's own store schema),
 `metis_evidence_ledger` (one row per evidence entry, append-only, enforced by database
-triggers), `metis_outbox` (notifications awaiting delivery), and `metis_schema`.
+triggers), `metis_outbox` (notifications awaiting delivery), `metis_chat_identities` (where to
+reach people in Teams), and `metis_schema`.
 
 A write runs inside one transaction. Within a process, a lock serialises each workspace's
 writers; across processes, a PostgreSQL advisory lock does; and a version check on save refuses

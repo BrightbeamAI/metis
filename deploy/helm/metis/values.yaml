@@ -61,6 +61,17 @@ notifications:
   existingSecret: ""
   existingSecretKey: notifications.yaml
 
+connectors:
+  # A Secret holding the source mappings file (docs/connectors.md).
+  existingSecret: ""
+  existingSecretKey: connectors.yaml
+
+# Whispers in chat tools. Each names a Secret holding the credentials.
+slack:
+  existingSecret: ""        # keys: bot-token, signing-secret
+teams:
+  existingSecret: ""        # keys: app-id, app-password, and optionally tenant-id
+
 # Background work: lapsing overdue whispers, review-date notices, and delivering notifications.
 sweepIntervalSeconds: 300
 dispatchIntervalSeconds: 5

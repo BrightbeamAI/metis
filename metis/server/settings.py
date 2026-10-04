@@ -63,6 +63,13 @@ class ServerSettings(BaseModel):
     ui_client_id: str | None = None
     ui_scopes: str = "openid profile email"
     remote_mcp: bool = True
+    connectors_file: str | None = None
+    # Whispers in chat tools
+    slack_bot_token: str | None = None
+    slack_signing_secret: str | None = None
+    teams_app_id: str | None = None
+    teams_app_password: str | None = None
+    teams_tenant_id: str | None = None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> ServerSettings:
@@ -96,6 +103,12 @@ class ServerSettings(BaseModel):
             "ui_scopes": env.get("METIS_UI_SCOPES"),
             "remote_mcp": (env.get("METIS_REMOTE_MCP") or "true").strip().lower()
             not in ("0", "false", "no", "off"),
+            "connectors_file": env.get("METIS_CONNECTORS_FILE"),
+            "slack_bot_token": env.get("METIS_SLACK_BOT_TOKEN"),
+            "slack_signing_secret": env.get("METIS_SLACK_SIGNING_SECRET"),
+            "teams_app_id": env.get("METIS_TEAMS_APP_ID"),
+            "teams_app_password": env.get("METIS_TEAMS_APP_PASSWORD"),
+            "teams_tenant_id": env.get("METIS_TEAMS_TENANT_ID"),
         }
         return cls(**{k: v for k, v in values.items() if v not in (None, "")})
 

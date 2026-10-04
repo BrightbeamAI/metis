@@ -108,6 +108,24 @@ spec:
             - name: METIS_NOTIFICATIONS_FILE
               value: /config/notifications/{{ .Values.notifications.existingSecretKey }}
             {{- end }}
+            {{- if .Values.connectors.existingSecret }}
+            - name: METIS_CONNECTORS_FILE
+              value: /config/connectors/{{ .Values.connectors.existingSecretKey }}
+            {{- end }}
+            {{- with .Values.slack.existingSecret }}
+            - name: METIS_SLACK_BOT_TOKEN
+              valueFrom: {secretKeyRef: {name: {{ . }}, key: bot-token}}
+            - name: METIS_SLACK_SIGNING_SECRET
+              valueFrom: {secretKeyRef: {name: {{ . }}, key: signing-secret}}
+            {{- end }}
+            {{- with .Values.teams.existingSecret }}
+            - name: METIS_TEAMS_APP_ID
+              valueFrom: {secretKeyRef: {name: {{ . }}, key: app-id}}
+            - name: METIS_TEAMS_APP_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ . }}, key: app-password}}
+            - name: METIS_TEAMS_TENANT_ID
+              valueFrom: {secretKeyRef: {name: {{ . }}, key: tenant-id, optional: true}}
+            {{- end }}
             - name: METIS_SWEEP_INTERVAL_SECONDS
               value: {{ .Values.sweepIntervalSeconds | quote }}
             - name: METIS_DISPATCH_INTERVAL_SECONDS
@@ -151,6 +169,11 @@ spec:
               mountPath: /config/notifications
               readOnly: true
             {{- end }}
+            {{- if .Values.connectors.existingSecret }}
+            - name: connectors
+              mountPath: /config/connectors
+              readOnly: true
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {}
@@ -170,6 +193,11 @@ spec:
         - name: notifications
           secret:
             secretName: {{ .Values.notifications.existingSecret }}
+        {{- end }}
+        {{- if .Values.connectors.existingSecret }}
+        - name: connectors
+          secret:
+            secretName: {{ .Values.connectors.existingSecret }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

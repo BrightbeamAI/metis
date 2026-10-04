@@ -139,7 +139,8 @@ See the [MCP server guide](docs/mcp_server.md). To run Metis for a team, the
 [server guide](docs/server.md) covers sign-in, workspace roles, the web app, and PostgreSQL;
 [deploy/](deploy/README.md) runs it with Docker or Kubernetes; and the
 [agent integrations guide](docs/agent_integrations.md) connects agents through remote MCP, a
-Python client, or LangChain.
+Python client, or LangChain. [Connectors](docs/connectors.md) capture from workplace systems
+and put whispers in Slack or Teams.
 
 ## Learn more
 

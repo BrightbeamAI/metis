@@ -241,7 +241,7 @@ def test_a_version_1_database_is_upgraded(db_url):
         conn.execute(text("UPDATE metis_schema SET version = 1"))
     repo.close()
     upgraded = SqlRepository(db_url)
-    assert upgraded.migrate() == 2
+    assert upgraded.migrate() == 3
     assert upgraded.outbox() == []
     assert upgraded.read("wsp_plant_a", lambda e: e.mission_group_members) == [R1, R2]
     upgraded.close()

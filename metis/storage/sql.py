@@ -10,6 +10,7 @@ Tables
                            triggers refuse updates and deletes, so recorded history stays as it is.
 ``metis_outbox``           notifications awaiting delivery, written in the same transaction as
                            the evidence they report (see ``metis.notify``).
+``metis_chat_identities``  where each person can be reached in a chat tool (Teams).
 ``metis_schema``           the schema version.
 
 One writer per workspace
@@ -70,7 +71,7 @@ from .repository import (
 
 T = TypeVar("T")
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 metadata = MetaData()
 schema_table = Table("metis_schema", metadata, Column("version", Integer, nullable=False))
@@ -116,6 +117,16 @@ outbox_table = Table(
     Column("last_error", Text, nullable=True),
 )
 Index("ix_metis_outbox_due", outbox_table.c.status, outbox_table.c.next_attempt_at)
+chat_identities_table = Table(
+    "metis_chat_identities", metadata,
+    Column("platform", String(20), primary_key=True),
+    Column("participant", String(320), primary_key=True),
+    Column("external_id", String(320), nullable=False),
+    Column("reference", Text, nullable=False),
+    Column("updated_at", String(40), nullable=False),
+)
+Index("ix_metis_chat_identities_external", chat_identities_table.c.platform,
+      chat_identities_table.c.external_id)
 
 _SQLITE_TRIGGERS = (
     "CREATE TRIGGER IF NOT EXISTS metis_ledger_no_update BEFORE UPDATE ON metis_evidence_ledger "
@@ -526,6 +537,34 @@ class SqlRepository:
         with self._global(), self.db.begin() as conn:
             return insert_rows(conn, outbox_table, self.notifier.rows(notifications),
                                skip_duplicates=True)
+
+    def save_chat_identity(self, platform: str, participant: str, external_id: str,
+                           reference: dict[str, Any]) -> None:
+        """Remember where ``participant`` can be reached in a chat tool."""
+        values = {"external_id": external_id, "reference": json.dumps(reference, sort_keys=True),
+                  "updated_at": _now()}
+        t = chat_identities_table
+        with self._global(), self.db.begin() as conn:
+            result = conn.execute(update(t).where(t.c.platform == platform,
+                                                  t.c.participant == participant).values(**values))
+            if result.rowcount == 0:
+                conn.execute(insert(t).values(platform=platform, participant=participant, **values))
+
+    def chat_identity(self, platform: str, participant: str) -> dict[str, Any] | None:
+        t = chat_identities_table
+        with self._global(), self.db.connect() as conn:
+            row = conn.execute(select(t).where(t.c.platform == platform,
+                                               t.c.participant == participant)).first()
+        if row is None:
+            return None
+        return {"participant": row.participant, "external_id": row.external_id,
+                **json.loads(row.reference)}
+
+    def chat_participant(self, platform: str, external_id: str) -> str | None:
+        t = chat_identities_table
+        with self._global(), self.db.connect() as conn:
+            return conn.execute(select(t.c.participant).where(
+                t.c.platform == platform, t.c.external_id == external_id)).scalar()
 
     def outbox(self, *, status: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
         """Outbox rows, newest first, optionally of one status."""

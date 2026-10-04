@@ -89,9 +89,12 @@ These credentials are for a local machine only. Remove the stack and its data wi
    redirect URI `<public URL>/app` and the API audience, then set `METIS_UI_CLIENT_ID` and
    `METIS_PUBLIC_URL`. Configure email, Slack, Teams, or webhooks as the
    [server guide](../docs/server.md#notifications) describes.
-7. **Back up the database.** It holds every workspace's domain state, CHAP chain, and evidence
+7. **Connect workplace systems and chat tools.** Map each source of records in
+   `METIS_CONNECTORS_FILE` and give it a capture identity; set the Slack or Teams credentials to
+   put whispers in chat. The [connectors guide](../docs/connectors.md) covers both.
+8. **Back up the database.** It holds every workspace's domain state, CHAP chain, and evidence
    ledger. The ledger table refuses updates and deletes, so recorded history stays as recorded.
-8. **Partition busy workspaces.** Each write stores the workspace's full CHAP snapshot, so its
+9. **Partition busy workspaces.** Each write stores the workspace's full CHAP snapshot, so its
    cost grows with the length of the chain. A workspace per site, line, or team keeps chains to
    a size that writes in milliseconds.
 
@@ -127,6 +130,9 @@ Every setting is an environment variable.
 | `METIS_SWEEP_INTERVAL_SECONDS` | `300` | How often whisper deadlines and review dates are checked; `0` turns it off |
 | `METIS_DISPATCH_INTERVAL_SECONDS` | `5` | How often queued notifications are delivered; `0` turns it off |
 | `METIS_REMOTE_MCP` | `true` | Serve MCP for agents at `/mcp` |
+| `METIS_CONNECTORS_FILE` | | Source mappings for ingestion; see [connectors.md](../docs/connectors.md) |
+| `METIS_SLACK_BOT_TOKEN`, `METIS_SLACK_SIGNING_SECRET` | | Whispers as Slack direct messages, answered in Slack |
+| `METIS_TEAMS_APP_ID`, `METIS_TEAMS_APP_PASSWORD`, `METIS_TEAMS_TENANT_ID` | | Whispers as Teams cards, answered in Teams |
 | `METIS_LOG_LEVEL` | `info` | Server log level |
 
 ## Kubernetes
@@ -152,5 +158,6 @@ helm install metis deploy/helm/metis \
 
 The chart runs the container as a non-root user with a read-only root filesystem, checks
 `/readyz` and `/healthz`, and refuses to render without a way to sign in, or with several
-replicas and no PostgreSQL database. See [`helm/metis/values.yaml`](helm/metis/values.yaml) for
-every value.
+replicas and no PostgreSQL database. Source mappings and chat credentials go in Secrets named by
+`connectors.existingSecret`, `slack.existingSecret`, and `teams.existingSecret`. See
+[`helm/metis/values.yaml`](helm/metis/values.yaml) for every value.

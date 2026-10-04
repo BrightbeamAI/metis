@@ -36,6 +36,12 @@ All notable changes to Metis are recorded here. The format follows
 - Agent framework adapters: function tools for the OpenAI and Anthropic APIs
   (`metis.integrations.agent_tools`), and LangChain tools and a retriever
   (`metis.integrations.langchain`). See docs/agent_integrations.md.
+- Capture connectors: source mappings (`METIS_CONNECTORS_FILE`) turn records from workplace
+  systems into observations through `POST /v1/workspaces/{id}/ingest/{source}` or
+  `metis connector import`, each record captured once.
+- Whispers in Slack (direct messages with answer buttons and a correction form) and Microsoft
+  Teams (Adaptive Cards from the Metis bot), answered in place and recorded as the worker. See
+  docs/connectors.md.
 
 ### Changed
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader

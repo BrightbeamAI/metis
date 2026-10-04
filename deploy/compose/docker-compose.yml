@@ -62,6 +62,14 @@ services:
       METIS_SMTP_PORT: "1025"
       METIS_SMTP_STARTTLS: "false"
       METIS_SMTP_FROM: metis@example.com
+      # Capture connectors and whispers in chat (docs/connectors.md). Slack and Teams call the
+      # server, so it needs a public address for them, such as a tunnel to port 8000.
+      METIS_CONNECTORS_FILE: ${METIS_CONNECTORS_FILE:-}
+      METIS_SLACK_BOT_TOKEN: ${METIS_SLACK_BOT_TOKEN:-}
+      METIS_SLACK_SIGNING_SECRET: ${METIS_SLACK_SIGNING_SECRET:-}
+      METIS_TEAMS_APP_ID: ${METIS_TEAMS_APP_ID:-}
+      METIS_TEAMS_APP_PASSWORD: ${METIS_TEAMS_APP_PASSWORD:-}
+      METIS_TEAMS_TENANT_ID: ${METIS_TEAMS_TENANT_ID:-}
     volumes:
       - config:/config
     depends_on:

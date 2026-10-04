@@ -181,6 +181,11 @@ class _Endpoints:
                           json={"response": response, "consent": consent,
                                 "corrected_text": corrected_text, "free_text": free_text})
 
+    def ingest(self, workspace: str, source: str, payload: Any) -> Any:
+        """Send records from a configured source (capture role): one record, a list, or the
+        source's own payload."""
+        return self._call("POST", f"{self._ws(workspace)}/ingest/{_seg(source)}", json=payload)
+
     # -- fragments and review --
     def fragments(self, workspace: str, *, validation_state: str | None = None,
                   authority_layer: str | None = None) -> Any:

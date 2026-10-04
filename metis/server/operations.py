@@ -118,3 +118,54 @@ def submit_observation(repo: Any, p: Principal, workspace_id: str, *, observatio
                     "note": "The worker has reached the whisper budget; nothing was asked."}
         return {"deferred": False, **whisper_view(engine, pending)}
     return repo.write(workspace_id, capture)
+
+
+MAX_INGEST_BATCH = 1000
+
+
+def ingest(repo: Any, p: Principal, workspace_id: str, mapping: Any,
+           records: list[Any]) -> dict[str, Any]:
+    """Map records from a source and capture each new one for its worker, in one transaction.
+
+    A record whose observation id is already recorded is a duplicate and is skipped, so a
+    source may send the same records again. A record that fails its mapping, names someone who
+    is not a worker, or carries an invalid category or context is reported and skipped before
+    anything is recorded for it.
+    """
+    from ..connectors.mapping import map_records
+    from ..taxonomy.categories import Category
+
+    if len(records) > MAX_INGEST_BATCH:
+        raise ValueError(f"Send at most {MAX_INGEST_BATCH} records at a time; got {len(records)}.")
+    mapped, failed = map_records(mapping, records)
+
+    def capture(engine: Any) -> dict[str, Any]:
+        require(engine, p, Role.capture)
+        accepted: list[dict[str, Any]] = []
+        duplicates: list[str] = []
+        problems = list(failed)
+        for obs in mapped:
+            if engine.observation_seen(obs.observation_id):
+                duplicates.append(obs.observation_id)
+                continue
+            try:
+                if Role.worker not in engine.roles_of(obs.worker):
+                    raise ValueError(f"{obs.worker} is not a worker in {workspace_id}.")
+                if obs.category:
+                    Category(obs.category)
+                ctx = views.context_from(obs.context)
+            except ValueError as exc:  # checked before anything is recorded for this record
+                problems.append({"observation_id": obs.observation_id, "error": str(exc)})
+                continue
+            pending = engine.begin_capture(
+                {"observation_id": obs.observation_id, "work_as_imagined": obs.work_as_imagined,
+                 "work_as_done": obs.work_as_done, "context": ctx, "source": mapping.name},
+                consent=ConsentRecord(consent_status=ConsentStatus.pending), worker=obs.worker,
+                submitted_by=None if obs.worker == p.uri else p.uri, category=obs.category,
+                title=obs.title, conditions=ctx)
+            accepted.append({"observation_id": obs.observation_id, "worker": obs.worker,
+                             "whisper_id": pending.whisper_id, "deferred": pending.deferred})
+        return {"source": mapping.name, "records": len(records), "accepted": accepted,
+                "duplicates": duplicates, "failed": problems,
+                "filtered": len(records) - len(mapped) - len(failed)}
+    return repo.write(workspace_id, capture)

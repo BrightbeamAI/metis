@@ -99,6 +99,7 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
                             format="%(asctime)s %(levelname)s %(name)s %(message)s")
     logging.getLogger("mcp").setLevel(logging.WARNING)
     auth = authenticator or settings.authenticator()
+    slack_api, teams_connector, chat_channels = _chat_integrations(settings)
     if repository is None:
         from ..notify import Notifier, load_channels
         from ..storage.sql import SqlRepository
@@ -107,7 +108,11 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
         repository = SqlRepository(
             settings.database_url, cache_size=settings.engine_cache_size,
             engine_options={"use_live_model": settings.use_live_model},
-            notifier=Notifier(channels, public_url=public_url or settings.public_url))
+            notifier=Notifier(channels + chat_channels,
+                              public_url=public_url or settings.public_url))
+    for channel in chat_channels:  # the Teams channel finds people through the repository
+        if hasattr(channel, "directory"):
+            channel.directory = repository.chat_identity
 
     from ..notify import Dispatcher
     from .background import Sweeper
@@ -139,6 +144,22 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
     app.state.auth = auth
     app.state.dispatcher = dispatcher
     app.state.sweeper = sweeper
+    if settings.connectors_file:
+        from ..connectors.mapping import load_mappings
+
+        app.state.connectors = load_mappings(settings.connectors_file)
+    else:
+        app.state.connectors = {}
+    app.state.slack = app.state.teams = None
+    if slack_api is not None and settings.slack_signing_secret:
+        from ..connectors.slack import SlackInteractions
+
+        app.state.slack = SlackInteractions(repository, slack_api, settings.slack_signing_secret)
+    if teams_connector is not None:
+        from ..connectors.teams import TeamsBot, TeamsBotAuth
+
+        app.state.teams = TeamsBot(repository, TeamsBotAuth(settings.teams_app_id),
+                                   teams_connector)
 
     if settings.cors_origins:
         from fastapi.middleware.cors import CORSMiddleware
@@ -187,6 +208,26 @@ def create_app(settings: ServerSettings | None = None, *, repository: Any = None
         app.router.routes.append(Route("/mcp", endpoint=SignedIn(mcp_server[1], auth),
                                        methods=["GET", "POST", "DELETE"]))
     return app
+
+
+def _chat_integrations(settings: ServerSettings) -> tuple[Any, Any, list[Any]]:
+    """The Slack and Teams clients the settings configure, and their whisper channels."""
+    slack_api = teams_connector = None
+    channels: list[Any] = []
+    if settings.slack_bot_token:
+        from ..connectors.slack import SlackAPI, SlackWhisperChannel
+
+        slack_api = SlackAPI(settings.slack_bot_token)
+        channels.append(SlackWhisperChannel(name="slack-whispers", api=slack_api,
+                                            public_url=settings.public_url))
+    if settings.teams_app_id and settings.teams_app_password:
+        from ..connectors.teams import BotConnector, TeamsWhisperChannel
+
+        teams_connector = BotConnector(settings.teams_app_id, settings.teams_app_password,
+                                       tenant_id=settings.teams_tenant_id)
+        channels.append(TeamsWhisperChannel(name="teams-whispers", connector=teams_connector,
+                                            public_url=settings.public_url))
+    return slack_api, teams_connector, channels
 
 
 def _remote_mcp(repository: Any) -> tuple[Any, Any] | None:

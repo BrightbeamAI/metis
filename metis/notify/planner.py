@@ -84,8 +84,11 @@ class Planner:
         for wid, worker in after.pending.items():
             if wid not in before.pending:
                 pending = engine.pending_captures[wid]
-                notes.append(self._note(engine, "whisper.asked", [worker], whisper_id=wid,
-                                        question=pending.whisper.question if pending.whisper else None))
+                notes.append(self._note(
+                    engine, "whisper.asked", [worker], whisper_id=wid,
+                    question=pending.whisper.question if pending.whisper else None,
+                    observation=pending.observation.work_as_done or pending.observation.text,
+                    options=[o["id"] for o in pending.whisper.options] if pending.whisper else None))
 
         for task_id in sorted(after.escalations - before.escalations):
             task = next(t for t in engine.escalation_tasks() if t["task_id"] == task_id)

@@ -132,7 +132,8 @@ See the [MCP server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/
 [server guide](https://github.com/BrightbeamAI/metis/blob/main/docs/server.md) covers sign-in, workspace roles, the web app, and PostgreSQL;
 [deploy/](https://github.com/BrightbeamAI/metis/blob/main/deploy/README.md) runs it with Docker or Kubernetes; and the
 [agent integrations guide](https://github.com/BrightbeamAI/metis/blob/main/docs/agent_integrations.md) connects agents through remote MCP, a
-Python client, or LangChain.
+Python client, or LangChain. [Connectors](https://github.com/BrightbeamAI/metis/blob/main/docs/connectors.md) capture from workplace systems
+and put whispers in Slack or Teams.
 
 ## Learn more
 

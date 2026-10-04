@@ -10,6 +10,7 @@
     metis audit read | verify | export --out evidence.jsonl
     metis mcp
     metis server run | migrate | workspace create | member set | api-key create
+    metis connector check | import --source <name> --file <records>
     metis model check | pull gemma4 | run --prompt "..."
     metis config set model.provider ollama
 """
@@ -20,6 +21,7 @@ import typer
 from .commands.audit import audit_app
 from .commands.capture import capture
 from .commands.config import config_app
+from .commands.connector import connector_app
 from .commands.demo import demo
 from .commands.fragment import fragment_app
 from .commands.init import init
@@ -48,6 +50,7 @@ app.add_typer(audit_app, name="audit")
 app.add_typer(model_app, name="model")
 app.add_typer(config_app, name="config")
 app.add_typer(server_app, name="server")
+app.add_typer(connector_app, name="connector")
 
 
 def main() -> None:

@@ -105,6 +105,8 @@ class MetisEngine:
             whisper_deadline_ms=whisper_deadline_ms)
         # Captures waiting for a worker's answer, keyed by whisper id.
         self.pending_captures: dict[str, PendingCapture] = {}
+        # The observation ids recorded so far, built from the chain on first use.
+        self._observation_ids: set[str] | None = None
         self.broker = MemoryBroker(
             procedural=self.procedural, semantic=self.semantic, episodic=self.episodic,
             fragment_store=self.fragments, tacit_store=self.tacit_store, gate=self.gate,
@@ -211,9 +213,24 @@ class MetisEngine:
             self.episodic.load_jsonl(episodic_jsonl)
 
     # ---- pass-throughs ---------------------------------------------------------
+    def observation_seen(self, observation_id: str) -> bool:
+        """True when an observation with this id is already recorded in the workspace."""
+        if self._observation_ids is None:
+            self._observation_ids = {
+                str(a["content"].get("observation_id"))
+                for a in self.adapter.artefacts_of_kind("tacit.capture_observation")
+                if isinstance(a.get("content"), dict)}
+        return observation_id in self._observation_ids
+
+    def _note_observation(self, observation_id: str) -> None:
+        if self._observation_ids is not None:
+            self._observation_ids.add(observation_id)
+
     @clock.scoped
     def capture_observation(self, observation_input: dict[str, Any], *, consent: ConsentRecord, **kw) -> CaptureResult:
-        return self.capture.run(observation_input, consent=consent, **kw)
+        result = self.capture.run(observation_input, consent=consent, **kw)
+        self._note_observation(result.observation.observation_id)
+        return result
 
     @clock.scoped
     def begin_capture(self, observation_input: dict[str, Any], *, consent: ConsentRecord,
@@ -226,6 +243,7 @@ class MetisEngine:
         """
         pending = self.capture.begin(observation_input, consent=consent, worker=worker,
                                      submitted_by=submitted_by, **kw)
+        self._note_observation(pending.observation.observation_id)
         if not pending.deferred:
             self.pending_captures[pending.whisper_id] = pending
         return pending
