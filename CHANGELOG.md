@@ -3,6 +3,12 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [Unreleased]
+
+### Changed
+- The README leads with figures from metis.brightbeam.works and keeps the text to what a reader
+  needs. The PyPI description gives each figure's alt text in its place.
+
 ## [0.1.4]
 
 ### Added
