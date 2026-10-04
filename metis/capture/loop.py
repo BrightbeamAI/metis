@@ -66,6 +66,7 @@ class PendingCapture(BaseModel):
     title: str | None = None
     source_pathway: SourcePathway = SourcePathway.exogenous
     fragment_id: str | None = None
+    supersedes: str | None = None  # a fragment awaiting re-elicitation that this capture replaces
     artefacts: dict[str, str] = Field(default_factory=dict)
     assist_records: list[ModelAssistRecord] = Field(default_factory=list)
     deferred: bool = False
@@ -85,6 +86,7 @@ class CaptureResult:
     used_live_model: bool = False
     deferred: bool = False
     deferred_reason: str | None = None
+    superseded: str | None = None  # the re-elicited fragment this capture replaced
 
 
 class CaptureLoop:
@@ -168,10 +170,17 @@ class CaptureLoop:
         use_model: bool = True,
         fragment_id: str | None = None,
         worker: str | None = None,
+        supersedes: str | None = None,
     ) -> PendingCapture:
-        """Observe, infer, and ask the worker one whisper. The worker answers later."""
+        """Observe, infer, and ask the worker one whisper. The worker answers later.
+
+        ``supersedes`` names a fragment the Mission Group sent back for re-elicitation; the
+        fragment this capture stores replaces it.
+        """
         if category is not None:
             Category(category)  # reject an unknown category before anything is recorded
+        if supersedes is not None and self.governance is not None:
+            self.governance.require_re_elicitation(supersedes)  # also before anything is recorded
         worker = worker or self.operator_uri
         mc = self.model_client if use_model else None
         assists: list[ModelAssistRecord] = []
@@ -204,7 +213,7 @@ class CaptureLoop:
             task_id=task_id, worker=worker, observation=observation, candidate=candidate,
             consent=consent, category=category, conditions=conditions, attribution=attribution,
             evidence=evidence, title=title, source_pathway=source_pathway,
-            fragment_id=fragment_id or f"TF-{self._frag_seq:05d}",
+            fragment_id=fragment_id or f"TF-{self._frag_seq:05d}", supersedes=supersedes,
             artefacts={"observation": obs_art, "candidate": cand_art}, assist_records=assists)
 
         # 3. Whisper (CHAP whisper capability), within the worker's prompt budget
@@ -325,6 +334,11 @@ class CaptureLoop:
             if self.governance is not None:
                 self.governance.register(fragment.fragment_id, fragment_artefact=frag_art,
                                          task_id=pending.task_id)
+                if pending.supersedes and self.governance.awaiting_re_elicitation(pending.supersedes):
+                    self.governance.supersede(pending.supersedes, fragment.fragment_id,
+                                              by=self.mission_group_uri,
+                                              note=f"re-elicited as {fragment.fragment_id}")
+                    result.superseded = pending.supersedes
         return result
 
     def run(
@@ -344,12 +358,13 @@ class CaptureLoop:
         use_model: bool = True,
         fragment_id: str | None = None,
         worker: str | None = None,
+        supersedes: str | None = None,
     ) -> CaptureResult:
         """The whole loop in one call, with the worker's response supplied up front."""
         pending = self.begin(
             observation_input, consent=consent, category=category, conditions=conditions,
             attribution=attribution, evidence=evidence, title=title, source_pathway=source_pathway,
-            use_model=use_model, fragment_id=fragment_id, worker=worker)
+            use_model=use_model, fragment_id=fragment_id, worker=worker, supersedes=supersedes)
         if pending.deferred:
             return CaptureResult(
                 observation=pending.observation, candidate=pending.candidate, whisper=None,

@@ -76,7 +76,9 @@ reached), `consent_declined` (the worker answered and withheld consent, so nothi
 `{ promoted_to_advisory | promoted_to_controlled | held | rejected | re_elicit }`,
 with terminal/lifecycle states `withdrawn`, `superseded`, `expired`. A promoted fragment is
 re-reviewed in place: it keeps its state until the reviewers renew it, move it to the other
-operational layer, hold it, reject it, or send it back for re-elicitation.
+operational layer, hold it, reject it, or send it back for re-elicitation. A fragment awaiting
+re-elicitation is replaced by a new capture that names it (`supersedes`): once the worker confirms
+the replacement, `control.supersede` and a `tacit.supersession_record` link the two.
 
 ## 4. Authority layers
 

@@ -38,7 +38,9 @@ The loop runs in two halves. `MetisEngine.begin_capture` observes, infers, and a
 whisper; `MetisEngine.answer_whisper` records the worker's own answer, which only the addressed
 human worker may give, and stores the fragment. Pending captures persist with the workspace, so a
 worker can answer after a restart. Whispers are rationed per worker (`WhisperBudget`, five per
-eight hours by default); a capture beyond the budget is deferred and the deferral recorded.
+eight hours by default); a capture beyond the budget is deferred and the deferral recorded. A
+capture can name a fragment awaiting re-elicitation (`supersedes`); the fragment it stores
+replaces that one.
 
 ## The validation lifecycle
 

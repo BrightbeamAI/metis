@@ -28,8 +28,9 @@ re-elicitation, because each of these withholds use. A held fragment gets a fres
 returns. Renewing a fragment, or moving it between layers, grants authority again and needs the
 same quorum as the first promotion.
 
-Callers pass the deciding reviewers as `decided_by`. When they omit it, the configured members are
-used in order; that convenience suits demos and tests. A deployment passes authenticated reviewer
+Every decision names its reviewers in `decided_by`. Live engines (a local project, the API, and
+the MCP server) refuse a decision that names none. A deterministic engine, used for demos and
+tests, fills in the configured members in order. A deployment passes authenticated reviewer
 identities.
 
 ## Confidence, review dates, and expiry
@@ -58,7 +59,8 @@ the fragment stays in use until the reviewers decide. They can:
 - **hold** it, which suspends use until a later promotion (one reviewer);
 - **reject** it, which returns it to the Evidence layer (one reviewer);
 - **re-elicit** it: use stops, and the practice is captured again as a new fragment that
-  supersedes this one (one reviewer).
+  supersedes this one (one reviewer). A capture names the fragment it replaces with
+  `supersedes=<fragment id>`, and the replacement is reviewed like any new capture.
 
 A later promotion rebuilds the fragment's memory object in place, so agents keep the same memory
 id. Every decision is recorded on the review's task, and the policy is checked before any of it

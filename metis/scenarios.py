@@ -109,8 +109,10 @@ def run_spec(spec: ScenarioSpec, engine: MetisEngine | None = None, *,
     result.fragment.use_constraints = list(spec.use_constraints)
     s("12. Evidence-layer fragment stored.", f"{result.fragment.fragment_id} [{result.fragment.authority_layer.value}]")
 
+    members = engine.mission_group_members
+    approvers = members[:engine.governance.policy.approvals_required(len(members))]
     out = engine.tier2_review(
-        result.fragment.fragment_id, "promoted_to_advisory",
+        result.fragment.fragment_id, "promoted_to_advisory", decided_by=approvers,
         dimension_assessments=spec.review_dimensions, summary=spec.review_summary,
         linked_procedural_refs=spec.linked_procedural, linked_semantic_refs=spec.linked_semantic,
         linked_episodic_refs=spec.linked_episodic)

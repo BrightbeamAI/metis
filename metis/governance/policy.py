@@ -31,6 +31,9 @@ class GovernancePolicy:
     # Granting authority is a collective Mission Group decision, enforced by CHAP's review
     # rule. Rejecting, holding, or re-eliciting needs one reviewer (the safe direction).
     review_rule: str = "quorum:2"
+    # Live engines record real decisions, so every decision names its reviewers. A
+    # deterministic engine (demos and tests) may leave them out and use the configured members.
+    require_named_reviewers: bool = False
     # Promotion sets a review date; high-risk fragments are reviewed sooner.
     advisory_review_days: int = 180
     controlled_review_days: int = 365

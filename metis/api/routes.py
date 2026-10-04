@@ -67,6 +67,7 @@ class CaptureRequest(BaseModel):
     response: str = "confirm"
     corrected_content: str | None = None
     title: str | None = None
+    supersedes: str | None = None  # a fragment awaiting re-elicitation that this capture replaces
 
 
 class ReviewRequest(BaseModel):
@@ -137,15 +138,18 @@ def memory_query(req: ContextRequest) -> dict[str, Any]:
 def capture(req: CaptureRequest) -> dict[str, Any]:
     consent = ConsentRecord(consent_status=ConsentStatus.granted)
     with engine_session() as eng:
-        result = eng.capture_observation(
-            dict(observation_id=req.observation_id, work_as_imagined=req.work_as_imagined,
-                 work_as_done=req.work_as_done, text=req.text,
-                 context=TacitContext.model_validate(req.context), source="api"),
-            consent=consent, response=req.response, corrected_content=req.corrected_content,
-            category=req.category, title=req.title,
-            conditions=TacitContext.model_validate(req.context))
+        try:
+            result = eng.capture_observation(
+                dict(observation_id=req.observation_id, work_as_imagined=req.work_as_imagined,
+                     work_as_done=req.work_as_done, text=req.text,
+                     context=TacitContext.model_validate(req.context), source="api"),
+                consent=consent, response=req.response, corrected_content=req.corrected_content,
+                category=req.category, title=req.title,
+                conditions=TacitContext.model_validate(req.context), supersedes=req.supersedes)
+        except (KeyError, ValueError) as exc:
+            raise HTTPException(422, str(exc)) from exc
         return {"fragment": result.fragment.model_dump(mode="json") if result.fragment else None,
-                "task_id": result.task_id,
+                "task_id": result.task_id, "superseded": result.superseded,
                 "model_assist_records": [a.assist_id for a in result.model_assist_records]}
 
 

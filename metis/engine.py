@@ -79,7 +79,8 @@ class MetisEngine:
         self.mission_group = MissionGroup(self.mission_group_uri, members=self.mission_group_members)
         self.governance = Governance(
             fragment_store=self.fragments, adapter=self.adapter, tacit_store=self.tacit_store,
-            policy=GovernancePolicy(), mission_group=self.mission_group, gate=self.gate,
+            policy=GovernancePolicy(require_named_reviewers=not deterministic),
+            mission_group=self.mission_group, gate=self.gate,
             clock_source=self.clock_source)
         self.capture = CaptureLoop(
             adapter=self.adapter, fragment_store=self.fragments, operator_uri=self.operator_uri,

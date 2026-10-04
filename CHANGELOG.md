@@ -3,6 +3,33 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [0.1.4]
+
+### Added
+- Re-review of fragments in use. The Mission Group can renew a fragment (for example after its
+  review date), move it between Advisory and Controlled, hold it, reject it, or send it back for
+  re-elicitation. The fragment stays in use until the decision, a later promotion rebuilds its
+  memory object under the same id, and `MetisEngine.request_review` opens a review ahead of time.
+- Re-capture after re-elicitation: `begin_capture`, `capture_observation`, and the API's
+  `/capture` take `supersedes=<fragment id>`, and the confirmed replacement supersedes the
+  fragment the Mission Group sent back.
+
+### Changed
+- Every contest except a withdrawal joins the fragment's open review or opens one, and the
+  reviewers decide it with a Tier-2 decision.
+- Live engines (a local project, the API, and the MCP server) record a Tier-2 decision only when
+  it names its reviewers in `decided_by`; the API's `/review` answers 422 otherwise.
+  Deterministic engines keep filling in the configured members for demos and tests.
+- Memory objects follow their fragment's layer and state, and the MCP listing shows fragments
+  in use and inside their review date.
+
+### Fixed
+- A decision that names more reviewers than the review rule needs records the approvals CHAP
+  counts and completes the review.
+- Revoking or superseding a fragment cancels any review still open on it, and a revoked
+  fragment stays out of review.
+- The API's `/capture` answers 422 for invalid input.
+
 ## [0.1.3]
 
 ### Added
@@ -23,10 +50,6 @@ All notable changes to Metis are recorded here. The format follows
   own answer and consent. Only the addressed human worker may answer.
 - Whisper budgets that ration prompts per worker and record deferrals.
 - A `ValidationEvent` model and schema for whisper deferrals, declined consent, and contests.
-- Re-review of fragments in use. The Mission Group can renew a fragment (for example after its
-  review date), move it between Advisory and Controlled, hold it, reject it, or send it back for
-  re-elicitation. The fragment stays in use until the decision, a later promotion rebuilds its
-  memory object under the same id, and `MetisEngine.request_review` opens a review ahead of time.
 - Knowledge Audit and Critical Decision Method interview guides.
 
 ### Changed
@@ -41,8 +64,6 @@ All notable changes to Metis are recorded here. The format follows
   and every lineage entry links to its evidence-chain record.
 - Only the worker who contributed a fragment can withdraw consent; reviewers retire
   fragments with `revoke`.
-- Every contest except a withdrawal joins the fragment's open review or opens one, and the
-  reviewers decide it with a Tier-2 decision.
 - Clearer wording in whisper templates, inference hypotheses, gate rationales, escalation
   actions, and agent instructions.
 - Each JSON Schema file is named after the artefact kind whose `schema` URI points to it:

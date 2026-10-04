@@ -39,7 +39,8 @@ authorisation, and transport security for a multi-tenant deployment belong to th
 CHAP Coordinator and host environment.
 
 - **The FastAPI server** (`metis.api`) is a single-user reference server. It has no
-  authentication and records the identities callers supply, so run it on localhost only.
+  authentication and records the identities callers supply, so run it on localhost only. Every
+  review it records names its reviewers (`decided_by`).
   Audit exports are confined to the project's `exports/` directory and accept a plain
   filename, so a request cannot choose where the server writes.
 - **The MCP server** (`metis mcp`) runs over stdio for one local client. It checks the form

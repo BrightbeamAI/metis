@@ -111,12 +111,15 @@ class Governance:
         """The reviewers whose decisions are recorded for ``outcome``.
 
         Granting authority needs as many distinct Mission Group approvals as the review rule
-        demands; rejecting, holding, or re-eliciting needs one reviewer. When ``decided_by``
-        is omitted, the configured members are used in order (a convenience for demos and
-        tests; production callers pass authenticated reviewer identities).
+        demands; rejecting, holding, or re-eliciting needs one reviewer. A live engine requires
+        ``decided_by``; a deterministic engine (demos and tests) uses the configured members in
+        order when it is omitted.
         """
         members = self.mission_group.reviewers()
         chosen = list(dict.fromkeys(decided_by)) if decided_by else None
+        if not chosen and self.policy.require_named_reviewers:
+            raise PermissionError(
+                "Name the reviewers who decide (decided_by): this engine records real decisions.")
         if chosen:
             outsiders = [u for u in chosen if u not in members]
             if outsiders:
@@ -142,6 +145,19 @@ class Governance:
         if frag.validation_state == VS.tier2_pending or (ref or {}).get("review") == _OPEN:
             return self._awaiting(ref)
         return False
+
+    def awaiting_re_elicitation(self, fragment_id: str) -> bool:
+        """True while the fragment waits to be captured again after a re-elicit decision."""
+        frag = self.fragments.get(fragment_id)
+        return frag is not None and frag.validation_state == VS.re_elicit
+
+    def require_re_elicitation(self, fragment_id: str) -> None:
+        """Raise unless a new capture may replace ``fragment_id``."""
+        frag = self.fragments.require(fragment_id)
+        if frag.validation_state != VS.re_elicit:
+            raise InvalidTransition(
+                f"{fragment_id} is {frag.validation_state.value}; a new capture can replace a "
+                "fragment only while it awaits re-elicitation.")
 
     @staticmethod
     def _require_active(frag: TacitFragment) -> None:
