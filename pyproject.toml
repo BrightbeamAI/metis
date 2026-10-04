@@ -39,7 +39,7 @@ metis = "metis.cli.main:main"
 Homepage = "https://github.com/BrightbeamAI/metis"
 Documentation = "https://github.com/BrightbeamAI/metis/tree/main/docs"
 "CHAP protocol" = "https://github.com/BrightbeamAI/chap"
-Paper = "https://doi.org/10.20944/preprints202608.0927.v1"
+Paper = "https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf"
 
 [tool.setuptools.packages.find]
 include = ["metis*"]

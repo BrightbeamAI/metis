@@ -32,7 +32,7 @@ Start with the visual explainer or the interactive demo, then dig into the conce
 | [chap_integration.md](chap_integration.md) | How Metis maps onto CHAP, which CHAP methods it dispatches, and how a project persists the chain. |
 | [metis_profile.md](metis_profile.md) | The `metis/1.0` profile: task kinds, artefact kinds, and rules. |
 | [local_model_runtime.md](local_model_runtime.md) | Installing Ollama, pulling Gemma, configuration, and why model output stays advisory. |
-| [tacit_fragments_preprint.pdf](tacit_fragments_preprint.pdf) | The paper Metis implements: *Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI* ([preprint](https://doi.org/10.20944/preprints202608.0927.v1)). |
+| [tacit_fragments_preprint.pdf](tacit_fragments_preprint.pdf) | The paper Metis implements: *Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI* ([on the website](https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf)). |
 | [ethical_use.md](ethical_use.md) | The constraints that make capture safe; see also the top-level ETHICAL_USE.md. |
 
 JSON Schemas for the core `tacit.*` objects are in [../schemas/](../schemas/). The runnable

@@ -8,6 +8,8 @@ All notable changes to Metis are recorded here. The format follows
 ### Changed
 - The README leads with figures from metis.brightbeam.works and keeps the text to what a reader
   needs. The PyPI description gives each figure's alt text in its place.
+- Paper links, including the PyPI project link and the citation file's URL, point to the PDF on
+  metis.brightbeam.works.
 
 ## [0.1.4]
 

@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://metis.brightbeam.works"><b>Website</b></a> ·
   <a href="docs/README.md"><b>Documentation</b></a> ·
-  <a href="https://doi.org/10.20944/preprints202608.0927.v1"><b>Paper</b></a> ·
+  <a href="https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf"><b>Paper</b></a> ·
   <a href="https://pypi.org/project/metis-memory/"><b>PyPI</b></a> ·
   <a href="https://github.com/BrightbeamAI/chap"><b>CHAP</b></a>
 </p>
@@ -158,9 +158,8 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 ## Citation
 
-Metis is the reference implementation of *Tacit Fragments: Operationalising Tacit Knowledge as a
-Governed Memory Layer for Agentic AI* ([preprint](https://doi.org/10.20944/preprints202608.0927.v1),
-[PDF](docs/tacit_fragments_preprint.pdf)).
+Metis is the reference implementation of
+[*Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*](https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf).
 
 ```bibtex
 @article{shahid2026tacitfragments,
@@ -169,6 +168,6 @@ Governed Memory Layer for Agentic AI* ([preprint](https://doi.org/10.20944/prepr
   journal = {Preprints},
   year    = {2026},
   doi     = {10.20944/preprints202608.0927.v1},
-  url     = {https://doi.org/10.20944/preprints202608.0927.v1}
+  url     = {https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf}
 }
 ```
