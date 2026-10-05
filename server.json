@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.BrightbeamAI/metis",
+  "title": "Metis",
+  "description": "Governed tacit memory for AI agents: reviewed expert know-how, given only where conditions match",
+  "version": "0.1.6",
+  "websiteUrl": "https://metis.brightbeam.works",
+  "repository": {
+    "url": "https://github.com/BrightbeamAI/metis",
+    "source": "github",
+    "id": "1262125919"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "metis-memory",
+      "version": "0.1.6",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "METIS_HOME",
+          "description": "The Metis project directory to serve. A directory with no workspace yet gets the pump demo, so there is governed memory to try at once.",
+          "format": "filepath",
+          "isRequired": true,
+          "placeholder": "/path/to/project/.metis"
+        }
+      ]
+    }
+  ]
+}

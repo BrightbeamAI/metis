@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metis-memory"
-version = "0.1.5.post1"
+version = "0.1.6"
 description = "A CHAP-aligned, local-first toolkit for capturing, validating, governing, and retrieving tacit fragments as governed tacit memory for AI agents."
 readme = "README_PYPI.md"
 license = { text = "Apache-2.0" }
@@ -25,10 +25,12 @@ dependencies = [
   "PyYAML>=6.0",
   "cryptography>=41.0",
   "httpx>=0.24",
+  "mcp>=1.10,<3",
 ]
 
 [project.optional-dependencies]
 api = ["fastapi>=0.110", "uvicorn>=0.23"]
+# The MCP SDK is a core dependency; the extra is kept so "metis-memory[mcp]" still installs.
 mcp = ["mcp>=1.10,<3"]
 server = ["fastapi>=0.110", "uvicorn[standard]>=0.23", "sqlalchemy>=2.0", "PyJWT[crypto]>=2.10.1", "mcp>=1.10,<3"]
 langchain = ["langchain-core>=0.3"]
@@ -37,6 +39,8 @@ dev = ["pytest>=7", "ruff>=0.4", "jsonschema>=4", "fastapi>=0.110", "uvicorn>=0.
 
 [project.scripts]
 metis = "metis.cli.main:main"
+# The same CLI under the package name, so `uvx metis-memory mcp` runs the MCP server.
+metis-memory = "metis.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/BrightbeamAI/metis"

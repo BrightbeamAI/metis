@@ -17,6 +17,8 @@
   <img src="https://img.shields.io/badge/recorded%20with-CHAP-282829" alt="Recorded with CHAP">
 </p>
 
+<!-- mcp-name: io.github.BrightbeamAI/metis -->
+
 **Metis** is an open-source toolkit for capturing fragments of expert practice and making them
 available to AI agents as memory, with human review and agreed conditions for use.
 
@@ -134,8 +136,9 @@ print(eng.retrieve(other).blocked[0].reason)  # conditions_do_not_match
 | Action | Guidance with its permitted uses | Action limits and human escalation |
 | Records | Local persistence and CHAP evidence | Storage, retention, and access policy |
 
-`metis mcp` serves the same governed memory to MCP clients such as Claude Desktop and Claude Code.
-See the [MCP server guide](docs/mcp_server.md). To run Metis for a team, the
+`metis mcp` serves the same governed memory to MCP clients such as Claude Desktop and Claude Code,
+and `uvx metis-memory mcp` runs it with nothing installed first. See the
+[MCP server guide](docs/mcp_server.md). To run Metis for a team, the
 [server guide](docs/server.md) covers sign-in, workspace roles, the web app, and PostgreSQL;
 [deploy/](deploy/README.md) runs it with Docker or Kubernetes; and the
 [agent integrations guide](docs/agent_integrations.md) connects agents through remote MCP, a

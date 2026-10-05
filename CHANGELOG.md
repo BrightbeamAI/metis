@@ -3,20 +3,27 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
-## [Unreleased]
+## [0.1.6]
 
 ### Added
+- `server.json` describes the MCP server for the MCP Registry, as `io.github.BrightbeamAI/metis`:
+  MCP clients that install from the registry run it with `uvx metis-memory mcp` and ask for the
+  project directory (`METIS_HOME`).
+- `metis-memory`, the same command line as `metis` under the package name, so
+  `uvx metis-memory mcp` runs the MCP server with nothing installed first.
 - Every MCP tool, on `metis mcp` and on the server's `/mcp`, publishes a JSON Schema for its
   arguments and its result with each field described, a title, and the MCP behaviour hints
   (read-only, destructive, idempotent, open world). The servers report the Metis version.
 - `metis mcp --home` names the project directory.
 
 ### Changed
+- The MCP SDK installs with Metis. The `mcp` extra still installs.
 - `metis mcp` asks for the situation's `risk_class` in `retrieve_guidance` and
   `agent_memory_context`, as the server does.
 - `submit_observation` on `metis mcp` returns the pending whisper when the same observation is
   reported again, and refuses another observation under a recorded id, as the server does.
 - `answer_whisper` on `metis mcp` needs the worker's corrected account with `correct`.
+- LICENSE carries the full text of the Apache License 2.0.
 
 ## [0.1.5.post1]
 

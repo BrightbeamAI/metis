@@ -13,9 +13,11 @@ agents anywhere, with sign-in and workspace roles, the Metis server answers MCP 
 ## Install and run
 
 ```bash
-pip install "metis-memory[mcp]"
+pip install metis-memory
 metis mcp
 ```
+
+Or run it without installing anything first: `uvx metis-memory mcp`.
 
 The server speaks MCP over stdio. It serves the active workspace of the project in
 `$METIS_HOME` (default `./.metis`, or `--home`); choose another workspace with `--workspace`.
@@ -50,7 +52,10 @@ claude mcp add metis --env METIS_HOME=/path/to/project/.metis -- metis mcp
 }
 ```
 
-Any other MCP client works the same way: run `metis mcp` as a stdio server.
+To run it without an install, use `"command": "uvx"` and `"args": ["metis-memory", "mcp"]`.
+
+Any other MCP client works the same way: run `metis mcp` as a stdio server. Clients that install
+from the MCP Registry find it as `io.github.BrightbeamAI/metis` and ask for `METIS_HOME`.
 
 ## Tools
 
