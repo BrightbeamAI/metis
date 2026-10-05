@@ -16,7 +16,7 @@ Thanks for your interest. Metis is a reference toolkit, so clarity and correctne
 
 ## Contribute a synthetic scenario
 
-A useful first contribution is a small scenario written in plain English. Describe one cue from expert practice and the circumstances in which it matters. Use synthetic observations and fictional participants. Check [ETHICAL_USE.md](ETHICAL_USE.md) before sharing material based on real work, and confirm consent and permission to share it.
+A useful first contribution is a small scenario written in plain English. Describe one cue from expert practice and the circumstances in which it matters. Use synthetic observations and fictional participants. 
 
 Include the following details.
 
