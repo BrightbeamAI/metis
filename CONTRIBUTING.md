@@ -14,6 +14,23 @@ Thanks for your interest. Metis is a reference toolkit, so clarity and correctne
 3. **The audit chain is append-only.** Never add code that mutates or deletes evidence.
 4. **No covert capture.** See [ETHICAL_USE.md](./ETHICAL_USE.md).
 
+## Contribute a synthetic scenario
+
+A useful first contribution is a small scenario written in plain English. Describe one cue from expert practice and the circumstances in which it matters. Use synthetic observations and fictional participants. Check [ETHICAL_USE.md](ETHICAL_USE.md) before sharing material based on real work, and confirm consent and permission to share it.
+
+Include the following details.
+
+- The procedure and what the worker did.
+- What the worker noticed and why it mattered.
+- A short whisper and the worker's confirmation in their own words.
+- The consent, provenance and conditions for use.
+- The supporting evidence and a counterexample.
+- The intended authority layer, Evidence, Advisory or Controlled, and the human review needed.
+- A situation requiring escalation to a person.
+- The expected effect of withdrawn consent or revocation.
+
+A scenario describes a partial account of practice for people to review. Human validation and authority govern its use. Start with one scenario that a reviewer can understand and check. If you turn it into code, follow the development and verification steps below.
+
 ## Development
 
 ```bash
