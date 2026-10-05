@@ -1,9 +1,10 @@
 """Generate README_PYPI.md from README.md for the PyPI project page.
 
-PyPI cannot render repository-relative images or links. This points each figure at its file
-in the release's tag on GitHub (raw.githubusercontent.com serves SVG as an image, which PyPI's
-image proxy accepts) and rewrites relative links to the tag's pages, so each version's page
-shows that version's figures and documents. Run by `make build`.
+README.md loads its figures from the main branch on GitHub, as Markdown images that GitHub,
+PyPI, and Glama all render, and PyPI cannot render repository-relative links. This points each
+figure at its file in the release's tag instead (raw.githubusercontent.com serves SVG as an
+image, which PyPI's image proxy accepts) and rewrites relative links to the tag's pages, so each
+version's page shows that version's figures and documents. Run by `make build`.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ def release_ref(pyproject: str) -> str:
     return "v" + re.split(r"\.(?:post|dev)", version.group(1))[0]
 
 
+MAIN_RAW = f"https://raw.githubusercontent.com/{REPO}/main/"
 IMG_SRC = re.compile(r'(<img\s[^>]*?src=")(docs/assets/[^"]+)(")')
 
 
@@ -42,6 +44,7 @@ def build() -> str:
     blob = f"{REPO_URL}/blob/{ref}"
 
     assert "docs/assets/metis-banner.svg" in text, "expected the banner in README.md"
+    text = text.replace(MAIN_RAW, f"{raw}/")
     text = IMG_SRC.sub(lambda m: f"{m.group(1)}{raw}/{m.group(2)}{m.group(3)}", text)
 
     # Rewrite relative markdown links and HTML hrefs to the tag's pages on GitHub.

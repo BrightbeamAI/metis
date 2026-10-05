@@ -1,6 +1,8 @@
-<p align="center">
-  <img src="docs/assets/metis-banner.svg" alt="Metis by Brightbeam Applied Research. Amplify your experts’ judgement. Open-source tacit memory for AI agents." width="100%">
-</p>
+<div align="center">
+
+![Metis by Brightbeam Applied Research. Amplify your experts’ judgement. Open-source tacit memory for AI agents.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-banner.svg)
+
+</div>
 
 <p align="center">
   <a href="https://metis.brightbeam.works"><b>Website</b></a> ·
@@ -15,6 +17,7 @@
   <img src="https://img.shields.io/badge/python-3.10%2B-1f6feb" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/license-Apache--2.0-2ea043" alt="Apache-2.0">
   <img src="https://img.shields.io/badge/recorded%20with-CHAP-282829" alt="Recorded with CHAP">
+  <a href="https://glama.ai/mcp/servers/BrightbeamAI/metis"><img src="https://glama.ai/mcp/servers/BrightbeamAI/metis/badges/score.svg" alt="Metis MCP server on Glama"></a>
 </p>
 
 <!-- mcp-name: io.github.BrightbeamAI/metis -->
@@ -28,24 +31,30 @@ A **tacit fragment** records what an expert noticed, how they responded, and the
 that response. After human review, it sits alongside procedures, facts, and past events in the
 agent's memory.
 
-<p align="center">
-  <img src="docs/assets/metis-memory-layers.svg" alt="Four layers of agent memory: procedural, what should happen; semantic, what is known; episodic, what happened; and tacit, what experience adds. The tacit layer comes from people." width="100%">
-</p>
+<div align="center">
+
+![Four layers of agent memory: procedural, what should happen; semantic, what is known; episodic, what happened; and tacit, what experience adds. The tacit layer comes from people.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-memory-layers.svg)
+
+</div>
 
 ## The gap between procedure and practice
 
 Procedures describe what should happen, and logs record what happened. The cue behind an expert's
 decision, and the reason for it, often go unrecorded.
 
-<p align="center">
-  <img src="docs/assets/metis-work-as-done.svg" alt="Work as imagined, from SOP-17: reduce load only when the alarm threshold is crossed. Work as done, by an experienced operator on the night shift: ease back earlier, when high load meets a dull sound. Metis records what the expert noticed, the context, and the response, for people to review." width="100%">
-</p>
+<div align="center">
+
+![Work as imagined, from SOP-17: reduce load only when the alarm threshold is crossed. Work as done, by an experienced operator on the night shift: ease back earlier, when high load meets a dull sound. Metis records what the expert noticed, the context, and the response, for people to review.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-work-as-done.svg)
+
+</div>
 
 ## How a fragment reaches an agent
 
-<p align="center">
-  <img src="docs/assets/metis-how-it-works.svg" alt="Three steps. Capture: the worker confirms the account in their own words. Human review: two named reviewers decide what the fragment may do. Use in context: the agent receives it when its conditions match. Three permission levels: Evidence, for reviewers only; Advisory, conditional support; Controlled, formal instruction." width="100%">
-</p>
+<div align="center">
+
+![Three steps. Capture: the worker confirms the account in their own words. Human review: two named reviewers decide what the fragment may do. Use in context: the agent receives it when its conditions match. Three permission levels: Evidence, for reviewers only; Advisory, conditional support; Controlled, formal instruction.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-how-it-works.svg)
+
+</div>
 
 Every capture, confirmation, review decision, and retrieval is recorded through the
 [CHAP](https://github.com/BrightbeamAI/chap) reference coordinator,
@@ -56,9 +65,11 @@ Every capture, confirmation, review decision, and retrieval is recorded through 
 When a recorded action differs from the procedure, a capture agent asks the expert one short
 question, a *whisper*, and the expert confirms the account in their own words.
 
-<p align="center">
-  <img src="docs/assets/metis-capture-loop.svg" alt="The capture loop around the worker and the capture agent: observe, infer, whisper, confirm, store." width="420">
-</p>
+<div align="center">
+
+![The capture loop around the worker and the capture agent: observe, infer, whisper, confirm, store.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-capture-loop.svg)
+
+</div>
 
 ## Seventeen kinds of know-how
 
@@ -66,9 +77,11 @@ Each fragment carries one of the paper's seventeen categories of tacit knowledge
 [atlas on the website](https://metis.brightbeam.works/#gap) gives an example of each and a way to
 capture it.
 
-<p align="center">
-  <img src="docs/assets/metis-atlas.svg" alt="Seventeen kinds of know-how, K1 to K17, in six domains: procedural and embodied; material and equipment; perceptual; inferential; meta-cognitive; social and normative." width="460">
-</p>
+<div align="center">
+
+![Seventeen kinds of know-how, K1 to K17, in six domains: procedural and embodied; material and equipment; perceptual; inferential; meta-cognitive; social and normative.](https://raw.githubusercontent.com/BrightbeamAI/metis/main/docs/assets/metis-atlas.svg)
+
+</div>
 
 ## Quickstart: run the pump example
 
