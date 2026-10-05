@@ -13,21 +13,37 @@ from __future__ import annotations
 import json
 import logging
 from contextvars import ContextVar
-from typing import Annotated, Any
-
-from pydantic import Field
+from typing import Any
 
 from ..identity import AuthenticationError, IdentityProviderUnavailable, Principal
-from ..limits import MAX_ID, MAX_NAME, MAX_NOTE, MAX_TEXT, MAX_URI
+from ..mcp.schema import (
+    CategoryHint,
+    EscalationId,
+    EscalationStatus,
+    MemoryContext,
+    MemoryListing,
+    ObservationId,
+    ObservedSituation,
+    RequesterRole,
+    RetrievalResult,
+    ServerObservationResult,
+    ServerWorker,
+    Situation,
+    TaskName,
+    Title,
+    WorkAsDone,
+    WorkAsImagined,
+    Workspace,
+    WorkspaceDetails,
+    WorkspaceList,
+    server_options,
+)
 from ..storage.repository import WorkspaceBusy, WorkspaceConflict
 from ..taxonomy.categories import CATEGORY_META
 from . import operations as ops
 from .access import ScopedRepository
 
 log = logging.getLogger("metis.server")
-
-Workspace = Annotated[str, Field(min_length=1, max_length=MAX_NAME)]
-Id = Annotated[str, Field(min_length=1, max_length=MAX_ID)]
 
 current_principal: ContextVar[Principal | None] = ContextVar("metis_principal", default=None)
 
@@ -102,75 +118,114 @@ def build_server(repo: Any) -> Any:
         from mcp.server.fastmcp import FastMCP as Server
     from mcp.types import ToolAnnotations
 
-    def annotations(read_only: bool) -> ToolAnnotations:
-        return ToolAnnotations(readOnlyHint=read_only, destructiveHint=False, openWorldHint=False)
+    server = Server("metis", instructions=INSTRUCTIONS, **server_options(Server))
 
-    server = Server("metis", instructions=INSTRUCTIONS)
+    def tool(name: str, title: str, description: str, *, read_only: bool,
+             idempotent: bool) -> Any:
+        return server.tool(name=name, title=title, description=description,
+                           annotations=ToolAnnotations(
+                               title=title, readOnlyHint=read_only, destructiveHint=False,
+                               idempotentHint=idempotent, openWorldHint=False))
 
-    @server.tool(name="list_workspaces", annotations=annotations(True),
-                 description="The Metis workspaces you belong to, with your roles in each.")
-    async def list_workspaces() -> list[dict[str, Any]]:
+    @tool("list_workspaces", "List your workspaces",
+          "List the Metis workspaces you belong to, with your roles in each. Call it first: "
+          "every other tool takes a workspace id from here, and your roles decide which tools "
+          "you may use (retrieval needs the agent role, reporting observations the capture "
+          "role). For one workspace's review rule, reviewers, and evidence status, use "
+          "describe_workspace. An auditor sees every workspace.",
+          read_only=True, idempotent=True)
+    async def list_workspaces() -> WorkspaceList:
         return await _call(ops.workspaces, repo)
 
-    @server.tool(name="describe_workspace", annotations=annotations(True),
-                 description="Describe a workspace: its review rule, reviewers, visible memory, "
-                             "evidence-chain status, and your roles.")
-    async def describe_workspace(workspace: Workspace) -> dict[str, Any]:
+    @tool("describe_workspace", "Describe a workspace",
+          "Describe one workspace you belong to: its review rule and reviewers, escalation "
+          "handler, whisper deadline, agent-visible memory, evidence-chain head and "
+          "participants, and your roles. Use it to orient yourself before retrieving or "
+          "reporting. It walks every hash link to report evidence_verified. To find workspace "
+          "ids, use list_workspaces; for the memory itself, use list_tacit_memory. Needs "
+          "membership of the workspace.",
+          read_only=True, idempotent=True)
+    async def describe_workspace(workspace: Workspace) -> WorkspaceDetails:
         return await _call(ops.describe, repo, workspace)
 
-    @server.tool(name="retrieve_guidance", annotations=annotations(False),
-                 description="Ask for governed tacit guidance for the current work situation. "
-                             "Returns only guidance whose recorded conditions match `context`, "
-                             "with its use constraints, plus anything a person must decide. "
-                             "`context` must include `risk_class` (low, moderate, high, or "
-                             "critical). The decision is recorded under your identity. Needs "
-                             "the agent role.")
-    async def retrieve_guidance(workspace: Workspace, context: dict[str, Any],
-                                role: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
-                                ) -> dict[str, Any]:
-        return await _call(ops.retrieve, repo, workspace, context, role)
+    @tool("retrieve_guidance", "Retrieve governed guidance",
+          "Retrieve the reviewed tacit guidance that applies to your current work situation, "
+          "with the use constraints reviewers attached. Call it before acting on equipment, a "
+          "process, or a product. For a whole task's procedures, reference facts, and past "
+          "cases as well, use agent_memory_context; to see what memory exists without its text, "
+          "use list_tacit_memory. A context field left out never matches a condition, so give "
+          "every field you know. role is the role you act for: a fragment restricted to other "
+          "roles is withheld as not authorised, while context.role is matched like any other "
+          "condition. When required_human_actions lists anything, stop: a person decides, the "
+          "handover opens an escalation task (escalation_task_id), and check_escalation reports "
+          "the decision. Needs the agent role. Each call records the decision on the evidence "
+          "chain under your identity and changes no fragment.",
+          read_only=False, idempotent=False)
+    async def retrieve_guidance(workspace: Workspace, context: Situation,
+                                role: RequesterRole = None) -> RetrievalResult:
+        return await _call(ops.retrieve, repo, workspace, dict(context), role)
 
-    @server.tool(name="agent_memory_context", annotations=annotations(False),
-                 description="Assemble procedural, semantic, episodic, and gated tacit memory for a "
-                             "task in the given context (including `risk_class`), with required "
-                             "human actions. Needs the agent role.")
-    async def agent_memory_context(workspace: Workspace,
-                                   task: Annotated[str, Field(max_length=MAX_NOTE)],
-                                   context: dict[str, Any],
-                                   role: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
-                                   ) -> dict[str, Any]:
-        return await _call(ops.agent_context, repo, workspace, task, context, role)
+    @tool("agent_memory_context", "Assemble memory for a task",
+          "Assemble a task's memory in one call: the workspace's procedures (SOPs), the facts "
+          "and past cases that match the context, and the governed tacit guidance that applies. "
+          "Use it when starting or planning a multi-step task. For a check before a single "
+          "action, use retrieve_guidance instead; calling both for one step records two "
+          "decisions. Tacit guidance passes the same condition-aware gate as retrieve_guidance, "
+          "and task is a label recorded with the query. When required_human_actions lists "
+          "anything (an escalation, or a use constraint that calls for a person's check), stop, "
+          "and follow an escalation with check_escalation. Needs the agent role. Each call "
+          "records the query and the gate's decisions under your identity, may open an "
+          "escalation task, and changes no fragment.",
+          read_only=False, idempotent=False)
+    async def agent_memory_context(workspace: Workspace, task: TaskName, context: Situation,
+                                   role: RequesterRole = None) -> MemoryContext:
+        return await _call(ops.agent_context, repo, workspace, task, dict(context), role)
 
-    @server.tool(name="list_tacit_memory", annotations=annotations(True),
-                 description="List agent-visible tacit memory (identifiers, categories, conditions, "
-                             "review dates). Content arrives only through retrieve_guidance.")
-    async def list_tacit_memory(workspace: Workspace) -> list[dict[str, Any]]:
+    @tool("list_tacit_memory", "List agent-visible tacit memory",
+          "List the tacit memory agents may receive in a workspace, as metadata with each "
+          "item's conditions of applicability and review date, without the guidance text. Use "
+          "it to see which situations memory covers and which context fields to give "
+          "retrieve_guidance; call retrieve_guidance to receive the guidance itself. Only "
+          "memory in use appears (promoted, consented, inside its review date), all in one "
+          "call. Listing records nothing, and a listed item can still be withheld at retrieval. "
+          "Needs the agent, reviewer, auditor, or admin role.",
+          read_only=True, idempotent=True)
+    async def list_tacit_memory(workspace: Workspace) -> MemoryListing:
         return await _call(ops.memory, repo, workspace)
 
-    @server.tool(name="check_escalation", annotations=annotations(True),
-                 description="The state of an escalation you raised, and the person's decision "
-                             "once it is made: applies, does_not_apply, or refer_to_review. After "
-                             "applies, call retrieve_guidance again with the same context to "
-                             "receive the guidance.")
-    async def check_escalation(workspace: Workspace, task_id: Id) -> dict[str, Any]:
+    @tool("check_escalation", "Check an escalation decision",
+          "Report the state of an escalation that a retrieval opened, and the person's decision "
+          "once it is made. Use it after retrieve_guidance or agent_memory_context return an "
+          "escalation_task_id, and leave time between checks, since a person decides. After "
+          "applies, call retrieve_guidance again with the same context within the grant window "
+          "(12 hours by default) to receive the guidance; after does_not_apply or "
+          "refer_to_review, do not use the withheld guidance. Records nothing. Open to the "
+          "agent that asked and to escalation handlers, reviewers, auditors, and admins.",
+          read_only=True, idempotent=True)
+    async def check_escalation(workspace: Workspace, task_id: EscalationId) -> EscalationStatus:
         return await _call(ops.escalation, repo, workspace, task_id)
 
-    @server.tool(name="submit_observation", annotations=annotations(False),
-                 description="Report where a worker's action differed from the procedure. Metis "
-                             "infers a candidate (a hypothesis only) and asks the worker one short "
-                             "question in their inbox. Nothing is stored until the worker answers. "
-                             "Needs the capture role.")
+    @tool("submit_observation", "Report a divergence from procedure",
+          "Report where a worker's action differed from the written procedure, so Metis asks "
+          "that worker one short question (a whisper) in their inbox. Use it when you see or "
+          "are told that work was done differently from the SOP; the worker answers in the "
+          "Metis web app, or in Slack or Teams where set up, so no tool here answers it. Metis "
+          "infers a candidate account (a hypothesis) and stores no fragment until the worker "
+          "answers. A worker gets at most five whispers in eight hours by default; past that "
+          "budget the call returns deferred, asks nothing, and spends the id. A retry with the "
+          "same observation_id, worker, and work_as_done returns the whisper while it awaits an "
+          "answer; any other report under a used id is refused. Needs the capture role, or the "
+          "worker role to report your own work; list_workspaces shows your roles.",
+          read_only=False, idempotent=True)
     async def submit_observation(
-            workspace: Workspace, observation_id: Id,
-            work_as_done: Annotated[str, Field(min_length=1, max_length=MAX_TEXT)],
-            context: dict[str, Any], worker: Annotated[str, Field(max_length=MAX_URI)],
-            work_as_imagined: Annotated[str, Field(max_length=MAX_TEXT)] | None = None,
-            category: Annotated[str, Field(max_length=MAX_NAME)] | None = None,
-            title: Annotated[str, Field(max_length=MAX_NAME)] | None = None) -> dict[str, Any]:
+            workspace: Workspace, observation_id: ObservationId, work_as_done: WorkAsDone,
+            context: ObservedSituation, worker: ServerWorker = None,
+            work_as_imagined: WorkAsImagined = None, category: CategoryHint = None,
+            title: Title = None) -> ServerObservationResult:
         return await _call(ops.submit_observation, repo, workspace,
                            observation_id=observation_id, work_as_done=work_as_done,
-                           context=context, worker=worker, work_as_imagined=work_as_imagined,
-                           category=category, title=title)
+                           context=dict(context), worker=worker,
+                           work_as_imagined=work_as_imagined, category=category, title=title)
 
     @server.resource("metis://governance", name="governance", mime_type="text/markdown",
                      description="The governance contract every Metis tool enforces.")

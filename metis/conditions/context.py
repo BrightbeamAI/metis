@@ -12,6 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 Scalar = str | list[str]
 
+# The risk classes a work situation can name. High and critical go to a person.
+RISK_CLASSES = ("low", "moderate", "high", "critical")
+
 # The structured context keys compared by the matcher.
 CONTEXT_KEYS = (
     "site", "area", "line", "equipment_family", "equipment_id", "product_family",

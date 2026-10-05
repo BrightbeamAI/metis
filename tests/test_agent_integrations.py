@@ -78,6 +78,9 @@ def _tool(http, key, name, **arguments):
     payload = result.get("structuredContent")
     if payload is not None and set(payload) == {"result"}:
         payload = payload["result"]
+    if payload is not None:  # the published output schema carries every key the tool returned
+        texts = [json.loads(c["text"]) for c in result["content"]]
+        assert (texts if isinstance(payload, list) else texts[0]) == payload
     return result.get("isError", False), payload if payload is not None else result["content"][0]["text"]
 
 
@@ -94,6 +97,13 @@ def test_remote_mcp_serves_agents_under_their_own_identity(server):
     failed, guidance = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS, context=ASK)
     assert not failed and [g["fragment_id"] for g in guidance["guidance"]] == [fid]
     assert guidance["guidance"][0]["use_constraints"] == ["Advisory only."]
+    failed, described = _tool(http, keys["agent"], "describe_workspace", workspace=WS)
+    assert not failed and described["your_roles"] == ["agent"] and described["evidence_verified"]
+    failed, listed = _tool(http, keys["agent"], "list_tacit_memory", workspace=WS)
+    assert not failed and [m["fragment_id"] for m in listed] == [fid]
+    failed, assembled = _tool(http, keys["agent"], "agent_memory_context", workspace=WS,
+                              task="restart the pump", context=ASK)
+    assert not failed and [t["fragment_id"] for t in assembled["tacit"]] == [fid]
 
     failed, message = _tool(http, keys["stranger"], "retrieve_guidance", workspace=WS, context=ASK)
     assert failed and "No workspace" in str(message)  # not a member: the workspace is unseen
@@ -116,6 +126,13 @@ def test_remote_mcp_serves_agents_under_their_own_identity(server):
                             context=PUMP, worker=PEOPLE["wendy"])
     assert not failed and whisper["worker"] == PEOPLE["wendy"]
     assert whisper["submitted_by"] == PEOPLE["cmms"]
+    failed, again = _tool(http, keys["cmms"], "submit_observation", workspace=WS,
+                          observation_id="WO-2", work_as_done="Opened the vent first.",
+                          context=PUMP, worker=PEOPLE["wendy"])
+    assert not failed and again["repeated"] and again["whisper_id"] == whisper["whisper_id"]
+    failed, message = _tool(http, keys["agent"], "retrieve_guidance", workspace=WS,
+                            context={**ASK, "valve": "open"})
+    assert failed and "valve" in str(message)  # the context schema is closed
     resources = _mcp(http, keys["agent"], "resources/list").json()["result"]["resources"]
     assert {r["uri"] for r in resources} >= {"metis://governance", "metis://taxonomy"}
 
@@ -269,3 +286,10 @@ def test_the_mcp_endpoint_takes_only_signed_posts(server):
     response = http.post("/mcp", headers=twice,
                          json={"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
     assert response.status_code == 401 and "more than one" in response.json()["detail"]
+
+
+def test_every_remote_tool_is_fully_documented():
+    from test_mcp import check_definitions  # the same standard as the stdio server
+
+    from metis.server.mcp_remote import build_server
+    check_definitions(asyncio.run(build_server(repo=None).list_tools()))

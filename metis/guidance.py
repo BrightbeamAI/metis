@@ -11,7 +11,7 @@ import datetime as _dt
 from typing import Any
 
 from . import clock
-from .conditions.context import TacitContext
+from .conditions.context import RISK_CLASSES, TacitContext
 from .retrieval.blocked_reasons import HUMAN_READABLE, BlockedReason
 from .taxonomy.categories import AuthorityLayer
 
@@ -47,6 +47,15 @@ def context_from(data: dict[str, Any]) -> TacitContext:
 
     check_context(data)
     return TacitContext.model_validate({k: v for k, v in data.items() if v is not None})
+
+
+def agent_situation(data: dict[str, Any]) -> TacitContext:
+    """An agent's work situation. It must name its risk class: Metis hands high-risk
+    situations to a person, so a missing risk class is refused, never assumed low."""
+    if data.get("risk_class") not in RISK_CLASSES:
+        raise ValueError(f"Give the situation's risk_class in the context: one of "
+                         f"{', '.join(RISK_CLASSES)}.")
+    return context_from(data)
 
 
 def withheld(engine: Any, blocked: list[Any]) -> tuple[list[dict[str, Any]], int]:

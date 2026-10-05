@@ -47,7 +47,9 @@ metis server member set --workspace wsp_plant_a --uri agent:shift-assistant --ro
 The server answers MCP over streamable HTTP at `/mcp` (POST, with JSON responses). Send the
 agent's API key or access token as a bearer token on every request; the endpoint is stateless, so
 any replica serves any request. A refusal (a missing role, a workspace the agent does not belong
-to, invalid input) comes back as a tool error with its reason.
+to, invalid input) comes back as a tool error with its reason. Every tool publishes a JSON Schema
+for its arguments and its result, with each field described, and declares the MCP behaviour
+hints; `submit_observation` is safe to retry with the same observation id.
 
 | Tool | Role | What it does |
 | --- | --- | --- |

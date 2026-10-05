@@ -21,14 +21,15 @@ from ..engine import MetisEngine
 from ..integrations.chap.participants import type_of
 from ..project import Project
 from ..taxonomy.categories import CATEGORY_META
+from ..validation.states import InvalidTransition
 
 INSTRUCTIONS = (
     "Metis serves governed tacit memory: reviewed fragments of expert practice that apply only "
     "under recorded conditions. Before acting in a work situation, call retrieve_guidance with "
-    "the current context. Treat guidance as situated advice for those conditions, and honour "
-    "every use constraint. When required_human_actions lists anything, stop and hand the "
-    "decision to the named person. Relay a worker's answers and contests in the worker's own "
-    "words, under the worker's own identity."
+    "the current context, including its risk class. Treat guidance as situated advice for "
+    "those conditions, and honour every use constraint. When required_human_actions lists "
+    "anything, stop and hand the decision to a person. Relay a worker's answers and contests "
+    "in the worker's own words, under the worker's own identity."
 )
 
 _RESPONSES = ("confirm", "correct", "dismiss", "defer")
@@ -105,15 +106,16 @@ class MetisTools:
 
     # ---- governed retrieval ----------------------------------------------------------
     def retrieve_guidance(self, context: dict[str, Any], role: str | None = None) -> dict[str, Any]:
+        """Governed guidance for a work situation, which must name its risk class."""
         with self._lock:
-            decision = self.engine.retrieve(_context(context), role=role)
+            decision = self.engine.retrieve(views.agent_situation(context), role=role)
             self._save()
             return views.guidance_view(self.engine, decision)
 
     def agent_memory_context(self, task: str, context: dict[str, Any],
                              role: str | None = None) -> dict[str, Any]:
         with self._lock:
-            amc = self.engine.agent_context(task, _context(context), role=role)
+            amc = self.engine.agent_context(task, views.agent_situation(context), role=role)
             self._save()
             return views.agent_context_view(self.engine, amc)
 
@@ -121,10 +123,23 @@ class MetisTools:
     def submit_observation(self, observation_id: str, work_as_done: str, context: dict[str, Any],
                            worker: str, work_as_imagined: str | None = None,
                            category: str | None = None, title: str | None = None) -> dict[str, Any]:
+        """Start a capture: infer a candidate and whisper one question to ``worker``.
+
+        Reporting the same observation again (a retry) returns the whisper it raised, so a retry
+        never asks the worker twice; another observation under a recorded id is refused."""
         _require_human(worker, "worker")
         with self._lock:
             ctx = _context(context)
-            pending = self.engine.begin_capture(
+            eng = self.engine
+            if eng.observation_seen(observation_id):
+                same = next((c for c in eng.pending_captures.values()
+                             if c.observation.observation_id == observation_id), None)
+                if (same is not None and same.worker == worker
+                        and same.observation.work_as_done == work_as_done):
+                    return {"deferred": False, "repeated": True, **self._asked(same)}
+                raise InvalidTransition(f"Observation {observation_id} was reported already; "
+                                        "give a new observation a new id.")
+            pending = eng.begin_capture(
                 {"observation_id": observation_id, "work_as_imagined": work_as_imagined,
                  "work_as_done": work_as_done, "context": ctx, "source": "mcp"},
                 consent=ConsentRecord(consent_status=ConsentStatus.pending),
@@ -133,13 +148,17 @@ class MetisTools:
             if pending.deferred:
                 return {"deferred": True, "reason": pending.deferred_reason,
                         "note": f"{worker} has reached the whisper budget; nothing was asked."}
-            return {"deferred": False, "whisper_id": pending.whisper_id, "worker": worker,
-                    "question": pending.whisper.question,
-                    "options": [o["id"] for o in pending.whisper.options],
-                    "candidate": {"category": pending.candidate.category,
-                                  "hypothesis": pending.candidate.hypothesis},
-                    "note": "A hypothesis only. Put the question to the worker and relay their "
-                            "own answer with answer_whisper."}
+            return {"deferred": False, **self._asked(pending)}
+
+    @staticmethod
+    def _asked(pending: Any) -> dict[str, Any]:
+        return {"whisper_id": pending.whisper_id, "worker": pending.worker,
+                "question": pending.whisper.question,
+                "options": [o["id"] for o in pending.whisper.options],
+                "candidate": {"category": pending.candidate.category,
+                              "hypothesis": pending.candidate.hypothesis},
+                "note": "A hypothesis only. Put the question to the worker and relay their "
+                        "own answer with answer_whisper."}
 
     def answer_whisper(self, whisper_id: str, response: str, answered_by: str, consent: str,
                        corrected_text: str | None = None) -> dict[str, Any]:
@@ -148,6 +167,9 @@ class MetisTools:
             raise ValueError(f"response must be one of {', '.join(_RESPONSES)}")
         if consent not in ("granted", "declined"):
             raise ValueError("consent must be 'granted' or 'declined', as the worker stated it")
+        if response == "correct" and not (corrected_text or "").strip():
+            raise ValueError("A correct answer needs the worker's corrected account in "
+                             "corrected_text, in their own words.")
         with self._lock:
             result = self.engine.answer_whisper(
                 whisper_id, response=response, answered_by=answered_by,

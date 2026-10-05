@@ -9,6 +9,8 @@ def mcp(
     workspace: str = typer.Option(None, "--workspace", help="Workspace to serve (default: the active one)."),
     seed_demo: bool = typer.Option(True, "--seed-demo/--no-seed-demo",
                                    help="Seed the pump demo when the project has no workspace."),
+    home: str = typer.Option(None, "--home", envvar="METIS_HOME",
+                             help="The project directory (default: $METIS_HOME, else ./.metis)."),
 ) -> None:
     """Serve this project's governed tacit memory to MCP clients over stdio."""
     if importlib.util.find_spec("mcp") is None:
@@ -18,7 +20,7 @@ def mcp(
     from ...project import NoWorkspace, WorkspaceBusy
 
     try:
-        serve(workspace=workspace, seed_demo=seed_demo)
+        serve(home=home, workspace=workspace, seed_demo=seed_demo)
     except (NoWorkspace, WorkspaceBusy) as exc:
         typer.secho(str(exc), err=True)
         raise typer.Exit(code=1) from exc

@@ -3,6 +3,21 @@
 All notable changes to Metis are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses semantic versioning.
 
+## [Unreleased]
+
+### Added
+- Every MCP tool, on `metis mcp` and on the server's `/mcp`, publishes a JSON Schema for its
+  arguments and its result with each field described, a title, and the MCP behaviour hints
+  (read-only, destructive, idempotent, open world). The servers report the Metis version.
+- `metis mcp --home` names the project directory.
+
+### Changed
+- `metis mcp` asks for the situation's `risk_class` in `retrieve_guidance` and
+  `agent_memory_context`, as the server does.
+- `submit_observation` on `metis mcp` returns the pending whisper when the same observation is
+  reported again, and refuses another observation under a recorded id, as the server does.
+- `answer_whisper` on `metis mcp` needs the worker's corrected account with `correct`.
+
 ## [0.1.5.post1]
 
 ### Changed

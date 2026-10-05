@@ -18,9 +18,9 @@ metis mcp
 ```
 
 The server speaks MCP over stdio. It serves the active workspace of the project in
-`$METIS_HOME` (default `./.metis`); choose another with `--workspace`. When the project has no
-workspace yet, the server seeds the pump demo so there is governed memory to try at once;
-`--no-seed-demo` turns that off. Every retrieval, capture, and contest is recorded on the
+`$METIS_HOME` (default `./.metis`, or `--home`); choose another workspace with `--workspace`.
+When the project has no workspace yet, the server seeds the pump demo so there is governed
+memory to try at once; `--no-seed-demo` turns that off. Every retrieval, capture, and contest is recorded on the
 workspace's hash-linked CHAP chain and its append-only ledger, exactly as the CLI records them.
 
 While the server runs it is the workspace's only writer. CLI commands that record something on the
@@ -56,19 +56,22 @@ Any other MCP client works the same way: run `metis mcp` as a stdio server.
 
 | Tool | What it does | Changes state |
 |------|--------------|---------------|
-| `retrieve_guidance` | Returns tacit guidance whose recorded conditions match the context, with use constraints, and anything a person must decide. | Records the decision |
-| `agent_memory_context` | Assembles procedural, semantic, episodic, and gated tacit memory for a task. | Records the query |
+| `retrieve_guidance` | Returns tacit guidance whose recorded conditions match the context, with use constraints, and anything a person must decide. The context names its risk class. | Records the decision |
+| `agent_memory_context` | Assembles procedures, matching facts and past cases, and gated tacit memory for a task. | Records the query |
 | `list_tacit_memory` | Lists agent-visible memory, meaning fragments in use and inside their review date: identifiers, titles, categories, conditions, review dates. The guidance text comes only through the gate. | No |
 | `describe_workspace` | Fragments by authority layer, pending whispers, reviewers, chain status. | No |
-| `submit_observation` | Reports a divergence from procedure; returns one short question for the worker. | Starts a capture |
+| `submit_observation` | Reports a divergence from procedure; returns one short question for the worker. A retry with the same observation id returns the same question. | Starts a capture |
 | `list_pending_whispers` | Whispers waiting for a worker's answer. | No |
-| `answer_whisper` | Relays the worker's own answer and consent; stores an Evidence-layer fragment when the worker confirms or corrects it and grants consent. | Completes a capture |
+| `answer_whisper` | Relays the worker's own answer and consent; stores an Evidence-layer fragment when the worker confirms, or corrects it in their own words, and grants consent. | Completes a capture |
 | `contest_fragment` | Relays a challenge, correction, proposed supersession, withdrawal, or re-elicitation request. A withdrawal revokes the fragment; every other contest goes to a Mission Group review. | Opens or joins a review, or revokes |
 | `audit_verify` | Verifies the evidence chain and checks the ledger agrees. | No |
 | `audit_tail` | The latest chain entries. | No |
 
-Two resources describe the rules: `metis://governance` (the contract below) and
-`metis://taxonomy` (the K1 to K17 categories and their capture modalities).
+Every tool publishes a JSON Schema for its arguments and for its result, with each field
+described, and declares the MCP behaviour hints (read-only, destructive, idempotent), so a
+client knows what a call takes, returns, and changes before it makes the call. Two resources
+describe the rules: `metis://governance` (the contract below) and `metis://taxonomy` (the K1
+to K17 categories and their capture modalities).
 
 ## The contract the tools enforce
 
@@ -78,7 +81,8 @@ Two resources describe the rules: `metis://governance` (the contract below) and
   through the gate.
 - **Unauthorised fragments stay out of sight.** Evidence-layer and unreviewed fragments appear
   only as a count (`not_yet_authorised`).
-- **A person decides when it matters.** High-risk situations and near misses come back as
+- **A person decides when it matters.** Every retrieval names the situation's risk class, and
+  a context without one is refused. High-risk situations and near misses come back as
   `required_human_actions` with an escalation task for the operator, and the agent waits for
   that person.
 - **Workers speak for themselves.** `submit_observation`, `answer_whisper`, and

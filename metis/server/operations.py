@@ -18,8 +18,6 @@ from ..validation.states import InvalidTransition
 from .access import Forbidden, require, require_member, roles_in
 from .deps import NotFound
 
-RISK_CLASSES = ("low", "moderate", "high", "critical")
-
 
 def _model(repo: Any) -> Any:
     """The live local model, when one is configured; drafting then happens before the write."""
@@ -59,16 +57,6 @@ def answer_draft(repo: Any, workspace_id: str, whisper_id: str, worker: str, res
                               confirmed_text=seen[1])
 
 
-def agent_context_of(context: dict[str, Any]) -> Any:
-    """An agent's work situation. It must name its risk class: Metis hands high-risk
-    situations to a person, so a missing risk class is refused, never assumed low."""
-    risk = context.get("risk_class")
-    if risk not in RISK_CLASSES:
-        raise ValueError(f"Give the situation's risk_class in the context: one of "
-                         f"{', '.join(RISK_CLASSES)}.")
-    return views.context_from(context)
-
-
 def workspaces(repo: Any, p: Principal) -> list[dict[str, Any]]:
     """The workspaces the caller can see, with the caller's roles in each."""
     mine = repo.memberships(p.uri)
@@ -95,7 +83,7 @@ def describe(repo: Any, p: Principal, workspace_id: str) -> dict[str, Any]:
 def retrieve(repo: Any, p: Principal, workspace_id: str, context: dict[str, Any],
              role: str | None = None) -> dict[str, Any]:
     """Governed guidance for a work situation, recorded under the agent's identity."""
-    ctx = agent_context_of(context)
+    ctx = views.agent_situation(context)
 
     def ask(engine: Any) -> dict[str, Any]:
         require(engine, p, Role.agent)
@@ -106,7 +94,7 @@ def retrieve(repo: Any, p: Principal, workspace_id: str, context: dict[str, Any]
 
 def agent_context(repo: Any, p: Principal, workspace_id: str, task: str, context: dict[str, Any],
                   role: str | None = None) -> dict[str, Any]:
-    ctx = agent_context_of(context)
+    ctx = views.agent_situation(context)
 
     def ask(engine: Any) -> dict[str, Any]:
         require(engine, p, Role.agent)
