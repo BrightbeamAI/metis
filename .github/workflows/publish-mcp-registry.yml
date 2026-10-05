@@ -1,0 +1,67 @@
+# Publishes server.json to the official MCP Registry as io.github.BrightbeamAI/metis.
+#
+# The registry trusts this repository's GitHub Actions identity (OIDC) for the
+# io.github.BrightbeamAI namespace, so no personal token or org-owner login is needed.
+# It runs when a release tag is pushed, after the package is on PyPI, and can be run
+# by hand from the Actions tab.
+
+name: Publish to the MCP Registry
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # the registry checks this repository's identity
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check that server.json describes this release
+        id: release
+        run: |
+          python3 - <<'PY'
+          import json, os, re, sys
+          version = re.search(r'^version\s*=\s*"([^"]+)"', open("pyproject.toml").read(), re.M).group(1)
+          server = json.load(open("server.json"))
+          found = {server["version"], *(package["version"] for package in server["packages"])}
+          if found != {version}:
+              sys.exit(f"server.json names {sorted(found)}; pyproject.toml names {version}")
+          ref = os.environ["GITHUB_REF"]
+          if ref.startswith("refs/tags/") and ref != f"refs/tags/v{version}":
+              sys.exit(f"{ref} does not match version {version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"version={version}\n")
+          PY
+
+      - name: Wait for the package on PyPI
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl -fsS -o /dev/null "https://pypi.org/pypi/metis-memory/${VERSION}/json"; then
+              exit 0
+            fi
+            echo "metis-memory ${VERSION} is not on PyPI yet; checking again in 30 seconds"
+            sleep 30
+          done
+          echo "::error::Upload metis-memory ${VERSION} to PyPI, then run this workflow again."
+          exit 1
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+
+      - name: Sign in to the registry as this repository
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish

@@ -55,3 +55,12 @@ JavaScript gate against the Python gate (it needs Node.js).
   `conditions`, `consent`, `capture`, `validation`, `governance`, `retrieval`, `memory`, `models`,
   `audit`, and `integrations/chap`, with `storage` and `project.py` for local projects and `cli`,
   `api`, and `mcp` for the interfaces.
+
+## Releases
+
+1. Set the version in `pyproject.toml` and both versions in `server.json`, and add the changelog
+   entry. A test fails when `server.json` and the package disagree.
+2. Run `make build`, then `twine upload dist/metis_memory-<version>*`.
+3. Tag the release and push the tag: `git tag -a v<version> -m "Metis <version>"` and
+   `git push origin v<version>`. The PyPI page loads its figures from the tag, and the tag runs the
+   workflow that publishes `server.json` to the MCP Registry as `io.github.BrightbeamAI/metis`.
