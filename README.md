@@ -5,9 +5,9 @@
 </div>
 
 <p align="center">
-  <a href="https://metis.brightbeam.works"><b>Website</b></a> ·
+  <a href="https://brightbeam.works/metis/"><b>Website</b></a> ·
   <a href="docs/README.md"><b>Documentation</b></a> ·
-  <a href="https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf"><b>Paper</b></a> ·
+  <a href="https://brightbeam.works/metis/resources/tacit-fragments-preprint.pdf"><b>Paper</b></a> ·
   <a href="https://pypi.org/project/metis-memory/"><b>PyPI</b></a> ·
   <a href="https://github.com/BrightbeamAI/chap"><b>CHAP</b></a>
 </p>
@@ -74,7 +74,7 @@ question, a *whisper*, and the expert confirms the account in their own words.
 ## Seventeen kinds of know-how
 
 Each fragment carries one of the paper's seventeen categories of tacit knowledge, K1 to K17. The
-[atlas on the website](https://metis.brightbeam.works/#gap) gives an example of each and a way to
+[atlas on the website](https://brightbeam.works/metis/#gap) gives an example of each and a way to
 capture it.
 
 <div align="center">
@@ -161,7 +161,7 @@ it in production.
 
 ## Learn more
 
-- [Website](https://metis.brightbeam.works): the interactive walkthrough, the atlas, and common questions.
+- [Website](https://brightbeam.works/metis/): the interactive walkthrough, the atlas, and common questions.
 - [Documentation](docs/README.md): architecture, governance, retrieval, and agent use.
 - [ABOUT.md](ABOUT.md): the repository map and how to develop.
 - [CHAP](https://github.com/BrightbeamAI/chap): the Collaborative Human-Agent Protocol.
@@ -181,7 +181,7 @@ Apache-2.0. See [LICENSE](LICENSE).
 ## Citation
 
 Metis is the reference implementation of
-[*Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*](https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf).
+[*Tacit Fragments: Operationalising Tacit Knowledge as a Governed Memory Layer for Agentic AI*](https://brightbeam.works/metis/resources/tacit-fragments-preprint.pdf).
 
 ```bibtex
 @article{shahid2026tacitfragments,
@@ -190,6 +190,6 @@ Metis is the reference implementation of
   journal = {Preprints},
   year    = {2026},
   doi     = {10.20944/preprints202608.0927.v1},
-  url     = {https://metis.brightbeam.works/resources/tacit-fragments-preprint.pdf}
+  url     = {https://brightbeam.works/metis/resources/tacit-fragments-preprint.pdf}
 }
 ```
